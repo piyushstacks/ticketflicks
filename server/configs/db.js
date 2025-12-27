@@ -6,7 +6,7 @@ const connectDB = async () => {
       console.log("Database connected");
     });
 
-    await mongoose.connect(`${process.env.MONGODB_URI}/ticketflicks`);
+    await mongoose.connect(`${process.env.MONGODB_URI.replace(/\/$/, "")}/ticketflicks`);
   } catch (error) {
     console.log("[db.js] " + error.message);
   }
