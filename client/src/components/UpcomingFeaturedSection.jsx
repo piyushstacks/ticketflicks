@@ -7,7 +7,6 @@ import UpcomingMovieCard from "./UpcomingMovieCard";
 import Loading from "./Loading";
 import useWindowWidth from "../hooks/useWindowWidth";
 import SkeletonCard from "./SkeletonCard";
-import { dummyShowsData } from "../assets/assets";
 
 const UpcomingFeaturedSection = () => {
   const navigate = useNavigate();
@@ -20,12 +19,6 @@ const UpcomingFeaturedSection = () => {
   }
   const { upcomingMovies, loading } = useAppContext();
 
-  // Use upcomingMovies if available, otherwise fall back to dummy data
-  const displayMovies =
-    upcomingMovies && upcomingMovies.length > 0
-      ? upcomingMovies.slice(0, sliceCount)
-      : dummyShowsData.slice(0, sliceCount);
-
   if (loading) {
     return (
       <div className="flex flex-wrap gap-9 mt-8 px-6 md:px-16 lg:px-24 xl:px-44 pt-40">
@@ -36,7 +29,7 @@ const UpcomingFeaturedSection = () => {
     );
   }
 
-  return (
+  return upcomingMovies.length > 0 ? (
     <div className="px-6 md:px-16 lg:px-24 xl:px-44 overflow-hidden">
       <div className="relative flex items-center justify-between pt-20 pb-10">
         <BlurCircle top="130px" left="50px" />
@@ -54,8 +47,8 @@ const UpcomingFeaturedSection = () => {
       </div>
 
       <div className="flex flex-wrap max-sm:justify-center gap-9 mt-8">
-        {displayMovies.map((movie) => (
-          <UpcomingMovieCard key={movie.id || movie._id} movie={movie} />
+        {upcomingMovies.slice(0, sliceCount).map((moive) => (
+          <UpcomingMovieCard key={moive.id} movie={moive} />
         ))}
       </div>
 
@@ -71,6 +64,8 @@ const UpcomingFeaturedSection = () => {
         </button>
       </div>
     </div>
+  ) : (
+    <Loading />
   );
 };
 

@@ -3,47 +3,35 @@ import { useAppContext } from "../../context/AppContext";
 import Loading from "../../components/Loading";
 import Title from "../../components/admin/Title";
 import { StarIcon } from "lucide-react";
-import { dummyFeedbackData } from "../../assets/assets";
 
 const Feedbacks = () => {
   const { axios, getToken, user } = useAppContext();
 
   const [feedbacks, setFeedbacks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAllFeedbacks = async () => {
+    try {
+      setLoading(true);
+      const { data } = await axios.get("/api/admin/all-feedbacks", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+
+      if (data.success) {
+        setFeedbacks(data.feedbacks);
+      } else {
+        console.error("Failed to fetch feedbacks:", data.message);
+      }
+    } catch (error) {
+      console.error("Failed to fetch feedbacks:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const initializeFeedbacks = () => {
-      try {
-        setFeedbacks(dummyFeedbackData);
-      } catch (error) {
-        console.log("Error initializing dummy feedbacks:", error);
-        setFeedbacks([]);
-      }
-    };
-
-    initializeFeedbacks();
-  }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await axios.get("/api/admin/all-feedbacks", {
-          headers: { Authorization: `Bearer ${await getToken()}` },
-        });
-
-        if (data.success) {
-          setFeedbacks(data.feedbacks);
-        } else {
-          console.error("Failed to fetch feedbacks:", data.message);
-        }
-      } catch (error) {
-        console.log("Error fetching feedbacks, using dummy data:", error);
-        // Keep dummy data already set in state
-      }
-    };
-
     if (user) {
-      fetchData();
+      fetchAllFeedbacks();
     }
   }, [user]);
 
@@ -66,14 +54,14 @@ const Feedbacks = () => {
                 key={index}
                 className="border-b border-primary/10 bg-primary/5 even:bg-primary/10"
               >
-                <td className="p-2 min-w-45 pl-5">{feedback.user?.name || "N/A"}</td>
-                <td className="p-2">{feedback.message || "N/A"}</td>
+                <td className="p-2 min-w-45 pl-5">{feedback.user.name}</td>
+                <td className="p-2">{feedback.message}</td>
                 <td className="p-2 flex">
                   {[...Array(5)].map((_, index) => (
                     <StarIcon
                       key={index}
                       className={
-                        index < (feedback.rating || 0)
+                        index < feedback.rating
                           ? "text-yellow-500 fill-yellow-400"
                           : "text-gray-300"
                       }
@@ -81,7 +69,7 @@ const Feedbacks = () => {
                   ))}
                 </td>
                 <td className="p-2">
-                  {feedback.createdAt ? new Date(feedback.createdAt).toLocaleString() : "N/A"}
+                  {new Date(feedback.createdAt).toLocaleString()}
                 </td>
               </tr>
             ))}

@@ -3,7 +3,6 @@ import axios from "axios";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { dummyFavoriteMovies } from "../assets/assets";
 
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -110,13 +109,10 @@ export const AppProvider = ({ children }) => {
       if (data.success) {
         setFavoriteMovies(data.movies);
       } else {
-        console.log("Failed to load favorites, using dummy data:", data.message);
-        setFavoriteMovies(dummyFavoriteMovies);
+        toast.error(data.message || "Failed to load favorites");
       }
     } catch (error) {
-      console.error("fetchFavoriteMovies error:", error);
-      // Use dummy data as fallback
-      setFavoriteMovies(dummyFavoriteMovies);
+      handleError("fetchFavoriteMovies", error);
     }
   };
 

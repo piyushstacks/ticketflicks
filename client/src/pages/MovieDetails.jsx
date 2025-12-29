@@ -37,22 +37,13 @@ const MovieDetails = () => {
 
   const getShow = async () => {
     try {
-      // Try to fetch from API first
       const { data } = await axios.get(`/api/show/${id}`);
-      console.log(data); // Debugging the API response
-      if (data.success && data.movie) {
-        setShow(data.movie);
-      } else {
-        console.error("Invalid response structure:", data);
-        // Fallback to dummy data if API fails
-        const dummyShow = dummyShowsData.find((show) => show._id === id);
-        setShow(dummyShow || dummyShowsData[0]);
+
+      if (data.success) {
+        setShow(data);
       }
     } catch (error) {
-      console.error("Error fetching movie details:", error);
-      // Fallback to dummy data on API error
-      const dummyShow = dummyShowsData.find((show) => show._id === id);
-      setShow(dummyShow || dummyShowsData[0]);
+      console.log(error);
     }
   };
 
@@ -71,16 +62,11 @@ const MovieDetails = () => {
       );
 
       if (data.success) {
-        try {
-          await fetchFavoriteMovies();
-        } catch (err) {
-          console.log("Could not fetch favorite movies:", err);
-        }
+        await fetchFavoriteMovies();
         toast.success(data.message);
       }
     } catch (error) {
-      console.log("Error adding to favorites:", error);
-      toast.error("Could not add to favorites");
+      console.log(error);
     }
   };
 
@@ -107,7 +93,7 @@ const MovieDetails = () => {
     <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50">
       <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
         <img
-          src={imageBaseURL + (show?.poster_path || "")}
+          src={imageBaseURL + show.movie.poster_path}
           alt="Movie Poster"
           className="max-md:mx-auto rounded-xl h-104 max-w-70 object-cover"
         />
@@ -116,22 +102,22 @@ const MovieDetails = () => {
           <BlurCircle top="-100px" left="-100px" />
           <p className="text-primary">ENGLISH</p>
           <h1 className="text-4xl font-semibold max-w-96 text-balance flex w-full justify-between items-center">
-            {show.title}
+            {show.movie.title}
             <FavoriteButton className="lg:hidden" iconSize="w-7 h-7" />
           </h1>
           <div className="flex items-center gap-2 text-gray-300">
             <StarIcon className="w-5 h-5 text-primary fill-primary" />
-            {show.vote_average.toFixed(1)} User Rating
+            {show.movie.vote_average.toFixed(1)} User Rating
           </div>
 
           <p className="text-gray-400 mt-2 text-md leading-tight max-w-2xl">
-            {show.overview}
+            {show.movie.overview}
           </p>
 
           <p>
-            {timeFormat(show.runtime)} ●{" "}
-            {show.genres.map((genre) => genre.name).join(" | ")} ●{" "}
-            {show.release_date.split("-").join("/")}
+            {timeFormat(show.movie.runtime)} ●{" "}
+            {show.movie.genres.map((genre) => genre.name).join(" | ")} ●{" "}
+            {show.movie.release_date.split("-").join("/")}
           </p>
 
           <div className="flex items-center flex-wrap gap-4 mt-4 lg:gap-3 xl:gap-4">
@@ -158,7 +144,7 @@ const MovieDetails = () => {
       <p className="text-xl font-medium mt-20">Movie Cast:</p>
       <div className="overflow-x-auto mt-8 pb-4">
         <div className="flex items-center gap-4 w-max px-4">
-          {show.casts.slice(0, 16).map((cast, index) => (
+          {show.movie.casts.slice(0, 16).map((cast, index) => (
             <div key={index} className="flex flex-col items-center text-center">
               <img
                 src={imageBaseURL + cast.profile_path}

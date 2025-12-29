@@ -6,7 +6,6 @@ import kConverter from "../../lib/kConverter";
 import toast from "react-hot-toast";
 import { useAppContext } from "../../context/AppContext";
 import isoTimeFormat from "../../lib/isoTimeFormat";
-import { dummyShowsData } from "../../assets/assets";
 
 const AddShows = () => {
   const currency = import.meta.env.VITE_CURRENCY;
@@ -20,18 +19,19 @@ const AddShows = () => {
 
   const { axios, getToken, user, imageBaseURL } = useAppContext();
 
-  useEffect(() => {
-    const initializeMovies = () => {
-      try {
-        setNowPlayingMovies(dummyShowsData);
-      } catch (error) {
-        console.log("Error initializing dummy movies:", error);
-        setNowPlayingMovies([]);
-      }
-    };
+  const fetchNowPlayingMovies = async () => {
+    try {
+      const { data } = await axios.get("/api/show/now-playing", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
 
-    initializeMovies();
-  }, []);
+      if (data.success) {
+        setNowPlayingMovies(data.movies);
+      }
+    } catch (error) {
+      console.error("[fetchNowPlayingMovies]", error);
+    }
+  };
 
   const handleDateTimeAdd = () => {
     if (!dateTimeInput) return;
@@ -92,26 +92,17 @@ const AddShows = () => {
         showPrice: Number(showPrice),
       };
 
-      try {
-        const { data } = await axios.post("/api/show/add", payload, {
-          headers: { Authorization: `Bearer ${await getToken()}` },
-        });
+      const { data } = await axios.post("/api/show/add", payload, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
 
-        if (data.success) {
-          toast.success(data.message);
-          setSelectedMovie(null);
-          setDateTimeSelection({});
-          setShowPrice("");
-        } else {
-          toast.error(data.message);
-        }
-      } catch (apiError) {
-        // If API fails in demo mode, just show success message with dummy data
-        console.log("API call failed, using demo mode:", apiError);
-        toast.success("Show added successfully (Demo Mode)");
+      if (data.success) {
+        toast.success(data.message);
         setSelectedMovie(null);
         setDateTimeSelection({});
         setShowPrice("");
+      } else {
+        toast.error(data.message);
       }
     } catch (error) {
       console.error("Submission error : ", error);
@@ -122,23 +113,8 @@ const AddShows = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await axios.get("/api/show/now-playing", {
-          headers: { Authorization: `Bearer ${await getToken()}` },
-        });
-
-        if (data.success) {
-          setNowPlayingMovies(data.movies);
-        }
-      } catch (error) {
-        console.log("Error fetching now playing movies, using dummy data:", error);
-        // Keep dummy data already set in state
-      }
-    };
-
     if (user) {
-      fetchData();
+      fetchNowPlayingMovies();
     }
   }, [user]);
 

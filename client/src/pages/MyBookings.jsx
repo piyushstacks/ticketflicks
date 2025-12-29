@@ -17,52 +17,24 @@ const MyBookings = () => {
 
   const fetchMyBookings = async () => {
     try {
-      // Check if there's a current booking in localStorage (from dummy booking)
-      const currentBookingStr = localStorage.getItem("currentBooking");
-      if (currentBookingStr) {
-        const currentBooking = JSON.parse(currentBookingStr);
-        const formattedBooking = {
-          _id: currentBooking.bookingId,
-          show: {
-            _id: currentBooking.show._id,
-            movie: currentBooking.show,
-            showDateTime: currentBooking.selectedTime.time,
-            showPrice: 100,
-          },
-          amount: currentBooking.amount,
-          bookedSeats: currentBooking.selectedSeats,
-          isPaid: currentBooking.isPaid,
-          createdAt: currentBooking.bookingDate,
-        };
-        setBookings([formattedBooking]);
-        setIsLoading(false);
-        return;
-      }
+      const { data } = await axios.get("/api/user/bookings", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
 
-      // Try to fetch from API if user is logged in
-      if (user) {
-        const { data } = await axios.get("/api/user/bookings", {
-          headers: { Authorization: `Bearer ${await getToken()}` },
-        });
-
-        if (data.success) {
-          setBookings(data.bookings);
-        }
-      } else {
-        // Use dummy booking data if no user and no currentBooking
-        setBookings(dummyBookingData);
+      if (data.success) {
+        setBookings(data.bookings);
       }
     } catch (error) {
-      console.log("Error fetching bookings, using dummy data:", error);
-      // Fallback to dummy data
-      setBookings(dummyBookingData);
+      console.log(error);
     }
 
     setIsLoading(false);
   };
 
   useEffect(() => {
-    fetchMyBookings();
+    if (user) {
+      fetchMyBookings();
+    }
   }, [user]);
 
   return !isLoading ? (
@@ -81,14 +53,14 @@ const MyBookings = () => {
         >
           <div className="flex flex-col md:flex-row">
             <img
-              src={imageBaseURL + (item.show.movie?.poster_path || item.show?.poster_path || "")}
+              src={imageBaseURL + item.show.movie.poster_path}
               alt="Movie Image"
               className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
             />
             <div className="flex flex-col p-4">
-              <p className="text-lg font-semibold">{item.show.movie?.title || item.show?.title}</p>
+              <p className="text-lg font-semibold">{item.show.movie.title}</p>
               <p className="text-gray-400 text-sm">
-                {timeFormat(item.show.movie?.runtime || item.show?.runtime)}
+                {timeFormat(item.show.movie.runtime)}
               </p>
               <p className="text-gray-400 text-sm mt-auto">
                 {dateFormat(item.show.showDateTime)}

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import BlurCircle from "./BlurCircle";
 import ReactPlayer from "react-player";
 import { useAppContext } from "../context/AppContext";
-import { dummyTrailers } from "../assets/assets";
 
 const TrailerSection = ({ id }) => {
   const { axios } = useAppContext();
@@ -14,16 +13,9 @@ const TrailerSection = ({ id }) => {
       const { data } = await axios.get(`/api/show/trailer/${id}`);
       if (data.success) {
         setTrailerUrl(data.trailer_url);
-      } else {
-        // Fallback to dummy trailer data
-        const dummyTrailer = dummyTrailers[0];
-        setTrailerUrl(dummyTrailer.videoUrl);
       }
     } catch (error) {
-      console.error("Failed to fetch trailer, using dummy data:", error);
-      // Fallback to dummy trailer data on error
-      const dummyTrailer = dummyTrailers[0];
-      setTrailerUrl(dummyTrailer.videoUrl);
+      console.error("Failed to fetch trailer:", error);
     } finally {
       setLoading(false);
     }

@@ -3,14 +3,12 @@ import BlurCircle from "./BlurCircle";
 import ReactPlayer from "react-player";
 import { PlayCircleIcon } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
-import { dummyTrailers } from "../assets/assets";
 
 const TrailersSection = () => {
   const { upcomingMovies, trailer } = useAppContext();
 
   const trailersData = useMemo(() => {
-    // Map upcomingMovies -> trailer entries (only those that have a key)
-    const real = upcomingMovies
+    return upcomingMovies
       .map((movie) => {
         const trailerInfo = trailer[movie.id];
 
@@ -25,38 +23,29 @@ const TrailersSection = () => {
         return null;
       })
       .filter(Boolean);
-
-    // If no real trailers available, fall back to dummyTrailers from assets
-    if (real.length > 0) return real;
-
-    return dummyTrailers.map((t, i) => ({
-      id: `dummy-${i}`,
-      title: t.title || `Trailer ${i + 1}`,
-      videoUrl: t.videoUrl,
-      image: t.image,
-    }));
   }, [upcomingMovies, trailer]);
 
   const [currentTrailer, setCurrentTrailer] = useState(null);
 
   // Set default trailer once data is available
   useEffect(() => {
-    if (trailersData && trailersData.length > 0) {
-      // If currentTrailer is not set or no longer present in data, pick the first
-      if (!currentTrailer || !trailersData.some((t) => t.id === currentTrailer.id)) {
-        setCurrentTrailer(trailersData[0]);
-      }
+    if (
+      trailersData.length > 0 &&
+      (!currentTrailer || !trailersData.some((t) => t.id === currentTrailer.id))
+    ) {
+      setCurrentTrailer(trailersData[0]);
     }
-  }, [trailersData, currentTrailer]);
+  }, [trailersData]);
 
   const thumbnailTrailers = useMemo(() => {
     if (!currentTrailer) return [];
-    return trailersData.filter((item) => item.id !== currentTrailer.id).slice(0, 4);
+    return trailersData
+      .filter((item) => item.id !== currentTrailer.id)
+      .slice(0, 4);
   }, [currentTrailer, trailersData]);
 
-  // If there's no trailer to show (extremely unlikely since dummy exists), render nothing
   if (!trailersData || trailersData.length === 0 || !currentTrailer) {
-    return null;
+    return null; // Prevent rendering if data is missing
   }
 
   return (

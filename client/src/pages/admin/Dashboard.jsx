@@ -26,19 +26,7 @@ const Dashboard = () => {
     totalUser: 0,
   });
 
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const initializeDashboard = () => {
-      try {
-        setDashboardData(dummyDashboardData);
-      } catch (error) {
-        console.log("Error initializing dashboard:", error);
-      }
-    };
-
-    initializeDashboard();
-  }, []);
+  const [loading, setLoading] = useState(true);
 
   const dashboardCards = [
     {
@@ -63,26 +51,26 @@ const Dashboard = () => {
     },
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await axios.get("api/admin/dashboard", {
-          headers: { Authorization: `Bearer ${await getToken()}` },
-        });
+  const fetchDashboardData = async () => {
+    try {
+      const { data } = await axios.get("api/admin/dashboard", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
 
-        if (data.success) {
-          setDashboardData(data.dashboardData);
-        } else {
-          toast.error(data.message);
-        }
-      } catch (error) {
-        console.log("Error fetching dashboard data, using dummy data:", error);
-        // Keep dummy data already set in state
+      if (data.success) {
+        setDashboardData(data.dashboardData);
+        setLoading(false);
+      } else {
+        toast.error(data.message);
       }
-    };
+    } catch (error) {
+      toast.error("[fetchDashboardData]", error);
+    }
+  };
 
+  useEffect(() => {
     if (user) {
-      fetchData();
+      fetchDashboardData();
     }
   }, [user]);
 

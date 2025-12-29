@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { assets, dummyShowsData, dummyOccupiedSeats } from "../assets/assets";
+import { assets } from "../assets/assets";
 import Loading from "../components/Loading";
 import ButtonLoader from "../components/ButtonLoader";
 import { ArrowRightIcon, ClockIcon } from "lucide-react";
@@ -26,11 +26,7 @@ const SeatLayout = () => {
 
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [selectedTime, setSelectedTime] = useState(null);
-  const [show, setShow] = useState(() => {
-    // Initialize with dummy data immediately
-    const dummyShow = dummyShowsData.find((show) => show._id === id);
-    return dummyShow || dummyShowsData[0];
-  });
+  const [show, setShow] = useState(null);
   const [occupiedSeats, setOccupiedSeats] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
 
@@ -38,19 +34,11 @@ const SeatLayout = () => {
     try {
       const { data } = await axios.get(`/api/show/${id}`);
 
-      if (data.success && data.movie) {
-        console.log("Loaded show from API:", data.movie);
-        setShow(data.movie);
-      } else {
-        throw new Error("Invalid response from API");
+      if (data.success) {
+        setShow(data);
       }
     } catch (error) {
-      console.log("Error fetching show, using dummy data:", error.message);
-      // Fallback to dummy data
-      const dummyShow = dummyShowsData.find((show) => show._id === id);
-      const showToSet = dummyShow || dummyShowsData[0];
-      console.log("Setting dummy show:", showToSet);
-      setShow(showToSet);
+      console.log(error);
     }
   };
 
@@ -89,9 +77,10 @@ const SeatLayout = () => {
                 ${isSelected ? "bg-primary text-white" : ""}
                 ${
                   isOccupied
-                    ? "bg-primary-dull opacity-50"
-                    : " hover:bg-primary/20"
+                    ? "bg-primary-dull opacity-50 cursor-not-allowed"
+                    : ""
                 }
+                ${!isSelected && !isOccupied ? "hover:bg-primary/30" : ""}
               `}
             >
               {seatId}
@@ -109,106 +98,51 @@ const SeatLayout = () => {
       );
 
       if (data.success) {
-        // Handle both object and array formats
-        let seatsArray = [];
-        if (Array.isArray(data.occupiedSeats)) {
-          seatsArray = data.occupiedSeats;
-        } else if (typeof data.occupiedSeats === "object" && data.occupiedSeats !== null) {
-          // Convert object keys to array (e.g., { "A1": "userId" } -> ["A1"])
-          seatsArray = Object.keys(data.occupiedSeats);
-        }
-        setOccupiedSeats(seatsArray);
+        setOccupiedSeats(data.occupiedSeats);
       } else {
-        console.log("Could not fetch occupied seats, using dummy data");
-        const dummySeats = dummyOccupiedSeats[selectedTime.showId] || [];
-        setOccupiedSeats(dummySeats);
+        toast.error(data.message);
       }
     } catch (error) {
-      console.log("Error fetching occupied seats, using dummy data:", error.message);
-      // For dummy data, use pre-defined occupied seats for this show
-      const dummySeats = dummyOccupiedSeats[selectedTime.showId] || [];
-      console.log("Using dummy occupied seats:", dummySeats);
-      setOccupiedSeats(dummySeats);
+      console.log(error);
     }
   };
 
   const bookTickets = async () => {
     try {
+      if (!user) return toast.error("Please login to proceed");
+
       if (!selectedTime || !selectedSeats.length) {
         return toast.error("Please select a time and seats");
       }
 
-      console.log("Selected seats:", selectedSeats);
-      console.log("Occupied seats:", occupiedSeats);
-
-      // Validate that selected seats are still available
-      const unavailableSeats = selectedSeats.filter((seat) =>
-        occupiedSeats.includes(seat)
-      );
-      
-      console.log("Unavailable seats:", unavailableSeats);
-
-      if (unavailableSeats.length > 0) {
-        toast.error(`Seats ${unavailableSeats.join(", ")} are no longer available`);
-        return;
-      }
-
       setBookingLoading(true);
 
-      // For now, always use dummy booking since backend is not fully configured
-      // This provides a complete demo experience
-      console.log("Using dummy booking for demo");
-      setTimeout(() => {
-        navigateWithDummyBooking();
-      }, 1000); // Small delay for UX
+      const { data } = await axios.post(
+        "/api/booking/create",
+        {
+          showId: selectedTime.showId,
+          selectedSeats,
+        },
+        {
+          headers: { Authorization: `Bearer ${await getToken()}` },
+        }
+      );
+
+      if (data.success) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.message);
+      }
     } catch (error) {
-      toast.error(error.message || "Booking failed");
+      toast.error(error.message);
+    } finally {
       setBookingLoading(false);
     }
   };
 
-  const navigateWithDummyBooking = () => {
-    // Save the booking info to localStorage for the MyBookings page to display
-    const bookingInfo = {
-      show: show,
-      selectedTime: selectedTime,
-      selectedSeats: selectedSeats,
-      bookingDate: new Date().toISOString(),
-      bookingId: `DUMMY-${Date.now()}`,
-      isPaid: true,
-      amount: selectedSeats.length * 100, // Dummy price calculation
-    };
-    localStorage.setItem("currentBooking", JSON.stringify(bookingInfo));
-    toast.success("Booking confirmed!");
-    navigate("/my-bookings");
-  };
-
   useEffect(() => {
-    if (id) {
-      getShow();
-    }
-  }, [id]);
-
-  useEffect(() => {
-    // Auto-select first available time if show data is loaded and no time is selected
-    if (show && show.dateTime && date) {
-      let availableTimes = show.dateTime[date];
-      
-      // Fallback: if the exact date is not found, create default times
-      if (!availableTimes || availableTimes.length === 0) {
-        availableTimes = [
-          { "time": `${date}T01:00:00.000Z`, "showId": "default-1" },
-          { "time": `${date}T03:00:00.000Z`, "showId": "default-2" },
-          { "time": `${date}T05:00:00.000Z`, "showId": "default-3" }
-        ];
-        console.warn("Using default times for date:", date);
-      }
-      
-      if (!selectedTime && availableTimes && availableTimes.length > 0) {
-        setSelectedTime(availableTimes[0]);
-      }
-    }
-  }, [show, date]);
+    getShow();
+  }, []);
 
   useEffect(() => {
     if (selectedTime) {
@@ -224,32 +158,28 @@ const SeatLayout = () => {
         <p className=" text-lg px-6 md:text-left text-center font-semibold">
           Movie:{" "}
           <span className="text-xl text-primary font-bold">
-            {show.movie?.title || show.title}
+            {show.movie.title}
           </span>
         </p>
         <p className="text-lg font-semibold px-6 text-center md:text-left">
           Available Timings for: <span className=" text-primary">{date}</span>
         </p>
         <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-2 justify-items-center px-4 md:px-0 md:space-y-1">
-          {(show.dateTime && show.dateTime[date] && show.dateTime[date].length > 0) ? (
-            show.dateTime[date].map((item) => (
-              <div
-                key={item.time}
-                onClick={() => setSelectedTime(item)}
-                className={`flex items-center justify-center gap-2 w-full md:w-max md:rounded-r-md px-4 py-2 cursor-pointer transition rounded-md
-                  ${
-                    selectedTime?.time === item.time
-                      ? "bg-primary text-white"
-                      : "hover:bg-primary/20"
-                  }`}
-              >
-                <ClockIcon className="w-5 h-5" />
-                <p className="text-md">{isoTimeFormat(item.time)}</p>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-400 text-sm">No times available for this date</p>
-          )}
+          {show.dateTime[date]?.map((item) => (
+            <div
+              key={item.time}
+              onClick={() => setSelectedTime(item)}
+              className={`flex items-center justify-center gap-2 w-full md:w-max md:rounded-r-md px-4 py-2 cursor-pointer transition rounded-md
+                ${
+                  selectedTime?.time === item.time
+                    ? "bg-primary text-white"
+                    : "hover:bg-primary/20"
+                }`}
+            >
+              <ClockIcon className="w-5 h-5" />
+              <p className="text-md">{isoTimeFormat(item.time)}</p>
+            </div>
+          ))}
         </div>
       </div>
 

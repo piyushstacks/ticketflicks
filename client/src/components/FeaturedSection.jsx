@@ -7,7 +7,6 @@ import { useAppContext } from "../context/AppContext";
 import useWindowWidth from "../hooks/useWindowWidth";
 import SkeletonCard from "./SkeletonCard";
 import Loading from "./Loading";
-import { dummyShowsData } from "../assets/assets";
 
 const FeaturedSection = () => {
   const navigate = useNavigate();
@@ -30,10 +29,8 @@ const FeaturedSection = () => {
       </div>
     );
   }
-  // Use real shows if available, otherwise fall back to dummy data
-  const displayShows = (shows && shows.length > 0) ? shows.slice(0, sliceCount) : dummyShowsData.slice(0, sliceCount);
 
-  return (
+  return shows.length > 0 ? (
     <div className="px-6 md:px-16 lg:px-24 xl:px-44 overflow-hidden">
       <div className="relative flex items-center justify-between pt-20 pb-10">
         <BlurCircle top="0" right="-80px" />
@@ -50,8 +47,8 @@ const FeaturedSection = () => {
         </button>
       </div>
 
-      <div className="flex flex-wrap max-sm:justify-center gap-8 mt-8 ">
-        {displayShows.map((show) => (
+      <div className="flex flex-wrap max-sm:justify-center gap-9 mt-8 ">
+        {shows.slice(0, sliceCount).map((show) => (
           <MovieCard key={show._id} movie={show} />
         ))}
       </div>
@@ -66,6 +63,28 @@ const FeaturedSection = () => {
         >
           Show more
         </button>
+      </div>
+    </div>
+  ) : (
+    <div className="px-6 md:px-16 lg:px-24 xl:px-44 overflow-hidden">
+      <div className="relative flex items-center justify-between pt-20 pb-10">
+        <BlurCircle top="0" right="-80px" />
+        <p className="text-gray-300 font-medium text-xl">Now Showing</p>
+        <button
+          onClick={() => {
+            navigate("/movies");
+            scrollTo(0, 0);
+          }}
+          className="group flex items-center gap-2 text-sm text-gray-300 cursor-pointer "
+        >
+          View All
+          <ArrowRight className="group-hover:translate-x-0.75 transition w-4.5 h-4.5" />
+        </button>
+      </div>
+      <div className="w-full h-[200px] flex items-center justify-center">
+        <p className="text-gray-400 text-lg font-medium">
+          No Shows Available For Now
+        </p>
       </div>
     </div>
   );
