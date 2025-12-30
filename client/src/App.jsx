@@ -19,6 +19,7 @@ import { SignIn } from "@clerk/clerk-react";
 import Loading from "./components/Loading";
 import Upcoming from "./pages/Upcoming";
 import UpcomingMovieDetails from "./pages/UpcomingMovieDetails";
+import ListFeedbacks from "./pages/admin/ListFeedbacks";
 import FeedbackForm from "./pages/FeedbackForm";
 import Theatre from "./pages/Theatres";
 
@@ -59,6 +60,7 @@ const App = () => {
           <Route path="add-shows" element={<AddShows />} />
           <Route path="list-shows" element={<ListShows />} />
           <Route path="list-bookings" element={<ListBookings />} />
+          <Route path="feedbacks" element={<ListFeedbacks />} />
         </Route>
       </Routes>
       {!isAdminRoute && <Footer />}
