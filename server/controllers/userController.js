@@ -33,6 +33,12 @@ export const updateFavorite = async (req, res) => {
     let actionType = "";
 
     if (!user.privateMetadata.favorites.includes(movieId)) {
+      // Verify if movie exists only when adding
+      const movieExists = await Movie.findById(movieId);
+      if (!movieExists) {
+        return res.json({ success: false, message: "Invalid Movie ID" });
+      }
+
       user.privateMetadata.favorites.push(movieId);
       actionType = "added";
     } else {
