@@ -12,8 +12,6 @@ const UpcomingMovieDetails = () => {
   const {
     upcomingMovies,
     imageBaseURL,
-
-    favoriteMovies,
   } = useAppContext();
 
   const { id } = useParams();

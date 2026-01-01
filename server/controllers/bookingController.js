@@ -75,7 +75,7 @@ export const createBooking = async (req, res) => {
     ];
 
     const session = await stripeInstance.checkout.sessions.create({
-      success_url: `${origin}/loading/my-bookings`,
+      success_url: `${origin}/loading/my-bookings?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/my-bookings`,
       line_items: lineItems,
       mode: "payment",
@@ -86,6 +86,7 @@ export const createBooking = async (req, res) => {
     });
 
     booking.paymentLink = session.url;
+    booking.paymentSessionId = session.id;
     await booking.save();
 
     //Run inngest scheduler function to check payment status after 10 minutes
@@ -97,6 +98,62 @@ export const createBooking = async (req, res) => {
     res.json({ success: true, url: session.url });
   } catch (error) {
     console.error("[createBooking]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const verifyBookingPayment = async (req, res) => {
+  try {
+    const sessionId = req.query.session_id;
+
+    if (!sessionId) {
+      return res.json({ success: false, message: "session_id is required" });
+    }
+
+    const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const session = await stripeInstance.checkout.sessions.retrieve(sessionId);
+
+    const bookingId = session?.metadata?.bookingId;
+    if (!bookingId) {
+      return res.json({ success: false, message: "Booking not found" });
+    }
+
+    if (session.payment_status !== "paid") {
+      return res.json({ success: false, message: "Payment not completed" });
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.json({ success: false, message: "Booking not found" });
+    }
+
+    if (!booking.isPaid) {
+      booking.isPaid = true;
+      booking.paymentLink = "";
+      booking.paymentSessionId = booking.paymentSessionId || sessionId;
+      await booking.save();
+
+      const show = await Show.findById(booking.show);
+      if (show) {
+        booking.bookedSeats.forEach((seat) => {
+          show.occupiedSeats[seat] = booking.user;
+        });
+        show.markModified("occupiedSeats");
+        await show.save();
+      }
+
+      await inngest.send({
+        name: "app/show.booked",
+        data: { bookingId: booking._id.toString() },
+      });
+    } else if (booking.paymentLink) {
+      booking.paymentLink = "";
+      await booking.save();
+    }
+
+    res.json({ success: true, bookingId: booking._id.toString() });
+  } catch (error) {
+    console.error("[verifyBookingPayment]", error);
     res.json({ success: false, message: error.message });
   }
 };

@@ -81,23 +81,34 @@ export const AppProvider = ({ children }) => {
 
     if (!newMovies.length) return; // No new trailers to fetch
 
-    const trailerRequests = newMovies.map((movie) =>
-      axios.get(`/api/show/trailer/${movie.id}`)
-    );
+    // Process in batches of 3 to avoid overwhelming the server/TMDB
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < newMovies.length; i += BATCH_SIZE) {
+      const batch = newMovies.slice(i, i + BATCH_SIZE);
+      const trailerRequests = batch.map((movie) =>
+        axios.get(`/api/show/trailer/${movie.id}`)
+      );
 
-    const responses = await Promise.allSettled(trailerRequests);
+      const responses = await Promise.allSettled(trailerRequests);
 
-    responses.forEach((res, index) => {
-      if (res.status === "fulfilled" && res.value.data.success) {
-        const movieId = newMovies[index].id;
-        trailersMap[movieId] = {
-          url: res.value.data.trailer_url,
-          key: res.value.data.video_key,
-        };
+      responses.forEach((res, index) => {
+        if (res.status === "fulfilled" && res.value.data.success) {
+          const movieId = batch[index].id;
+          trailersMap[movieId] = {
+            url: res.value.data.trailer_url,
+            key: res.value.data.video_key,
+          };
+        }
+      });
+
+      // Update state incrementally
+      setTrailer((prev) => ({ ...prev, ...trailersMap }));
+
+      // Small delay between batches to respect rate limits
+      if (i + BATCH_SIZE < newMovies.length) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
-    });
-
-    setTrailer(trailersMap);
+    }
   };
 
   const fetchFavoriteMovies = async () => {

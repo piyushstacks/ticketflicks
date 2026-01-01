@@ -4,6 +4,7 @@ import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import sendEmail from "../configs/nodeMailer.js";
 import Movie from "../models/Movie.js";
+import Stripe from "stripe";
 const { fromZonedTime } = await import("date-fns-tz");
 
 export const inngest = new Inngest({ id: "movie-ticking-booking" });
@@ -56,13 +57,13 @@ const syncUserUpdation = inngest.createFunction(
   }
 );
 
-// Inngest function to cancel booking and release seats of show after 10 minutes of booking created if payment is not made
+// Inngest function to cancel booking and release seats of show after 35 minutes of booking created if payment is not made
 const releaseSeatsAndDeleteBooking = inngest.createFunction(
   { id: "release-seats-delete-booking" },
   { event: "app/checkpayment" },
   async ({ event, step }) => {
-    // Wait for 10 minutes before checking for payment
-    await step.sleep("wait-for-10-minutes", "10m");
+    // Wait for 35 minutes before checking for payment
+    await step.sleep("wait-for-35-minutes", "35m");
 
     await step.run("check-payment-status", async () => {
       const bookingId = event.data.bookingId;
@@ -70,6 +71,35 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
 
       // If booking still exists and payment is not made, release seats and delete booking
       if (booking && !booking.isPaid) {
+        if (booking.paymentSessionId) {
+          const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+          const session = await stripeInstance.checkout.sessions.retrieve(
+            booking.paymentSessionId
+          );
+
+          if (session?.payment_status === "paid") {
+            booking.isPaid = true;
+            booking.paymentLink = "";
+            await booking.save();
+
+            const show = await Show.findById(booking.show);
+            if (show) {
+              booking.bookedSeats.forEach((seat) => {
+                show.occupiedSeats[seat] = booking.user;
+              });
+              show.markModified("occupiedSeats");
+              await show.save();
+            }
+
+            await inngest.send({
+              name: "app/show.booked",
+              data: { bookingId: booking._id.toString() },
+            });
+
+            return;
+          }
+        }
+
         const show = await Show.findById(booking.show);
 
         // This check is important in case the show was deleted for some reason
