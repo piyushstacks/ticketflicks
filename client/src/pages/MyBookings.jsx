@@ -37,6 +37,21 @@ const MyBookings = () => {
     }
   }, [user]);
 
+  // Refetch bookings when page loads (e.g., after returning from Stripe checkout)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        fetchMyBookings();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user]);
+
   return !isLoading ? (
     <div className="relative px-6 md:px-16 lg:px-40 pt-30 md:pt-40 min-h-[80vh]">
       <BlurCircle top="100px" left="100px" />
@@ -74,13 +89,19 @@ const MyBookings = () => {
                 {currency}
                 {item.amount}
               </p>
-              {!item.isPaid && (
-                <Link
-                  to={item.paymentLink}
-                  className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer active:scale-95"
-                >
-                  Pay Now
-                </Link>
+              {!item.isPaid ? (
+                item.paymentLink && (
+                  <Link
+                    to={item.paymentLink}
+                    className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer active:scale-95 hover:bg-primary/80"
+                  >
+                    Pay Now
+                  </Link>
+                )
+              ) : (
+                <div className="bg-green-500/20 text-green-500 border border-green-500/50 px-4 py-1.5 mb-3 text-sm rounded-full font-medium">
+                  Paid
+                </div>
               )}
             </div>
             <div className="text-sm">
