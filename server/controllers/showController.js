@@ -180,15 +180,10 @@ export const fetchShows = async (req, res) => {
       .populate("movie")
       .sort({ showDateTime: 1 });
 
-    // Filter unique shows using Map to deduplicate by movie ID and handle null movies
-    const uniqueMoviesMap = new Map();
-    shows.forEach((show) => {
-      if (show.movie && show.movie._id) {
-        uniqueMoviesMap.set(show.movie._id.toString(), show.movie);
-      }
-    });
+    //filter unique shows
+    const uniqueShows = new Set(shows.map((show) => show.movie));
 
-    res.json({ success: true, shows: Array.from(uniqueMoviesMap.values()) });
+    res.json({ success: true, shows: Array.from(uniqueShows) });
   } catch (error) {
     console.error("[fetchShows]", error);
     res.json({ success: false, message: error.message });

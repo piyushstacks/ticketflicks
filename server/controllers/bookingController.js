@@ -4,6 +4,11 @@ import Show from "../models/Show.js";
 import { getAuth } from "@clerk/express";
 import Stripe from "stripe";
 
+const INR_TO_USD_RATE = Number(process.env.INR_TO_USD_RATE || 0.011);
+
+const convertInrToUsd = (amountInInr) => {
+  return amountInInr * INR_TO_USD_RATE;
+};
 //Function to check availability of selected seats for the movie
 const fetchSeatsAvailablity = async (showId, selectedSeats) => {
   try {
@@ -60,6 +65,8 @@ export const createBooking = async (req, res) => {
     // Stripe Gateway initialize
     const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+    const amountInUsd = convertInrToUsd(booking.amount);
+
     // //Creating line items from stripe
     const lineItems = [
       {
@@ -68,14 +75,14 @@ export const createBooking = async (req, res) => {
           product_data: {
             name: showData.movie.title,
           },
-          unit_amount: Math.floor(booking.amount * 100),
+          unit_amount: Math.round(amountInUsd * 100),
         },
         quantity: 1,
       },
     ];
 
     const session = await stripeInstance.checkout.sessions.create({
-      success_url: `${origin}/loading/my-bookings?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/loading/my-bookings`,
       cancel_url: `${origin}/my-bookings`,
       line_items: lineItems,
       mode: "payment",
@@ -86,7 +93,6 @@ export const createBooking = async (req, res) => {
     });
 
     booking.paymentLink = session.url;
-    booking.paymentSessionId = session.id;
     await booking.save();
 
     //Run inngest scheduler function to check payment status after 10 minutes
@@ -98,62 +104,6 @@ export const createBooking = async (req, res) => {
     res.json({ success: true, url: session.url });
   } catch (error) {
     console.error("[createBooking]", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-export const verifyBookingPayment = async (req, res) => {
-  try {
-    const sessionId = req.query.session_id;
-
-    if (!sessionId) {
-      return res.json({ success: false, message: "session_id is required" });
-    }
-
-    const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
-    const session = await stripeInstance.checkout.sessions.retrieve(sessionId);
-
-    const bookingId = session?.metadata?.bookingId;
-    if (!bookingId) {
-      return res.json({ success: false, message: "Booking not found" });
-    }
-
-    if (session.payment_status !== "paid") {
-      return res.json({ success: false, message: "Payment not completed" });
-    }
-
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.json({ success: false, message: "Booking not found" });
-    }
-
-    if (!booking.isPaid) {
-      booking.isPaid = true;
-      booking.paymentLink = "";
-      booking.paymentSessionId = booking.paymentSessionId || sessionId;
-      await booking.save();
-
-      const show = await Show.findById(booking.show);
-      if (show) {
-        booking.bookedSeats.forEach((seat) => {
-          show.occupiedSeats[seat] = booking.user;
-        });
-        show.markModified("occupiedSeats");
-        await show.save();
-      }
-
-      await inngest.send({
-        name: "app/show.booked",
-        data: { bookingId: booking._id.toString() },
-      });
-    } else if (booking.paymentLink) {
-      booking.paymentLink = "";
-      await booking.save();
-    }
-
-    res.json({ success: true, bookingId: booking._id.toString() });
-  } catch (error) {
-    console.error("[verifyBookingPayment]", error);
     res.json({ success: false, message: error.message });
   }
 };

@@ -1,7 +1,6 @@
 import Stripe from "stripe";
 import Booking from "../models/Booking.js";
 import { inngest } from "../inngest/index.js";
-import Show from "../models/Show.js";
 
 export const stripeWebhooks = async (req, res) => {
   const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -20,54 +19,26 @@ export const stripeWebhooks = async (req, res) => {
   }
 
   try {
-    const markPaid = async ({ bookingId, paymentSessionId }) => {
-      if (!bookingId) return;
-
-      const booking = await Booking.findById(bookingId);
-      if (!booking) return;
-
-      const wasPaid = booking.isPaid;
-      booking.isPaid = true;
-      booking.paymentLink = "";
-      if (paymentSessionId && !booking.paymentSessionId) {
-        booking.paymentSessionId = paymentSessionId;
-      }
-      await booking.save();
-
-      const show = await Show.findById(booking.show);
-      if (show) {
-        booking.bookedSeats.forEach((seat) => {
-          show.occupiedSeats[seat] = booking.user;
-        });
-        show.markModified("occupiedSeats");
-        await show.save();
-      }
-
-      if (!wasPaid) {
-        await inngest.send({
-          name: "app/show.booked",
-          data: { bookingId },
-        });
-      }
-    };
-
     switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
-        const { bookingId } = session.metadata || {};
-        await markPaid({ bookingId, paymentSessionId: session.id });
-        break;
-      }
-
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object;
         const sessionList = await stripeInstance.checkout.sessions.list({
           payment_intent: paymentIntent.id,
         });
 
-        const session = sessionList.data?.[0];
-        const { bookingId } = session?.metadata || {};
-        await markPaid({ bookingId, paymentSessionId: session?.id });
+        const session = sessionList.data[0];
+        const { bookingId } = session.metadata;
+
+        await Booking.findByIdAndUpdate(bookingId, {
+          isPaid: true,
+          paymentLink: "",
+        });
+
+        //Send confirmation Email
+        await inngest.send({
+          name: "app/show.booked",
+          data: { bookingId },
+        });
 
         break;
       }

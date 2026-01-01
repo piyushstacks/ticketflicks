@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { assets } from "../assets/assets";
 import Loading from "../components/Loading";
 import ButtonLoader from "../components/ButtonLoader";
@@ -17,6 +17,8 @@ const SeatLayout = () => {
     ["G", "H"],
     ["I", "J"],
   ];
+
+  const navigate = useNavigate();
 
   const { id, date } = useParams();
 

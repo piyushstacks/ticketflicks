@@ -1,42 +1,17 @@
 import React, { useEffect } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useAppContext } from "../context/AppContext";
+import { useNavigate, useParams } from "react-router-dom";
 
 const Loading = () => {
   const { nextUrl } = useParams(); // nextUrl = "my-bookings"
   const navigate = useNavigate();
-  const location = useLocation();
-  const { axios } = useAppContext();
 
   useEffect(() => {
-    let timeoutId;
-
-    const verifyAndRedirect = async () => {
-      if (nextUrl !== "my-bookings") return;
-
-      const sessionId = new URLSearchParams(location.search).get("session_id");
-
-      if (sessionId) {
-        try {
-          await axios.get(
-            `/api/booking/verify?session_id=${encodeURIComponent(sessionId)}`
-          );
-        } catch (error) {
-          console.log(error);
-        }
-      }
-
-      timeoutId = setTimeout(() => {
+    if (nextUrl === "my-bookings") {
+      setTimeout(() => {
         navigate("/my-bookings");
-      }, 1200);
-    };
-
-    verifyAndRedirect();
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [nextUrl, navigate, location.search, axios]);
+      }, 5000);
+    }
+  }, [nextUrl, navigate]);
 
   return (
     <div className="flex justify-center items-center h-[90vh]">

@@ -1,4 +1,5 @@
 import {
+  icons,
   LayoutDashboardIcon,
   ListCollapseIcon,
   ListIcon,

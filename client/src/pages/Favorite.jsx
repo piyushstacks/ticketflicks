@@ -6,7 +6,7 @@ import Loading from "../components/Loading";
 import { MapPin } from "lucide-react";
 
 const Favorite = () => {
-  const { favoriteMovies, loading } = useAppContext();
+  const { favoriteMovies, loading, imageBaseURL } = useAppContext();
   const [selectedMovieId, setSelectedMovieId] = useState(null);
 
   if (loading) {
