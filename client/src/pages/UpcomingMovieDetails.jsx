@@ -9,12 +9,7 @@ import { PlayCircleIcon } from "lucide-react";
 import TrailerSection from "../components/TrailerSection";
 
 const UpcomingMovieDetails = () => {
-  const {
-    upcomingMovies,
-    imageBaseURL,
-
-    favoriteMovies,
-  } = useAppContext();
+  const { upcomingMovies, imageBaseURL, loading } = useAppContext();
 
   const { id } = useParams();
 
@@ -30,9 +25,21 @@ const UpcomingMovieDetails = () => {
 
   useEffect(() => {
     fetchUpcomingMovie();
-  }, [id]);
+  }, [id, upcomingMovies]);
 
-  return upcomingMovie ? (
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!upcomingMovie) {
+    return (
+      <div className="flex justify-center items-center h-[90vh]">
+        <p className="text-gray-400 text-lg">Movie not found.</p>
+      </div>
+    );
+  }
+
+  return (
     <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50">
       <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
         <img
@@ -77,8 +84,6 @@ const UpcomingMovieDetails = () => {
       </div>
       <TrailerSection id={id} />
     </div>
-  ) : (
-    <Loading />
   );
 };
 

@@ -4,7 +4,6 @@ import { useAppContext } from "../context/AppContext";
 import BlurCircle from "./BlurCircle";
 import { ArrowRight } from "lucide-react";
 import UpcomingMovieCard from "./UpcomingMovieCard";
-import Loading from "./Loading";
 import useWindowWidth from "../hooks/useWindowWidth";
 import SkeletonCard from "./SkeletonCard";
 
@@ -29,7 +28,11 @@ const UpcomingFeaturedSection = () => {
     );
   }
 
-  return upcomingMovies.length > 0 ? (
+  if (!upcomingMovies || upcomingMovies.length === 0) {
+    return null;
+  }
+
+  return (
     <div className="px-6 md:px-16 lg:px-24 xl:px-44 overflow-hidden">
       <div className="relative flex items-center justify-between pt-20 pb-10">
         <BlurCircle top="130px" left="50px" />
@@ -64,8 +67,6 @@ const UpcomingFeaturedSection = () => {
         </button>
       </div>
     </div>
-  ) : (
-    <Loading />
   );
 };
 
