@@ -20,7 +20,7 @@ const Footer = () => {
               {" "}
               Created & Modified By{" "}
               <span className="font-bold underline">
-                Piyush Bhagchandani & Team
+                Team Group 20
               </span>
             </span>{" "}
           </p>
