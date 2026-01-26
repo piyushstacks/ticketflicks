@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { dummyDateTimeData, dummyShowsData } from "../assets/assets";
 import BlurCircle from "../components/BlurCircle";
-import { Heart, HeartIcon, PlayCircleIcon, StarIcon } from "lucide-react";
+import { Heart, HeartIcon, PlayCircleIcon, StarIcon, ChevronDown } from "lucide-react";
 import timeFormat from "../lib/timeFormat";
 import DateSelect from "../components/DateSelect";
 import MovieCard from "../components/MovieCard";
@@ -24,9 +24,16 @@ const MovieDetails = () => {
 
   const { id } = useParams();
   const [show, setShow] = useState(null);
+  const [selectedTheater, setSelectedTheater] = useState(null);
+  const [selectedScreen, setSelectedScreen] = useState(null);
+  const [selectedShowId, setSelectedShowId] = useState(null);
+  const [theaters, setTheaters] = useState([]);
+  const [screens, setScreens] = useState([]);
+  const [shows, setShows] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const {
-    shows,
+    shows: allShows,
     axios,
     getToken,
     user,
@@ -35,12 +42,75 @@ const MovieDetails = () => {
     imageBaseURL,
   } = useAppContext();
 
+  // Fetch all theaters
+  const fetchTheaters = async () => {
+    try {
+      const { data } = await axios.get("/api/theatre/");
+      if (data.success) {
+        setTheaters(data.theaters);
+      }
+    } catch (error) {
+      console.error("Error fetching theaters:", error);
+    }
+  };
+
+  // Fetch screens for selected theater
+  const fetchScreens = async (theaterId) => {
+    if (!theaterId) {
+      setScreens([]);
+      return;
+    }
+
+    try {
+      // The theatre API returns the theatre document with embedded screens
+      const { data } = await axios.get(`/api/theatre/${theaterId}`);
+      if (data && data.success && data.theatre) {
+        // Some theatre documents use `screens` array directly
+        const screensList = Array.isArray(data.theatre.screens)
+          ? data.theatre.screens
+          : [];
+        setScreens(screensList);
+        setSelectedScreen(null);
+      } else {
+        setScreens([]);
+      }
+    } catch (error) {
+      console.error("Error fetching screens:", error);
+      setScreens([]);
+    }
+  };
+
+  // Fetch shows for movie (grouped by theater/screen)
+  const fetchShowsForMovie = async () => {
+    try {
+      setLoading(true);
+      const { data } = await axios.get(`/api/show/by-movie/${id}`);
+      if (data.success) {
+        setShows(data.groupedShows);
+      }
+    } catch (error) {
+      console.error("Error fetching shows:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getShow = async () => {
     try {
       const { data } = await axios.get(`/api/show/${id}`);
 
       if (data.success) {
-        setShow(data);
+        // The server may return either { show } (single show) or { movie, dateTime }
+        // when fetching by movie id. Normalize to an object with `movie` so the
+        // component can safely access `show.movie`.
+        if (data.movie) {
+          setShow({ movie: data.movie, dateTime: data.dateTime || {} });
+        } else if (data.show) {
+          setShow(data.show);
+        } else {
+          // Fallback: set raw response
+          setShow(data);
+        }
       }
     } catch (error) {
       console.log(error);
@@ -70,6 +140,22 @@ const MovieDetails = () => {
     }
   };
 
+  // Handle theater selection
+  const handleTheaterChange = (theaterId) => {
+    setSelectedTheater(theaterId);
+    fetchScreens(theaterId);
+  };
+
+  // Get shows for selected theater and screen
+  const getShowsForSelection = () => {
+    if (!selectedTheater || !selectedScreen || !shows[selectedTheater]) {
+      return [];
+    }
+
+    const theaterShows = shows[selectedTheater].screens[selectedScreen];
+    return theaterShows?.shows || [];
+  };
+
   const isFavorite = favoriteMovies.some((movie) => movie._id === id);
 
   const FavoriteButton = ({ className = "", iconSize = "w-5 h-5" }) => (
@@ -87,14 +173,17 @@ const MovieDetails = () => {
 
   useEffect(() => {
     getShow();
+    fetchTheaters();
+    fetchShowsForMovie();
   }, [id]);
 
-  return show ? (
-    <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50">
-      <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
+  // Ensure we have movie details before attempting to render properties like poster, casts, etc.
+  return show && show.movie ? (
+    <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50 pb-20">
+      <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto mb-12">
         <img
-          src={imageBaseURL + show.movie.poster_path}
-          alt="Movie Poster"
+          src={imageBaseURL + (show.movie.poster_path || "")}
+          alt={show.movie.title || "Movie Poster"}
           className="max-md:mx-auto rounded-xl h-104 max-w-70 object-cover"
         />
 
@@ -107,7 +196,9 @@ const MovieDetails = () => {
           </h1>
           <div className="flex items-center gap-2 text-gray-300">
             <StarIcon className="w-5 h-5 text-primary fill-primary" />
-            {show.movie.vote_average.toFixed(1)} User Rating
+            {(typeof show.movie.vote_average === "number" && !isNaN(show.movie.vote_average))
+              ? show.movie.vote_average.toFixed(1)
+              : "N/A"} User Rating
           </div>
 
           <p className="text-gray-400 mt-2 text-md leading-tight max-w-2xl">
@@ -115,9 +206,9 @@ const MovieDetails = () => {
           </p>
 
           <p>
-            {timeFormat(show.movie.runtime)} ●{" "}
-            {show.movie.genres.map((genre) => genre.name).join(" | ")} ●{" "}
-            {show.movie.release_date.split("-").join("/")}
+            {(show.movie.runtime ? timeFormat(show.movie.runtime) : "N/A")} ●{" "}
+            {(Array.isArray(show.movie.genres) ? show.movie.genres.map((genre) => genre.name).join(" | ") : "N/A")} ●{" "}
+            {(show.movie.release_date ? show.movie.release_date.split("-").join("/") : "N/A")}
           </p>
 
           <div className="flex items-center flex-wrap gap-4 mt-4 lg:gap-3 xl:gap-4">
@@ -130,7 +221,7 @@ const MovieDetails = () => {
               Watch Trailer
             </a>
             <a
-              href="#dateSelect"
+              href="#bookingSection"
               className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium
               cursor-pointer active:scale-95"
             >
@@ -141,10 +232,91 @@ const MovieDetails = () => {
         </div>
       </div>
 
+      {/* Theater/Screen/Show Selection Section */}
+      <div id="bookingSection" className="bg-gray-900/50 backdrop-blur-md rounded-lg p-8 my-12 border border-gray-700">
+        <h2 className="text-2xl font-bold mb-8">Select Your Show</h2>
+        
+        {/* Theater Selection */}
+        <div className="mb-8">
+          <label className="block text-sm font-semibold mb-3">Select Theater</label>
+          <select
+            value={selectedTheater || ""}
+            onChange={(e) => handleTheaterChange(e.target.value)}
+            className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-primary outline-none transition hover:bg-gray-750 cursor-pointer"
+          >
+            <option value="">-- Choose a theater --</option>
+            {(Array.isArray(theaters) ? theaters : []).map((theater) => (
+              <option key={theater._id} value={theater._id}>
+                {theater.name} - {theater.city}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Screen Selection */}
+        {selectedTheater && screens.length > 0 && (
+          <div className="mb-8">
+            <label className="block text-sm font-semibold mb-3">Select Screen</label>
+            <select
+              value={selectedScreen || ""}
+              onChange={(e) => setSelectedScreen(e.target.value)}
+              className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-primary outline-none transition hover:bg-gray-750 cursor-pointer"
+            >
+              <option value="">-- Choose a screen --</option>
+              {(Array.isArray(screens) ? screens : []).map((screen) => (
+                <option key={screen._id} value={screen._id}>
+                  {screen.screenNumber} ({screen.seatLayout.totalSeats} seats)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Shows Grid */}
+        {selectedTheater && selectedScreen && (
+          <div>
+            <label className="block text-sm font-semibold mb-4">Select Show Time</label>
+            {getShowsForSelection().length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {(getShowsForSelection() || []).map((showItem) => (
+                  <button
+                    key={showItem._id}
+                    onClick={() => {
+                      if (!user) {
+                        navigate("/login");
+                        return;
+                      }
+                      navigate(`/seat-layout/${showItem._id}`);
+                    }}
+                    className="p-3 bg-primary hover:bg-primary-dull rounded-lg transition text-center font-semibold text-white active:scale-95 transform duration-200"
+                  >
+                    {new Date(showItem.showDateTime).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-center py-6">
+                No shows available for this selection
+              </p>
+            )}
+          </div>
+        )}
+
+        {!selectedTheater && (
+          <p className="text-gray-400 text-center py-6">
+            👆 Please select a theater to view available shows
+          </p>
+        )}
+      </div>
+
       <p className="text-xl font-medium mt-20">Movie Cast:</p>
       <div className="overflow-x-auto mt-8 pb-4">
         <div className="flex items-center gap-4 w-max px-4">
-          {show.movie.casts.slice(0, 16).map((cast, index) => (
+          {(show.movie.casts || []).slice(0, 16).map((cast, index) => (
             <div key={index} className="flex flex-col items-center text-center">
               <img
                 src={imageBaseURL + cast.profile_path}
@@ -157,13 +329,11 @@ const MovieDetails = () => {
         </div>
       </div>
 
-      <DateSelect dateTime={show.dateTime} id={id} />
-
       <TrailerSection id={id} />
 
       <p className="text-xl font-medium mt-20 mb-8">You May Also Like</p>
       <div className="flex flex-wrap max-sm:justify-center gap-9 ">
-        {shows
+        {(Array.isArray(allShows) ? allShows : [])
           .filter((movie) => movie._id !== id)
           .slice(0, sliceCount)
           .map((movie, index) => (

@@ -7,22 +7,29 @@ import { useAppContext } from "../../context/AppContext";
 const ListBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY;
 
-  const { axios, getToken, user } = useAppContext();
+  const { axios, getAuthHeaders, user } = useAppContext();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBookingData = async () => {
     try {
-      const { data } = await axios.get("api/admin/all-bookings", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
+      const { data } = await axios.get("/api/admin/all-bookings", {
+        headers: getAuthHeaders(),
       });
 
-      setBookings(data.bookings);
+      if (data.success && Array.isArray(data.bookings)) {
+        setBookings(data.bookings);
+      } else {
+        setBookings([]);
+        console.error("[fetchBookingData] Invalid response", data);
+      }
     } catch (error) {
-      console.error(error);
+      console.error("[fetchBookingData]", error);
+      setBookings([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -46,7 +53,7 @@ const ListBookings = () => {
             </tr>
           </thead>
           <tbody className="text-sm font-light">
-            {bookings.map((item, index) => (
+            {(Array.isArray(bookings) ? bookings : []).map((item, index) => (
               <tr
                 key={index}
                 className="border-b border-primary/20 bg-primary/5 even:bg-primary/10"

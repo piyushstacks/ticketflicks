@@ -8,7 +8,10 @@ import { inngest, functions } from "./inngest/index.js";
 import showRouter from "./routes/showRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
+import managerRouter from "./routes/managerRoutes.js";
 import userRouter from "./routes/userRoutes.js";
+import theatreRouter from "./routes/theatreRoutes.js";
+import debugRouter from "./routes/debugRoutes.js";
 import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
 
 const app = express();
@@ -34,8 +37,13 @@ app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/show", showRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/manager", managerRouter);
 app.use("/api/user", userRouter);
+app.use("/api/theatre", theatreRouter);
+// Debug routes (safe: requires DEBUG_EMAIL_SECRET when NODE_ENV=production)
+app.use("/api/debug", debugRouter);
 
 app.listen(PORT, () =>
   console.log(`Server listening at http://localhost:${PORT}`)
 );
+

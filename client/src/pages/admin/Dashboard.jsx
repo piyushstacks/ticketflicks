@@ -4,6 +4,7 @@ import {
   PlayCircleIcon,
   StarIcon,
   UsersIcon,
+  Building2,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { dummyDashboardData } from "../../assets/assets";
@@ -13,58 +14,85 @@ import BlurCircle from "../../components/BlurCircle";
 import dateFormat from "../../lib/dateFormat";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const currency = import.meta.env.VITE_CURRENCY;
+  const navigate = useNavigate();
 
-  const { axios, getToken, user, imageBaseURL } = useAppContext();
+  const { axios, getAuthHeaders, user, imageBaseURL } = useAppContext();
 
   const [dashboardData, setDashboardData] = useState({
     totalBookings: 0,
     totalRevenue: 0,
     activeShows: [],
     totalUser: 0,
+    totalTheatres: 0,
+    activeUsers: 0,
   });
 
   const [loading, setLoading] = useState(true);
 
   const dashboardCards = [
     {
-      title: "Total Bookings",
-      value: dashboardData.totalBookings || "0",
-      icon: ChartLineIcon,
+      title: "Total Theatres",
+      value: dashboardData.totalTheatres || "0",
+      icon: Building2,
+      color: "text-blue-500",
+    },
+    {
+      title: "Active Users",
+      value: dashboardData.activeUsers || "0",
+      icon: UsersIcon,
+      color: "text-purple-500",
     },
     {
       title: "Total Revenue",
-      value: currency + dashboardData.totalRevenue || "0",
+      value: currency + (dashboardData.totalRevenue || "0"),
       icon: CircleDollarSignIcon,
+      color: "text-green-500",
     },
     {
-      title: "Active Shows",
-      value: dashboardData.activeShows.length || "0",
-      icon: PlayCircleIcon,
-    },
-    {
-      title: "Total Users",
-      value: dashboardData.totalUser || "0",
-      icon: UsersIcon,
+      title: "Total Bookings",
+      value: dashboardData.totalBookings || "0",
+      icon: ChartLineIcon,
+      color: "text-orange-500",
     },
   ];
 
   const fetchDashboardData = async () => {
     try {
-      const { data } = await axios.get("api/admin/dashboard", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
+      // Try new endpoint first
+      const { data } = await axios.get("/api/admin/dashboard-admin", {
+        headers: getAuthHeaders(),
       });
 
       if (data.success) {
-        setDashboardData(data.dashboardData);
-        setLoading(false);
+        setDashboardData(data.data);
       } else {
-        toast.error(data.message);
+        // Fallback to old endpoint
+        const fallbackData = await axios.get("/api/admin/dashboard", {
+          headers: getAuthHeaders(),
+        });
+        if (fallbackData.data.success) {
+          setDashboardData(fallbackData.data.dashboardData);
+        }
       }
     } catch (error) {
-      toast.error("[fetchDashboardData]", error);
+      console.error("Error fetching dashboard:", error);
+      // Try fallback endpoint
+      try {
+        const fallbackData = await axios.get("/api/admin/dashboard", {
+          headers: getAuthHeaders(),
+        });
+        if (fallbackData.data.success) {
+          setDashboardData(fallbackData.data.dashboardData);
+        }
+      } catch (err) {
+        toast.error("Failed to load dashboard data");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
-import { MenuIcon, SearchIcon, TicketPlus, XIcon } from "lucide-react";
-import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
+import { MenuIcon, XIcon, UserIcon } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { useAuthContext } from "../context/AuthContext.jsx";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useUser();
-  const { openSignIn } = useClerk();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { user, logout } = useAuthContext();
 
   const navigate = useNavigate();
   const { favoriteMovies } = useAppContext();
@@ -89,27 +89,113 @@ const Navbar = () => {
       </div>
 
       <div className="flex items-center gap-8">
-        {/* <SearchIcon className="max-md:hidden w-6 h-6 cursor-pointer" /> */}
-
         {!user ? (
           <button
-            onClick={openSignIn}
+            onClick={() => navigate("/login")}
             className="px-4 py-1 sm:px-7 sm:py-2 bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer"
           >
             Login
           </button>
         ) : (
-          <UserButton>
-            <UserButton.MenuItems>
-              <UserButton.Action
-                label="My Bookings"
-                labelIcon={<TicketPlus width={15} />}
-                onClick={() => {
-                  navigate("/my-bookings");
-                }}
-              />
-            </UserButton.MenuItems>
-          </UserButton>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsProfileOpen((prev) => !prev)}
+              className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition"
+            >
+              <span className="text-sm font-medium">
+                {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="w-5 h-5" />}
+              </span>
+            </button>
+
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-3 w-56 rounded-2xl bg-black/90 border border-white/10 shadow-xl backdrop-blur-xl py-2 text-sm text-white">
+                <div className="px-4 py-2 border-b border-white/10">
+                  <p className="font-medium truncate">
+                    {user.name || "Account"}
+                  </p>
+                  <p className="text-xs text-white/60 truncate">
+                    {user.email}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate("/my-bookings");
+                    setIsProfileOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-white/10 transition"
+                >
+                  My Bookings
+                </button>
+
+                {favoriteMovies.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate("/favorite");
+                      setIsProfileOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-white/10 transition"
+                  >
+                    Favorites
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate("/feedback");
+                    setIsProfileOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-white/10 transition"
+                >
+                  Feedback
+                </button>
+
+                {user.role === "admin" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate("/admin");
+                      setIsProfileOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-white/10 transition"
+                  >
+                    Admin Dashboard
+                  </button>
+                )}
+
+                {user.role === "manager" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate("/manager");
+                      setIsProfileOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-white/10 transition"
+                  >
+                    Manager Dashboard
+                  </button>
+                )}
+
+                <div className="border-t border-white/10 mt-1 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setIsProfileOpen(false);
+                      navigate("/");
+                    }}
+                    className="w-full text-left px-4 py-2 text-red-400 hover:bg-red-500/10 transition"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
-import { useAuth, useUser } from "@clerk/clerk-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useAuthContext } from "./AuthContext.jsx";
 
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -18,21 +18,34 @@ export const AppProvider = ({ children }) => {
 
   const imageBaseURL = import.meta.env.VITE_TMDB_IMAGE_BASE_URL;
 
-  const { user } = useUser();
-  const { getToken } = useAuth();
+  const { user, getAuthHeaders, token } = useAuthContext();
   const location = useLocation();
   const navigate = useNavigate();
 
   // Reusable error handler
   const handleError = (prefix, error, userMessage) => {
     console.error(`[${prefix}]`, error);
-    if (userMessage) toast.error(userMessage);
+    // If a custom user message was provided, show it.
+    if (userMessage) {
+      toast.error(userMessage);
+      return;
+    }
+
+    // Network or connection errors (no response) indicate backend might be down.
+    if (!error || !error.response) {
+      toast.error("Unable to reach API server. Please ensure the backend is running.");
+      return;
+    }
+
+    // Otherwise show server-provided message if available.
+    const serverMessage = error.response?.data?.message;
+    if (serverMessage) toast.error(serverMessage);
   };
 
   const fetchIsAdmin = async () => {
     try {
-      const { data } = await axios.get("api/admin/is-admin", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
+      const { data } = await axios.get("/api/admin/is-admin", {
+        headers: getAuthHeaders(),
       });
 
       setIsAdmin(data.isAdmin);
@@ -114,7 +127,7 @@ export const AppProvider = ({ children }) => {
   const fetchFavoriteMovies = async () => {
     try {
       const { data } = await axios.get("/api/user/favorites", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
+        headers: getAuthHeaders(),
       });
 
       if (data.success) {
@@ -160,7 +173,9 @@ export const AppProvider = ({ children }) => {
     axios,
     fetchIsAdmin,
     user,
-    getToken,
+    getAuthHeaders,
+    // Provide a getToken helper for components that expect it.
+    getToken: async () => token,
     navigate,
     isAdmin,
     shows,

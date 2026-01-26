@@ -1,20 +1,15 @@
 import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import User from "../models/User.js";
-import { clerkClient, getAuth } from "@clerk/express";
+import Theater from "../models/Theater.js";
+import Theatre from "../models/Theatre.js";
 
-//API to check if user is admin
 export const isAdmin = async (req, res) => {
   try {
-    const { userId } = getAuth(req);
-
-    const user = await clerkClient.users.getUser(userId);
-
-    const isAdminUser = user.privateMetadata?.role === "admin";
-
+    const user = await User.findById(req.user.id);
+    const isAdminUser = user && user.role === "admin";
     res.json({ success: true, isAdmin: isAdminUser });
   } catch (error) {
-    console.error("[isAdmin]", error);
     res.json({ success: false, message: "not authorized", isAdmin: false });
   }
 };
@@ -68,6 +63,179 @@ export const fetchAllBookings = async (req, res) => {
     res.json({ success: true, bookings });
   } catch (error) {
     console.error("[fetchAllBookings]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Admin Dashboard Data - New
+export const dashboardAdminData = async (req, res) => {
+  try {
+    const totalTheatres = await Theatre.countDocuments();
+    const activeUsers = await User.countDocuments({ role: "customer" });
+    const paidBookings = await Booking.find({ isPaid: true });
+    const totalRevenue = paidBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+
+    res.json({
+      success: true,
+      data: {
+        totalTheatres,
+        activeUsers,
+        totalRevenue,
+        totalBookings: paidBookings.length,
+      },
+    });
+  } catch (error) {
+    console.error("[dashboardAdminData]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get All Theatres - New
+export const getAllTheatres = async (req, res) => {
+  try {
+    const theatres = await Theatre.find()
+      .populate("manager_id", "name email phone")
+      .sort({ name: 1 });
+    
+    res.json({ success: true, theatres });
+  } catch (error) {
+    console.error("[getAllTheatres]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get Theatre Details - New
+export const getTheatreDetails = async (req, res) => {
+  try {
+    const { theatreId } = req.params;
+    
+    const theatre = await Theatre.findById(theatreId)
+      .populate("manager_id", "name email phone");
+    
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+
+    res.json({ success: true, theatre });
+  } catch (error) {
+    console.error("[getTheatreDetails]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Create Theatre - New
+export const createTheatre = async (req, res) => {
+  try {
+    const { name, location, contact_no, managerId } = req.body;
+
+    if (!name || !location || !contact_no) {
+      return res.json({ success: false, message: "Missing required fields" });
+    }
+
+    // Check if manager exists and has manager role
+    if (!managerId) {
+      return res.json({ success: false, message: "Manager is required" });
+    }
+
+    const manager = await User.findById(managerId);
+    if (!manager || manager.role !== "manager") {
+      return res.json({ success: false, message: "Invalid manager" });
+    }
+
+    const theatre = await Theatre.create({
+      name,
+      location,
+      contact_no,
+      manager_id: managerId,
+      screens: [],
+    });
+
+    const populatedTheatre = await theatre.populate("manager_id", "name email phone");
+
+    res.json({ success: true, message: "Theatre created successfully", theatre: populatedTheatre });
+  } catch (error) {
+    console.error("[createTheatre]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Update Theatre - New
+export const updateTheatre = async (req, res) => {
+  try {
+    const { theatreId } = req.params;
+    const { name, location, contact_no, managerId } = req.body;
+
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (location) updateData.location = location;
+    if (contact_no) updateData.contact_no = contact_no;
+    
+    if (managerId) {
+      const manager = await User.findById(managerId);
+      if (!manager || manager.role !== "manager") {
+        return res.json({ success: false, message: "Invalid manager" });
+      }
+      updateData.manager_id = managerId;
+    }
+
+    const theatre = await Theatre.findByIdAndUpdate(theatreId, updateData, { new: true })
+      .populate("manager_id", "name email phone");
+
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+
+    res.json({ success: true, message: "Theatre updated successfully", theatre });
+  } catch (error) {
+    console.error("[updateTheatre]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Delete Theatre - New
+export const deleteTheatre = async (req, res) => {
+  try {
+    const { theatreId } = req.params;
+
+    const theatre = await Theatre.findByIdAndDelete(theatreId);
+
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+
+    res.json({ success: true, message: "Theatre deleted successfully" });
+  } catch (error) {
+    console.error("[deleteTheatre]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get Theatre Payments/Bookings - New
+export const getTheatrePayments = async (req, res) => {
+  try {
+    const { theatreId } = req.params;
+
+    const bookings = await Booking.find({
+      theater: theatreId,
+      isPaid: true,
+    })
+      .populate("user", "name email")
+      .populate({
+        path: "show",
+        populate: { path: "movie" },
+      })
+      .sort({ createdAt: -1 });
+
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
+
+    res.json({
+      success: true,
+      bookings,
+      totalRevenue,
+      count: bookings.length,
+    });
+  } catch (error) {
+    console.error("[getTheatrePayments]", error);
     res.json({ success: false, message: error.message });
   }
 };

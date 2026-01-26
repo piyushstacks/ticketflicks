@@ -7,15 +7,15 @@ import { useAppContext } from "../../context/AppContext";
 const ListShows = () => {
   const currency = import.meta.env.VITE_CURRENCY;
 
-  const { axios, getToken, user } = useAppContext();
+  const { axios, getAuthHeaders, user } = useAppContext();
 
   const [shows, setShows] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchShowData = async () => {
     try {
-      const { data } = await axios.get("api/admin/all-shows", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
+      const { data } = await axios.get("/api/admin/all-shows", {
+        headers: getAuthHeaders(),
       });
 
       setShows(data.shows);

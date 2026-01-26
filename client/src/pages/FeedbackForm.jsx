@@ -7,7 +7,7 @@ import Loading from "../components/Loading";
 import BlurCircle from "../components/BlurCircle";
 
 const FeedbackForm = () => {
-  const { axios, user, getToken } = useAppContext();
+  const { axios, user, getAuthHeaders } = useAppContext();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [message, setMessage] = useState("");
@@ -42,7 +42,7 @@ const FeedbackForm = () => {
           userId: user.id,
         },
         {
-          headers: { Authorization: `Bearer ${await getToken()}` },
+          headers: getAuthHeaders(),
         }
       );
       setRating(0);
@@ -71,7 +71,7 @@ const FeedbackForm = () => {
             type="text"
             readOnly
             className="w-[80%] max-md:w-full max-md:mt-2 px-4 py-2 bg-white/10 rounded-md text-white border border-white/20"
-            value={user.fullName || "Guest User"} // Fallback for guest users
+            value={user.name || "Guest User"}
           />
         </div>
 

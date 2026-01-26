@@ -1,13 +1,10 @@
-import { clerkClient, getAuth } from "@clerk/express";
 import Booking from "../models/Booking.js";
 import Movie from "../models/Movie.js";
+import User from "../models/User.js";
 
-// API to get user bookings
 export const fetchUserBookings = async (req, res) => {
   try {
-    const { userId } = getAuth(req);
-
-    const bookings = await Booking.find({ user: userId })
+    const bookings = await Booking.find({ user: req.user.id })
       .populate({ path: "show", populate: { path: "movie" } })
       .sort({ createdAt: -1 });
 
@@ -18,39 +15,35 @@ export const fetchUserBookings = async (req, res) => {
   }
 };
 
-// API to update favorite movie in Clerk user metadata
 export const updateFavorite = async (req, res) => {
   try {
     const { movieId } = req.body;
-    const { userId } = getAuth(req);
+    const user = await User.findById(req.user.id);
 
-    const user = await clerkClient.users.getUser(userId);
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
 
-    if (!user.privateMetadata.favorites) {
-      user.privateMetadata.favorites = [];
+    if (!Array.isArray(user.favorites)) {
+      user.favorites = [];
     }
 
     let actionType = "";
 
-    if (!user.privateMetadata.favorites.includes(movieId)) {
-      // Verify if movie exists only when adding
+    if (!user.favorites.includes(movieId)) {
       const movieExists = await Movie.findById(movieId);
       if (!movieExists) {
         return res.json({ success: false, message: "Invalid Movie ID" });
       }
 
-      user.privateMetadata.favorites.push(movieId);
+      user.favorites.push(movieId);
       actionType = "added";
     } else {
-      user.privateMetadata.favorites = user.privateMetadata.favorites.filter(
-        (item) => item !== movieId
-      );
+      user.favorites = user.favorites.filter((item) => item !== movieId);
       actionType = "removed";
     }
 
-    await clerkClient.users.updateUserMetadata(userId, {
-      privateMetadata: user.privateMetadata,
-    });
+    await user.save();
 
     res.json({
       success: true,
@@ -62,14 +55,14 @@ export const updateFavorite = async (req, res) => {
   }
 };
 
-// API to fetch favorite movies
 export const fetchFavorites = async (req, res) => {
   try {
-    const { userId } = getAuth(req);
-    const user = await clerkClient.users.getUser(userId);
-    const favorites = user.privateMetadata.favorites;
+    const user = await User.findById(req.user.id);
+    if (!user || !Array.isArray(user.favorites)) {
+      return res.json({ success: true, movies: [] });
+    }
+    const favorites = user.favorites;
 
-    //Get Movies from database
     const movies = await Movie.find({ _id: { $in: favorites } });
 
     res.json({ success: true, movies });

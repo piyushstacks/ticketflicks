@@ -5,7 +5,7 @@ import Title from "../../components/admin/Title";
 import { StarIcon } from "lucide-react";
 
 const Feedbacks = () => {
-  const { axios, getToken, user } = useAppContext();
+  const { axios, getAuthHeaders, user } = useAppContext();
 
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +14,7 @@ const Feedbacks = () => {
     try {
       setLoading(true);
       const { data } = await axios.get("/api/admin/all-feedbacks", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
+        headers: getAuthHeaders(),
       });
 
       if (data.success) {

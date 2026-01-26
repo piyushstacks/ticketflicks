@@ -6,9 +6,37 @@ import {
 } from "../controllers/userController.js";
 import { protectUser } from "../middleware/protectUser.js";
 import { submitFeedback } from "../controllers/feedbackController.js";
+import {
+  login,
+  signup,
+  forgotPasswordRequest,
+  resetPasswordWithOtp,
+  changePassword,
+  resendForgotOtp,
+  requestSignupOtp,
+  completeSignup,
+} from "../controllers/authController.js";
+import { otpRateLimiter } from "../middleware/otpRateLimiter.js";
+
+// Create a more lenient rate limiter for forgot-password (10 per 15 minutes)
+const forgotPasswordRateLimiter = otpRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 
 const userRouter = express.Router();
 
+userRouter.post("/signup", signup);
+userRouter.post("/login", login); // Direct password-based login (no OTP)
+
+// New signup OTP flow
+userRouter.post("/signup/request-otp", otpRateLimiter(), requestSignupOtp);
+userRouter.post("/signup/complete", completeSignup);
+
+// Forgot password OTP flow (2-min expiry, resend deletes old OTP)
+userRouter.post("/forgot-password", forgotPasswordRateLimiter, forgotPasswordRequest);
+userRouter.post("/forgot-password/resend", forgotPasswordRateLimiter, (req, res) => resendForgotOtp(req, res));
+userRouter.post("/reset-password", resetPasswordWithOtp);
+
+// Authenticated routes
+userRouter.post("/change-password", protectUser, changePassword);
 userRouter.get("/bookings", protectUser, fetchUserBookings);
 userRouter.post("/update-favorite", protectUser, updateFavorite);
 userRouter.get("/favorites", protectUser, fetchFavorites);

@@ -41,7 +41,7 @@ const MovieCard = ({ movie }) => {
       <div className="flex items-center justify-between mt-4 pb-3">
         <button
           onClick={() => {
-            navigate(`/movies/${movie._id}`);
+            navigate(`/buy-tickets/${movie._id}`);
             scrollTo(0, 0);
           }}
           className="px-4 py-2 text-xs bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer"
