@@ -100,21 +100,21 @@ export const fetchNowPlayingMovies = async (req, res) => {
 //API to add a new show to the database (Updated for Theater and Screen)
 export const addShow = async (req, res) => {
   try {
-    const { movieId, theaterId, screenId, showsInput } = req.body;
+    const { movieId, theatreId, screenId, showsInput } = req.body;
 
-    if (!movieId || !theaterId || !screenId || !showsInput) {
+    if (!movieId || !theatreId || !screenId || !showsInput) {
       return res.json({
         success: false,
-        message: "Please provide movie, theater, screen, and shows data",
+        message: "Please provide movie, theatre, screen, and shows data",
       });
     }
 
     let movie = await Movie.findById(movieId);
-    const theater = await Theater.findById(theaterId);
+    const theatre = await Theatre.findById(theatreId);
     const screen = await Screen.findById(screenId);
 
-    if (!theater) {
-      return res.json({ success: false, message: "Theater not found" });
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
     }
 
     if (!screen) {
@@ -173,7 +173,7 @@ export const addShow = async (req, res) => {
         const showDateTimeUTC = fromZonedTime(dateTimeString, timeZone);
         showsToCreate.push({
           movie: movieId,
-          theater: theaterId,
+          theatre: theatreId,
           screen: screenId,
           showDateTime: showDateTimeUTC,
           seatTiers: JSON.parse(JSON.stringify(initialSeatTiers)),

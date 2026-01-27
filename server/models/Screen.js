@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const screenSchema = new mongoose.Schema(
   {
     screenNumber: { type: String, required: true }, // e.g., "Screen 1", "Screen 2"
-    theater: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Theater" },
+    theatre: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Theatre" },
     seatLayout: {
       rows: { type: Number, required: true }, // Number of rows
       seatsPerRow: { type: Number, required: true }, // Seats per row

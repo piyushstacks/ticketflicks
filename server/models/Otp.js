@@ -10,11 +10,7 @@ const otpSchema = new mongoose.Schema(
       trim: true        // Remove whitespace
     },
     otpHash: { type: String, required: true },
-    purpose: {
-      type: String,
-      enum: ["login", "forgot", "signup", "theatre-registration"],
-      required: true,
-    },
+    purpose: { type: String, enum: ["login", "forgot"], default: "login" },
     expiresAt: { type: Date, required: true },
   },
   { timestamps: true }

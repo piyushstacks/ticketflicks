@@ -288,7 +288,7 @@ export const fetchTheatre = async (req, res) => {
 export const updateTheatre = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, location, contact_no, screens } = req.body;
+    const { name, location, contact_no, screens, address, city, state, zipCode, email } = req.body;
 
     // Validate that at least one screen exists
     if (screens && screens.length === 0) {
@@ -303,6 +303,11 @@ export const updateTheatre = async (req, res) => {
     if (location) updateData.location = location;
     if (contact_no) updateData.contact_no = contact_no;
     if (screens) updateData.screens = screens;
+    if (address) updateData.address = address;
+    if (city) updateData.city = city;
+    if (state) updateData.state = state;
+    if (zipCode) updateData.zipCode = zipCode;
+    if (email) updateData.email = email;
 
     const theatre = await Theatre.findByIdAndUpdate(id, updateData, { new: true }).populate(
       "manager_id",

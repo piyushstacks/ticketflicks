@@ -4,6 +4,8 @@ import {
   Users,
   TrendingUp,
   Bookmark,
+  Film,
+  Monitor,
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -103,20 +105,52 @@ const AdminDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/30 rounded-lg p-8 hover:border-blue-500/50 transition cursor-pointer">
           <Building2 className="w-12 h-12 text-blue-400 mb-4" />
           <h3 className="text-xl font-bold mb-2">Manage Theatres</h3>
           <p className="text-gray-400 text-sm">
-            Add, edit, or delete theatre locations and assign managers
+            Add, edit, or disable theatre locations and assign managers
           </p>
         </div>
 
         <div className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 border border-purple-500/30 rounded-lg p-8 hover:border-purple-500/50 transition cursor-pointer">
-          <Users className="w-12 h-12 text-purple-400 mb-4" />
+          <Film className="w-12 h-12 text-purple-400 mb-4" />
+          <h3 className="text-xl font-bold mb-2">Manage Movies</h3>
+          <p className="text-gray-400 text-sm">
+            Add, edit, or disable movie details, cast, and other information
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-600/20 to-green-900/20 border border-green-500/30 rounded-lg p-8 hover:border-green-500/50 transition cursor-pointer">
+          <Monitor className="w-12 h-12 text-green-400 mb-4" />
+          <h3 className="text-xl font-bold mb-2">Shows & Screens</h3>
+          <p className="text-gray-400 text-sm">
+            View show schedules, screen details, and occupancy information
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-600/20 to-orange-900/20 border border-orange-500/30 rounded-lg p-8 hover:border-orange-500/50 transition cursor-pointer">
+          <Bookmark className="w-12 h-12 text-orange-400 mb-4" />
           <h3 className="text-xl font-bold mb-2">View Bookings</h3>
           <p className="text-gray-400 text-sm">
             Track all bookings and manage user reservations across theatres
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-pink-600/20 to-pink-900/20 border border-pink-500/30 rounded-lg p-8 hover:border-pink-500/50 transition cursor-pointer">
+          <TrendingUp className="w-12 h-12 text-pink-400 mb-4" />
+          <h3 className="text-xl font-bold mb-2">Payment Info</h3>
+          <p className="text-gray-400 text-sm">
+            View payment details, revenue analytics, and transaction history
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-br from-indigo-600/20 to-indigo-900/20 border border-indigo-500/30 rounded-lg p-8 hover:border-indigo-500/50 transition cursor-pointer">
+          <Users className="w-12 h-12 text-indigo-400 mb-4" />
+          <h3 className="text-xl font-bold mb-2">System Overview</h3>
+          <p className="text-gray-400 text-sm">
+            Monitor system performance and user activity statistics
           </p>
         </div>
       </div>

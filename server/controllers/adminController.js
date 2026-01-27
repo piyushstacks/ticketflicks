@@ -1,7 +1,6 @@
 import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import User from "../models/User.js";
-import Theater from "../models/Theater.js";
 import Theatre from "../models/Theatre.js";
 
 export const isAdmin = async (req, res) => {
@@ -38,6 +37,56 @@ export const fetchDashboardData = async (req, res) => {
   }
 };
 
+// Get pending theatres
+export const getPendingTheatres = async (req, res) => {
+  try {
+    // For now, return empty array as we don't have a pending status field
+    // This can be updated when theatre approval workflow is implemented
+    res.json({ success: true, theatres: [] });
+  } catch (error) {
+    console.error("[getPendingTheatres]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Enable theatre
+export const enableTheatre = async (req, res) => {
+  try {
+    const { theatreId } = req.params;
+    
+    const theatre = await Theatre.findById(theatreId);
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+    
+    // For now, just return success as we don't have an enabled/disabled status field
+    // This can be updated when theatre status management is implemented
+    res.json({ success: true, message: "Theatre enabled successfully" });
+  } catch (error) {
+    console.error("[enableTheatre]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Disable theatre
+export const disableTheatre = async (req, res) => {
+  try {
+    const { theatreId } = req.params;
+    
+    const theatre = await Theatre.findById(theatreId);
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+    
+    // For now, just return success as we don't have an enabled/disabled status field
+    // This can be updated when theatre status management is implemented
+    res.json({ success: true, message: "Theatre disabled successfully" });
+  } catch (error) {
+    console.error("[disableTheatre]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 //API to get all shows
 export const fetchAllShows = async (req, res) => {
   try {
@@ -48,6 +97,34 @@ export const fetchAllShows = async (req, res) => {
     res.json({ success: true, shows });
   } catch (error) {
     console.error("[fetchAllShows]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+//API to get all screens
+export const fetchAllScreens = async (req, res) => {
+  try {
+    const theatres = await Theatre.find({})
+      .select('name screens')
+      .sort({ name: 1 });
+    
+    const allScreens = [];
+    theatres.forEach(theatre => {
+      theatre.screens.forEach(screen => {
+        allScreens.push({
+          theatreId: theatre._id,
+          theatreName: theatre.name,
+          screenId: screen._id,
+          screenName: screen.name,
+          totalSeats: screen.totalSeats,
+          status: screen.status || 'active'
+        });
+      });
+    });
+
+    res.json({ success: true, screens: allScreens });
+  } catch (error) {
+    console.error("[fetchAllScreens]", error);
     res.json({ success: false, message: error.message });
   }
 };
@@ -126,7 +203,7 @@ export const getTheatreDetails = async (req, res) => {
 // Create Theatre - New
 export const createTheatre = async (req, res) => {
   try {
-    const { name, location, contact_no, managerId } = req.body;
+    const { name, location, contact_no, managerId, address, city, state, zipCode, email } = req.body;
 
     if (!name || !location || !contact_no) {
       return res.json({ success: false, message: "Missing required fields" });
@@ -147,6 +224,11 @@ export const createTheatre = async (req, res) => {
       location,
       contact_no,
       manager_id: managerId,
+      address: address || "",
+      city: city || "",
+      state: state || "",
+      zipCode: zipCode || "",
+      email: email || "",
       screens: [],
     });
 
@@ -163,12 +245,17 @@ export const createTheatre = async (req, res) => {
 export const updateTheatre = async (req, res) => {
   try {
     const { theatreId } = req.params;
-    const { name, location, contact_no, managerId } = req.body;
+    const { name, location, contact_no, managerId, address, city, state, zipCode, email } = req.body;
 
     const updateData = {};
     if (name) updateData.name = name;
     if (location) updateData.location = location;
     if (contact_no) updateData.contact_no = contact_no;
+    if (address) updateData.address = address;
+    if (city) updateData.city = city;
+    if (state) updateData.state = state;
+    if (zipCode) updateData.zipCode = zipCode;
+    if (email) updateData.email = email;
     
     if (managerId) {
       const manager = await User.findById(managerId);

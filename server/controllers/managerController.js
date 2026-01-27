@@ -1,7 +1,7 @@
 import Show from "../models/Show.js";
 import Screen from "../models/Screen.js";
 import Movie from "../models/Movie.js";
-import Theater from "../models/Theater.js";
+import Theatre from "../models/Theatre.js";
 import Booking from "../models/Booking.js";
 import User from "../models/User.js";
 
@@ -13,10 +13,10 @@ export const dashboardManagerData = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId;
+    const theatreId = manager.managedTheatreId;
 
     const activeShows = await Show.countDocuments({
-      theater: theatreId,
+      theatre: theatreId,
       showDateTime: { $gte: new Date() },
     });
 
@@ -26,21 +26,21 @@ export const dashboardManagerData = async (req, res) => {
     todayEnd.setHours(23, 59, 59, 999);
 
     const todayBookings = await Booking.countDocuments({
-      theater: theatreId,
+      theatre: theatreId,
       createdAt: { $gte: todayStart, $lte: todayEnd },
     });
 
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const monthBookings = await Booking.find({
-      theater: theatreId,
+      theatre: theatreId,
       isPaid: true,
       createdAt: { $gte: monthStart },
     });
 
     const monthRevenue = monthBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
 
-    const screens = await Screen.countDocuments({ theater: theatreId });
-    const theatre = await Theater.findById(theatreId);
+    const screens = await Screen.countDocuments({ theatre: theatreId });
+    const theatre = await Theatre.findById(theatreId);
 
     res.json({
       success: true,
@@ -67,7 +67,7 @@ export const addShow = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId;
+    const theatreId = manager.managedTheatreId;
     const { movieId, screenId, showDateTime, seatTiers } = req.body;
 
     if (!movieId || !screenId || !showDateTime) {
@@ -76,13 +76,13 @@ export const addShow = async (req, res) => {
 
     // Verify screen belongs to manager's theatre
     const screen = await Screen.findById(screenId);
-    if (!screen || screen.theater.toString() !== theatreId.toString()) {
+    if (!screen || screen.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Invalid screen" });
     }
 
     const show = await Show.create({
       movie: movieId,
-      theater: theatreId,
+      theatre: theatreId,
       screen: screenId,
       showDateTime,
       seatTiers: seatTiers || [],
@@ -109,7 +109,7 @@ export const editShow = async (req, res) => {
     const { movieId, screenId, showDateTime, seatTiers } = req.body;
 
     const show = await Show.findById(showId);
-    if (!show || show.theater.toString() !== manager.managedTheaterId.toString()) {
+    if (!show || show.theatre.toString() !== manager.managedTheatreId.toString()) {
       return res.json({ success: false, message: "Invalid show or not authorized" });
     }
 
@@ -141,7 +141,7 @@ export const deleteShow = async (req, res) => {
     const { showId } = req.params;
 
     const show = await Show.findById(showId);
-    if (!show || show.theater.toString() !== manager.managedTheaterId.toString()) {
+    if (!show || show.theatre.toString() !== manager.managedTheatreId.toString()) {
       return res.json({ success: false, message: "Invalid show or not authorized" });
     }
 
@@ -162,7 +162,7 @@ export const addScreen = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId;
+    const theatreId = manager.managedTheatreId;
     const { screenNumber, seatLayout } = req.body;
 
     if (!screenNumber || !seatLayout) {
@@ -170,13 +170,13 @@ export const addScreen = async (req, res) => {
     }
 
     const screen = await Screen.create({
-      theater: theatreId,
+      theatre: theatreId,
       screenNumber,
       seatLayout,
     });
 
     // Add screen to theatre
-    await Theater.findByIdAndUpdate(theatreId, {
+    await Theatre.findByIdAndUpdate(theatreId, {
       $push: { screens: screen._id },
     });
 
@@ -199,7 +199,7 @@ export const editScreen = async (req, res) => {
     const { screenNumber, seatLayout } = req.body;
 
     const screen = await Screen.findById(screenId);
-    if (!screen || screen.theater.toString() !== manager.managedTheaterId.toString()) {
+    if (!screen || screen.theatre.toString() !== manager.managedTheatreId.toString()) {
       return res.json({ success: false, message: "Invalid screen or not authorized" });
     }
 
@@ -227,14 +227,14 @@ export const deleteScreen = async (req, res) => {
     const { screenId } = req.params;
 
     const screen = await Screen.findById(screenId);
-    if (!screen || screen.theater.toString() !== manager.managedTheaterId.toString()) {
+    if (!screen || screen.theatre.toString() !== manager.managedTheatreId.toString()) {
       return res.json({ success: false, message: "Invalid screen or not authorized" });
     }
 
     await Screen.findByIdAndDelete(screenId);
 
     // Remove screen from theatre
-    await Theater.findByIdAndUpdate(manager.managedTheaterId, {
+    await Theatre.findByIdAndUpdate(manager.managedTheatreId, {
       $pull: { screens: screenId },
     });
 
@@ -254,7 +254,7 @@ export const getManagerBookings = async (req, res) => {
     }
 
     const bookings = await Booking.find({
-      theater: manager.managedTheaterId,
+      theatre: manager.managedTheatreId,
     })
       .populate("user", "name email phone")
       .populate({

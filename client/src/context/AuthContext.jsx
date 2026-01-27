@@ -63,94 +63,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const resetPassword = async (payload) => {
-    try {
-      const { data } = await axios.post("/api/user/reset-password", payload);
-      return data;
-    } catch (error) {
-      // Return the error response data if available
-      if (error.response && error.response.data) {
-        return error.response.data;
-      }
-      throw error;
-    }
-  };
-
-  const requestTheatreRegistrationOtp = async (payload) => {
-    try {
-      console.log("=== THEATRE OTP REQUEST ===");
-      console.log("Request payload:", payload);
-      console.log("Email:", payload.email);
-      
-      const { data } = await axios.post("/api/theatre/request-otp", payload);
-      console.log("OTP request response:", data);
-      console.log("Response success:", data.success);
-      console.log("Response message:", data.message);
-      return data;
-    } catch (error) {
-      console.error("=== THEATRE OTP REQUEST ERROR ===");
-      console.error("Error:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
-      
-      // Return the error response data if available
-      if (error.response && error.response.data) {
-        return error.response.data;
-      }
-      throw error;
-    }
-  };
-
-  const completeTheatreRegistration = async (payload) => {
-    try {
-      const { data } = await axios.post("/api/theatre/register", payload);
-      return data;
-    } catch (error) {
-      // Return the error response data if available
-      if (error.response && error.response.data) {
-        return error.response.data;
-      }
-      throw error;
-    }
-  };
-
-  const getTheatresByManager = async (managerId) => {
-    try {
-      console.log("=== AUTH CONTEXT THEATRE FETCH ===");
-      console.log("Fetching theatres for manager:", managerId);
-      console.log("ManagerId type:", typeof managerId);
-      console.log("ManagerId value:", managerId.toString());
-      
-      const headers = getAuthHeaders();
-      console.log("Auth headers:", headers);
-      console.log("Token available:", !!token);
-      
-      // First try debug endpoint without auth
-      try {
-        console.log("Trying debug endpoint first...");
-        const debugResponse = await axios.get(`/api/theatre/debug/manager/${managerId}`);
-        console.log("Debug endpoint response:", debugResponse.data);
-      } catch (debugError) {
-        console.error("Debug endpoint failed:", debugError);
-      }
-      
-      const { data } = await axios.get(`/api/theatre/manager/${managerId}`, {
-        headers: headers
-      });
-      console.log("AuthContext: API response:", data);
-      console.log("AuthContext: Response success:", data.success);
-      console.log("AuthContext: Response theatres:", data.theatres);
-      return data;
-    } catch (error) {
-      console.error("=== AUTH CONTEXT ERROR ===");
-      console.error("AuthContext: Error fetching theatres:", error);
-      console.error("Error status:", error.response?.status);
-      console.error("Error data:", error.response?.data);
-      // Return the error response data if available
-      if (error.response && error.response.data) {
-        return error.response.data;
-      }
-      throw error;
-    }
+    const { data } = await axios.post("/api/user/reset-password", payload);
+    return data;
   };
 
   const changePassword = async (payload) => {
@@ -178,19 +92,6 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const requestSignupOtp = async (payload) => {
-    const { data } = await axios.post("/api/user/signup/request-otp", payload);
-    return data;
-  };
-
-  const completeSignup = async (payload) => {
-    const { data } = await axios.post("/api/user/signup/complete", payload);
-    if (data.success) {
-      saveAuth(data.user, data.token, true);
-    }
-    return data;
-  };
-
   const logout = () => {
     saveAuth(null, null);
   };
@@ -205,17 +106,13 @@ export const AuthProvider = ({ children }) => {
     login,
     verifyOtp,
     signup,
-    requestSignupOtp,
-    completeSignup,
-    forgotPassword,
-    resetPassword,
-    resendForgot,
-    changePassword,
-    requestTheatreRegistrationOtp,
-    completeTheatreRegistration,
-    getTheatresByManager,
     logout,
     getAuthHeaders,
+    forgotPassword,
+    resetPassword,
+    resendLogin,
+    resendForgot,
+    changePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

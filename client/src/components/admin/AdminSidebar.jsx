@@ -1,5 +1,9 @@
 import {
-  icons,
+  Building2,
+  Film,
+  Monitor,
+  Ticket,
+  CreditCard,
   LayoutDashboardIcon,
   ListCollapseIcon,
   ListIcon,
@@ -18,13 +22,11 @@ const AdminSidebar = () => {
 
   const adminNavLinks = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboardIcon },
-    { name: "Add Shows", path: "/admin/add-shows", icon: PlusSquareIcon },
-    { name: "List Shows", path: "/admin/list-shows", icon: ListIcon },
-    {
-      name: "List Bookings",
-      path: "/admin/list-bookings",
-      icon: ListCollapseIcon,
-    },
+    { name: "Manage Theatres", path: "/admin/theatres", icon: Building2 },
+    { name: "Manage Movies", path: "/admin/movies", icon: Film },
+    { name: "Shows & Screens", path: "/admin/shows", icon: Monitor },
+    { name: "Bookings", path: "/admin/bookings", icon: Ticket },
+    { name: "Payments", path: "/admin/payments-list", icon: CreditCard },
   ];
 
   return (

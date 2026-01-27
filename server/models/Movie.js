@@ -21,6 +21,11 @@ const movieSchema = new mongoose.Schema(
       ref: "Theater",
       default: [],
     }, // Theatres showing this movie
+    excludedTheatres: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Theatre",
+      default: [],
+    }, // Theatres excluded from showing this movie
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );

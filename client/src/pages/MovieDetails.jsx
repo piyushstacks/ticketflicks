@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { dummyDateTimeData, dummyShowsData } from "../assets/assets";
 import BlurCircle from "../components/BlurCircle";
 import { Heart, HeartIcon, PlayCircleIcon, StarIcon, ChevronDown } from "lucide-react";
 import timeFormat from "../lib/timeFormat";
@@ -182,7 +181,11 @@ const MovieDetails = () => {
     <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50 pb-20">
       <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto mb-12">
         <img
-          src={imageBaseURL + (show.movie.poster_path || "")}
+          src={
+            (show.movie.poster_path || "").startsWith("http")
+              ? show.movie.poster_path
+              : imageBaseURL + (show.movie.poster_path || "")
+          }
           alt={show.movie.title || "Movie Poster"}
           className="max-md:mx-auto rounded-xl h-104 max-w-70 object-cover"
         />

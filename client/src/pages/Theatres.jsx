@@ -5,6 +5,7 @@ import { useAppContext } from '../context/AppContext'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import TheatreRegistration from '../components/TheatreRegistration'
+import { dummyShowsData, dummyDateTimeData } from '../assets/assets'
 
 const Theatres = () => {
   const navigate = useNavigate()
@@ -44,14 +45,15 @@ const Theatres = () => {
   const fetchShowsForTheater = async (theaterId) => {
     try {
       setLoading(true)
-      const { data } = await axios.get('/api/show/all')
-      if (data.success) {
-        // Filter shows for this theater
-        const theaterShows = data.shows.filter(
-          (show) => show.theater?._id === theaterId
-        )
-        setTheaterMovies(theaterShows)
-      }
+      // Use dummy data for shows at the selected theatre
+      const times = Object.values(dummyDateTimeData)[0] || []
+      const theatreShows = dummyShowsData.map((m, i) => ({
+        _id: `dshow-${theaterId}-${i}`,
+        movie: m,
+        showDateTime: times[i % Math.max(times.length, 1)]?.time || new Date().toISOString(),
+        theater: { _id: theaterId },
+      }))
+      setTheaterMovies(theatreShows)
     } catch (error) {
       console.error('Error fetching shows:', error)
       setTheaterMovies([])
@@ -230,7 +232,7 @@ const Theatres = () => {
                   >
                     <div className="relative">
                       <img
-                        src={'https://image.tmdb.org/t/p/w500' + show.movie.poster_path}
+                        src={show.movie.poster_path?.startsWith('http') ? show.movie.poster_path : 'https://image.tmdb.org/t/p/w500' + show.movie.poster_path}
                         alt={show.movie.title}
                         className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                       />

@@ -4,7 +4,7 @@ const bookingSchema = new mongoose.Schema(
   {
     user: { type: String, required: true, ref: "User" },
     show: { type: String, required: true, ref: "Show" },
-    theater: { type: mongoose.Schema.Types.ObjectId, ref: "Theater" },
+    theatre: { type: mongoose.Schema.Types.ObjectId, ref: "Theatre" },
     screen: { type: mongoose.Schema.Types.ObjectId, ref: "Screen" },
     bookedSeats: [
       {

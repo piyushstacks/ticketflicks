@@ -45,7 +45,7 @@ export const protectManager = async (req, res, next) => {
     req.user = { 
       id: decoded.id, 
       role: decoded.role,
-      managedTheaterId: user.managedTheaterId
+      managedTheatreId: user.managedTheatreId
     };
     next();
   } catch (error) {

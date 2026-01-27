@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Edit2, Trash2, Plus, MapPin, Users, Phone } from "lucide-react";
+import { Edit2, Ban, Plus, MapPin, Users, Phone } from "lucide-react";
 
 const AdminTheatres = () => {
   const { axios, getAuthHeaders } = useAppContext();
@@ -16,7 +16,7 @@ const AdminTheatres = () => {
     city: "",
     state: "",
     zipCode: "",
-    phone: "",
+    contact_no: "",
     email: "",
   });
 
@@ -84,7 +84,7 @@ const AdminTheatres = () => {
           city: "",
           state: "",
           zipCode: "",
-          phone: "",
+          contact_no: "",
           email: "",
         });
         setEditingId(null);
@@ -107,30 +107,32 @@ const AdminTheatres = () => {
       city: theatre.city,
       state: theatre.state,
       zipCode: theatre.zipCode || "",
-      phone: theatre.phone || "",
+      contact_no: theatre.contact_no || "",
       email: theatre.email || "",
     });
     setEditingId(theatre._id);
     setShowForm(true);
   };
 
-  const handleDelete = async (theatreId) => {
-    if (!window.confirm("Are you sure you want to delete this theatre?")) return;
+  const handleDisable = async (theatreId) => {
+    if (!window.confirm("Are you sure you want to disable this theatre?")) return;
 
     try {
-      const { data } = await axios.delete(`/api/admin/theatres/${theatreId}`, {
-        headers: getAuthHeaders(),
-      });
+      const { data } = await axios.put(
+        `/api/admin/theatres/${theatreId}/disable`,
+        {},
+        { headers: getAuthHeaders() }
+      );
 
       if (data.success) {
-        toast.success("Theatre deleted successfully");
+        toast.success("Theatre disabled successfully");
         fetchTheatres();
       } else {
         toast.error(data.message);
       }
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Failed to delete theatre");
+      toast.error("Failed to disable theatre");
     }
   };
 
@@ -144,7 +146,7 @@ const AdminTheatres = () => {
       city: "",
       state: "",
       zipCode: "",
-      phone: "",
+      contact_no: "",
       email: "",
     });
   };
@@ -232,9 +234,9 @@ const AdminTheatres = () => {
               />
               <input
                 type="tel"
-                name="phone"
+                name="contact_no"
                 placeholder="Phone"
-                value={formData.phone}
+                value={formData.contact_no}
                 onChange={handleInputChange}
                 className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
@@ -272,10 +274,19 @@ const AdminTheatres = () => {
         {theatres.map((theatre) => (
           <div
             key={theatre._id}
-            className="bg-gray-900/30 border border-gray-700 rounded-lg p-6 hover:border-primary/50 transition"
+            className={`bg-gray-900/30 border rounded-lg p-6 hover:border-primary/50 transition ${
+              theatre.disabled ? "border-red-500/30 opacity-60" : "border-gray-700"
+            }`}
           >
             <div className="space-y-3">
-              <h3 className="text-xl font-bold">{theatre.name}</h3>
+              <div className="flex justify-between items-start">
+                <h3 className="text-xl font-bold">{theatre.name}</h3>
+                {theatre.disabled && (
+                  <span className="px-2 py-1 bg-red-600/20 text-red-400 text-xs rounded-full">
+                    Disabled
+                  </span>
+                )}
+              </div>
 
               <div className="space-y-2 text-sm text-gray-400">
                 <div className="flex items-center gap-2">
@@ -290,10 +301,10 @@ const AdminTheatres = () => {
                   </span>
                 </div>
 
-                {theatre.phone && (
+                {theatre.contact_no && (
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-primary" />
-                    <span>{theatre.phone}</span>
+                    <span>{theatre.contact_no}</span>
                   </div>
                 )}
 
@@ -321,11 +332,11 @@ const AdminTheatres = () => {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(theatre._id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition text-sm font-medium"
+                  onClick={() => handleDisable(theatre._id)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 rounded-lg transition text-sm font-medium"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
+                  <Ban className="w-4 h-4" />
+                  Disable
                 </button>
               </div>
             </div>

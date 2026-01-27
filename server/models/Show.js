@@ -7,10 +7,10 @@ const showSchema = mongoose.Schema(
       required: true,
       ref: "Movie",
     },
-    theater: {
+    theatre: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: "Theater",
+      ref: "Theatre",
     },
     screen: {
       type: mongoose.Schema.Types.ObjectId,
