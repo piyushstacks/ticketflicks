@@ -50,9 +50,9 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
       });
       
       if (data.success) {
-        toast.success("Theatre registered successfully!");
+        toast.success("Registration submitted successfully!");
         setTimeout(() => {
-          navigate("/login");
+          navigate("/registration-pending");
         }, 2000);
       } else {
         toast.error(data.message || "Registration failed");

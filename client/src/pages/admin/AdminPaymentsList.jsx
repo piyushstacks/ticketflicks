@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { Eye, Search, Filter, Calendar, CreditCard, TrendingUp, DollarSign, Activity } from "lucide-react";
-import { dummyBookingData } from "../../assets/assets";
+
 
 const AdminPaymentsList = () => {
   const { axios, getAuthHeaders } = useAppContext();

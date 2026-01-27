@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { Edit2, Plus, Eye, Users, Calendar, Star, Ban, X, Check } from "lucide-react";
-import { dummyShowsData, dummyCastsData } from "../../assets/assets";
+
 
 const AdminMovies = () => {
   const { axios, getAuthHeaders } = useAppContext();

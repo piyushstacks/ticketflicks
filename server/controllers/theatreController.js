@@ -156,7 +156,7 @@ export const registerTheatre = async (req, res) => {
     }
 
     // Validate theatre data
-    const { name: theatreName, location, contact_no } = theatre;
+    const { name: theatreName, location, contact_no, email: theatreEmail, address, city, state, zipCode } = theatre;
     if (!theatreName || !location || !contact_no) {
       return res.status(400).json({
         success: false,
@@ -167,14 +167,13 @@ export const registerTheatre = async (req, res) => {
     // Hash password
     const hashedPassword = await bcryptjs.hash(password, 10);
 
-    // Create new manager user
-    // Note: User schema expects `password_hash` property (required), not `password`.
+    // Create new manager user but with pending status initially
     const newManager = new User({
       name,
       email: normalizedEmail,
       phone,
       password_hash: hashedPassword,
-      role: "manager",
+      role: "pending_manager", // Changed from "manager" to prevent login until approved
     });
 
     const savedManager = await newManager.save();
@@ -201,13 +200,19 @@ export const registerTheatre = async (req, res) => {
       };
     });
 
-    // Create theatre
+    // Create theatre with pending approval status
     const newTheatre = new Theatre({
       name: theatreName,
       location,
       contact_no,
+      email: theatreEmail || '',
+      address: address || '',
+      city: city || '',
+      state: state || '',
+      zipCode: zipCode || '',
       manager_id: savedManager._id,
       screens: theatreScreens,
+      approval_status: 'pending', // Set to pending until admin approval
     });
 
     await newTheatre.save();
@@ -215,9 +220,32 @@ export const registerTheatre = async (req, res) => {
     // Delete all OTPs for this email after successful registration
     await Otp.deleteMany({ email: normalizedEmail, purpose: "theatre-registration" });
 
+    // Send notification email to admin about new theatre registration
+    try {
+      const subject = "New Theatre Registration Request";
+      const body = `
+        <p>A new theatre registration request has been submitted.</p>
+        <p><strong>Theatre Name:</strong> ${theatreName}</p>
+        <p><strong>Location:</strong> ${location}</p>
+        <p><strong>Manager Name:</strong> ${name}</p>
+        <p><strong>Manager Email:</strong> ${normalizedEmail}</p>
+        <p>Please log in to the admin panel to review and approve this request.</p>
+      `;
+      
+      // Send to admin email (you may want to configure this)
+      await sendEmail({
+        to: process.env.ADMIN_EMAIL || "admin@example.com",
+        subject,
+        body,
+      });
+    } catch (emailError) {
+      console.error("Error sending admin notification email:", emailError);
+      // Continue even if admin email fails
+    }
+
     res.status(201).json({
       success: true,
-      message: "Theatre registered successfully",
+      message: "Theatre registration submitted successfully. Please wait for admin approval.",
       data: {
         manager: {
           id: savedManager._id,
@@ -242,7 +270,7 @@ export const registerTheatre = async (req, res) => {
 // Fetch all theatres
 export const fetchAllTheatres = async (req, res) => {
   try {
-    const theatres = await Theatre.find().populate("manager_id", "name email phone");
+    const theatres = await Theatre.find({ disabled: { $ne: true } }).populate("manager_id", "name email phone");
     res.status(200).json({
       success: true,
       theatres,
@@ -288,7 +316,7 @@ export const fetchTheatre = async (req, res) => {
 export const updateTheatre = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, location, contact_no, screens, address, city, state, zipCode, email } = req.body;
+    const { name, location, contact_no, screens } = req.body;
 
     // Validate that at least one screen exists
     if (screens && screens.length === 0) {
@@ -303,11 +331,6 @@ export const updateTheatre = async (req, res) => {
     if (location) updateData.location = location;
     if (contact_no) updateData.contact_no = contact_no;
     if (screens) updateData.screens = screens;
-    if (address) updateData.address = address;
-    if (city) updateData.city = city;
-    if (state) updateData.state = state;
-    if (zipCode) updateData.zipCode = zipCode;
-    if (email) updateData.email = email;
 
     const theatre = await Theatre.findByIdAndUpdate(id, updateData, { new: true }).populate(
       "manager_id",

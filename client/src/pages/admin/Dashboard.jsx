@@ -7,7 +7,7 @@ import {
   Building2,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { dummyDashboardData } from "../../assets/assets";
+
 import Loading from "../../components/Loading";
 import Title from "../../components/admin/Title";
 import BlurCircle from "../../components/BlurCircle";
@@ -68,7 +68,29 @@ const Dashboard = () => {
       });
 
       if (data.success) {
-        setDashboardData(data.data);
+        // New endpoint returns different structure, merge with existing data
+        setDashboardData(prev => ({
+          ...prev,
+          totalTheatres: data.data.totalTheatres || 0,
+          activeUsers: data.data.activeUsers || 0,
+          totalRevenue: data.data.totalRevenue || 0,
+          totalBookings: data.data.totalBookings || 0,
+        }));
+        
+        // Fetch active shows separately
+        try {
+          const showsResponse = await axios.get("/api/admin/all-shows", {
+            headers: getAuthHeaders(),
+          });
+          if (showsResponse.data.success) {
+            setDashboardData(prev => ({
+              ...prev,
+              activeShows: showsResponse.data.shows || [],
+            }));
+          }
+        } catch (showsError) {
+          console.error("Error fetching active shows:", showsError);
+        }
       } else {
         // Fallback to old endpoint
         const fallbackData = await axios.get("/api/admin/dashboard", {

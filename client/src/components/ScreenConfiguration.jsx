@@ -53,15 +53,44 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
     if (layout) {
       setSelectedLayout(layoutKey);
       setCustomLayout(null);
-      initializeTierPricing(layout);
       
-      // Update current screen
+      // Initialize pricing first
+      const tiersInLayout = new Set();
+      layout.layout?.flat().forEach(seat => {
+        if (seat && seat !== '') tiersInLayout.add(seat);
+      });
+
+      const isSingleTier = tiersInLayout.size === 1;
+      let newPricing = {};
+      
+      if (isSingleTier) {
+        // For single-tier layouts, set unified pricing mode
+        const singleTier = Array.from(tiersInLayout)[0];
+        setPricingMode('unified');
+        const price = SEAT_TIERS[singleTier]?.basePrice || 150;
+        setUnifiedPrice(String(price));
+        newPricing = { unified: price };
+      } else {
+        // For multi-tier layouts, use tier-based pricing
+        setPricingMode('tier');
+        const pricing = {};
+        tiersInLayout.forEach(tier => {
+          pricing[tier] = {
+            price: SEAT_TIERS[tier]?.basePrice || 150,
+            enabled: true
+          };
+        });
+        setTierPricing(pricing);
+        newPricing = pricing;
+      }
+      
+      // Update current screen with the new pricing
       const updatedScreens = [...screens];
       updatedScreens[currentScreenIndex] = {
         ...currentScreen,
         name: currentScreen.name || `Screen ${currentScreenIndex + 1}`,
         layout: layout,
-        pricing: pricingMode === 'tier' ? tierPricing : { unified: unifiedPrice }
+        pricing: newPricing
       };
       setScreens(updatedScreens);
       setErrors({});
@@ -107,7 +136,7 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
     const newScreen = {
       name: `Screen ${screens.length + 1}`,
       layout: null,
-      pricing: {}
+      pricing: { unified: 150 } // Default unified pricing
     };
     setScreens([...screens, newScreen]);
     setCurrentScreenIndex(screens.length);

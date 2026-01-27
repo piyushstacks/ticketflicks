@@ -21,25 +21,45 @@ const theatreSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    email: {
+      type: String,
+      required: false,
+      trim: true,
+    },
     address: {
       type: String,
       required: false,
+      trim: true,
     },
     city: {
       type: String,
       required: false,
+      trim: true,
     },
     state: {
       type: String,
       required: false,
+      trim: true,
     },
     zipCode: {
       type: String,
       required: false,
+      trim: true,
     },
-    email: {
+    approval_status: {
       type: String,
-      required: false,
+      enum: ["pending", "approved", "declined"],
+      default: "pending",
+    },
+    approval_date: {
+      type: Date,
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+    disabled_date: {
+      type: Date,
     },
     screens: [
       {

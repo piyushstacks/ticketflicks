@@ -5,6 +5,7 @@ import Otp from "../models/Otp.js";
 import sendEmail from "../configs/nodeMailer.js";
 
 const OTP_TTL_MS = 2 * 60 * 1000; // 2 minutes for forgot-password OTP
+const SIGNUP_OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes for signup OTP
 const PASSWORD_MIN_LENGTH = 8;
 // Regex: at least 1 lowercase, 1 uppercase, 1 digit, 1 special char
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -93,7 +94,23 @@ export const login = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 
+    // Check if user is a pending manager (not approved yet)
+    if (user.role === "pending_manager") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Your theatre registration is pending approval. Please wait for admin approval before logging in." 
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
+    }
+
+    user.last_login = new Date();
+    await user.save();
+
+    const token = createToken(user);
 
     res.json({
       success: true,
@@ -215,6 +232,12 @@ export const resetPasswordWithOtp = async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(400).json({ success: false, message: "User not found" });
 
+    // Prevent setting the same password as current
+    const isSamePassword = await bcrypt.compare(newPassword, user.password_hash);
+    if (isSamePassword) {
+      return res.status(400).json({ success: false, message: "New password must be different from current password" });
+    }
+
     user.password_hash = await bcrypt.hash(newPassword, 10);
     await user.save();
 
@@ -242,6 +265,11 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ success: false, message: "New passwords do not match" });
     }
 
+    // Prevent setting the same password as current
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ success: false, message: "New password must be different from current password" });
+    }
+
     // Validate new password
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.valid) {
@@ -260,6 +288,108 @@ export const changePassword = async (req, res) => {
     res.json({ success: true, message: "Password changed successfully" });
   } catch (error) {
     console.error("[changePassword]", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Request signup OTP (no user created yet)
+export const requestSignupOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    const normalizedEmail = email.toLowerCase();
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) return res.status(409).json({ success: false, message: "Email already registered" });
+
+    // Delete any existing signup OTPs for this email
+    await Otp.deleteMany({ email: normalizedEmail, purpose: "signup" });
+
+    const otp = ("000000" + Math.floor(Math.random() * 999999)).slice(-6);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[dev-otp] signup OTP for ${normalizedEmail}: ${otp}`);
+    }
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + SIGNUP_OTP_TTL_MS);
+
+    await Otp.create({ email: normalizedEmail, otpHash, purpose: "signup", expiresAt });
+
+    const subject = "Your TicketFlicks sign-up code";
+    const body = `<p>Your sign-up code is <strong>${otp}</strong>. It expires in 10 minutes.</p>`;
+    try {
+      await sendEmail({ to: email, subject, body });
+    } catch (err) {
+      console.error("[requestSignupOtp][sendEmail]", err);
+    }
+
+    res.json({ success: true, message: "OTP sent to your email. Valid for 10 minutes." });
+  } catch (error) {
+    console.error("[requestSignupOtp]", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Complete signup after OTP verification
+export const completeSignup = async (req, res) => {
+  try {
+    const { email, otp, name, phone, password } = req.body;
+    if (!email || !otp || !name || !phone || !password) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+
+    // Verify OTP
+    const otpDoc = await Otp.findOne({ 
+      email: normalizedEmail, 
+      purpose: "signup", 
+      expiresAt: { $gte: new Date() } 
+    }).sort({ createdAt: -1 });
+    
+    if (!otpDoc) return res.status(400).json({ success: false, message: "OTP not found or expired" });
+
+    const match = await bcrypt.compare(otp, otpDoc.otpHash);
+    if (!match) return res.status(400).json({ success: false, message: "Invalid OTP" });
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ success: false, message: passwordValidation.message });
+    }
+
+    // Create user
+    const password_hash = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name,
+      email: normalizedEmail,
+      phone,
+      password_hash,
+      role: "customer",
+      last_login: new Date(),
+    });
+
+    // Delete OTP
+    await Otp.deleteMany({ email: normalizedEmail, purpose: "signup" });
+
+    // Issue token
+    const token = createToken(user);
+
+    res.json({
+      success: true,
+      message: "Signup successful",
+      token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("[completeSignup]", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

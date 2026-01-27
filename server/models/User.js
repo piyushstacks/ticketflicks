@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
     },
     phone: { type: String, required: true },
     password_hash: { type: String, required: true },
-    role: { type: String, enum: ["customer", "admin", "manager"], default: "customer" },
+    role: { type: String, enum: ["customer", "admin", "manager", "pending_manager"], default: "customer" },
     managedTheaterId: { type: mongoose.Schema.Types.ObjectId, ref: "Theater" },
     last_login: { type: Date },
     favorites: { type: [String], default: [] },

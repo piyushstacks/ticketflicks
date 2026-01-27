@@ -2,6 +2,8 @@ import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import User from "../models/User.js";
 import Theatre from "../models/Theatre.js";
+import bcryptjs from "bcryptjs";
+import sendEmail from "../configs/nodeMailer.js";
 
 export const isAdmin = async (req, res) => {
   try {
@@ -37,52 +39,121 @@ export const fetchDashboardData = async (req, res) => {
   }
 };
 
-// Get pending theatres
+// Get pending theatre registrations - New
 export const getPendingTheatres = async (req, res) => {
   try {
-    // For now, return empty array as we don't have a pending status field
-    // This can be updated when theatre approval workflow is implemented
-    res.json({ success: true, theatres: [] });
+    const pendingTheatres = await Theatre.find({ approval_status: "pending" })
+      .populate("manager_id", "name email phone")
+      .sort({ createdAt: -1 });
+    
+    res.json({ success: true, theatres: pendingTheatres });
   } catch (error) {
     console.error("[getPendingTheatres]", error);
     res.json({ success: false, message: error.message });
   }
 };
 
-// Enable theatre
-export const enableTheatre = async (req, res) => {
+// Approve theatre registration - New
+export const approveTheatre = async (req, res) => {
   try {
     const { theatreId } = req.params;
-    
-    const theatre = await Theatre.findById(theatreId);
-    if (!theatre) {
-      return res.json({ success: false, message: "Theatre not found" });
-    }
-    
-    // For now, just return success as we don't have an enabled/disabled status field
-    // This can be updated when theatre status management is implemented
-    res.json({ success: true, message: "Theatre enabled successfully" });
-  } catch (error) {
-    console.error("[enableTheatre]", error);
-    res.json({ success: false, message: error.message });
-  }
-};
+    const { action } = req.body; // "approve" or "decline"
 
-// Disable theatre
-export const disableTheatre = async (req, res) => {
-  try {
-    const { theatreId } = req.params;
-    
-    const theatre = await Theatre.findById(theatreId);
+    if (!["approve", "decline"].includes(action)) {
+      return res.json({ success: false, message: "Invalid action" });
+    }
+
+    const theatre = await Theatre.findById(theatreId).populate("manager_id");
     if (!theatre) {
       return res.json({ success: false, message: "Theatre not found" });
     }
-    
-    // For now, just return success as we don't have an enabled/disabled status field
-    // This can be updated when theatre status management is implemented
-    res.json({ success: true, message: "Theatre disabled successfully" });
+
+    if (theatre.approval_status !== "pending") {
+      return res.json({ success: false, message: "Theatre has already been processed" });
+    }
+
+    if (action === "approve") {
+      // Update theatre status
+      theatre.approval_status = "approved";
+      theatre.approval_date = new Date();
+      await theatre.save();
+
+      // Update manager role from pending_manager to manager
+      const manager = await User.findById(theatre.manager_id);
+      if (manager && manager.role === "pending_manager") {
+        manager.role = "manager";
+        await manager.save();
+      }
+
+      // Generate login credentials email
+      try {
+        const subject = "Theatre Registration Approved - Login Credentials";
+        const body = `
+          <h2>Theatre Registration Approved!</h2>
+          <p>Dear ${manager.name},</p>
+          <p>Your theatre registration has been approved by the admin.</p>
+          <p><strong>Theatre Details:</strong></p>
+          <ul>
+            <li><strong>Theatre Name:</strong> ${theatre.name}</li>
+            <li><strong>Location:</strong> ${theatre.location}</li>
+            <li><strong>Contact:</strong> ${theatre.contact_no}</li>
+          </ul>
+          <p><strong>Login Credentials:</strong></p>
+          <ul>
+            <li><strong>Email:</strong> ${manager.email}</li>
+            <li><strong>Password:</strong> Use the password you set during registration</li>
+          </ul>
+          <p>You can now log in to your theatre management dashboard.</p>
+          <p>Thank you for choosing our platform!</p>
+        `;
+        
+        await sendEmail({
+          to: manager.email,
+          subject,
+          body,
+        });
+      } catch (emailError) {
+        console.error("Error sending approval email:", emailError);
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Theatre approved successfully and login credentials sent to manager" 
+      });
+    } else {
+      // Decline the theatre
+      theatre.approval_status = "declined";
+      theatre.approval_date = new Date();
+      await theatre.save();
+
+      // Send decline email
+      try {
+        const subject = "Theatre Registration Declined";
+        const body = `
+          <h2>Theatre Registration Update</h2>
+          <p>Dear ${manager.name},</p>
+          <p>We regret to inform you that your theatre registration has been declined by the admin.</p>
+          <p><strong>Theatre Name:</strong> ${theatre.name}</p>
+          <p>If you believe this was an error, please contact our support team.</p>
+          <p>Thank you for your interest in our platform.</p>
+        `;
+        
+        await sendEmail({
+          to: manager.email,
+          subject,
+          body,
+        });
+      } catch (emailError) {
+        console.error("Error sending decline email:", emailError);
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Theatre declined successfully and notification sent to manager" 
+      });
+    }
   } catch (error) {
-    console.error("[disableTheatre]", error);
+    console.error("[approveTheatre]", error);
     res.json({ success: false, message: error.message });
   }
 };
@@ -92,39 +163,13 @@ export const fetchAllShows = async (req, res) => {
   try {
     const shows = await Show.find({ showDateTime: { $gte: new Date() } })
       .populate("movie")
+      .populate("theatre")
+      .populate("screen")
       .sort({ showDateTime: 1 });
 
     res.json({ success: true, shows });
   } catch (error) {
     console.error("[fetchAllShows]", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-//API to get all screens
-export const fetchAllScreens = async (req, res) => {
-  try {
-    const theatres = await Theatre.find({})
-      .select('name screens')
-      .sort({ name: 1 });
-    
-    const allScreens = [];
-    theatres.forEach(theatre => {
-      theatre.screens.forEach(screen => {
-        allScreens.push({
-          theatreId: theatre._id,
-          theatreName: theatre.name,
-          screenId: screen._id,
-          screenName: screen.name,
-          totalSeats: screen.totalSeats,
-          status: screen.status || 'active'
-        });
-      });
-    });
-
-    res.json({ success: true, screens: allScreens });
-  } catch (error) {
-    console.error("[fetchAllScreens]", error);
     res.json({ success: false, message: error.message });
   }
 };
@@ -140,6 +185,46 @@ export const fetchAllBookings = async (req, res) => {
     res.json({ success: true, bookings });
   } catch (error) {
     console.error("[fetchAllBookings]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+//API to get all screens from all theatres
+export const fetchAllScreens = async (req, res) => {
+  try {
+    const theatres = await Theatre.find({ disabled: { $ne: true } })
+      .populate("manager_id", "name email phone")
+      .sort({ name: 1 });
+
+    const screensData = [];
+    
+    theatres.forEach(theatre => {
+      if (theatre.screens && theatre.screens.length > 0) {
+        theatre.screens.forEach((screen, index) => {
+          screensData.push({
+            _id: `${theatre._id}-screen-${index}`,
+            theatre: {
+              _id: theatre._id,
+              name: theatre.name,
+              location: theatre.location,
+              manager: theatre.manager_id
+            },
+            screen: {
+              name: screen.name,
+              layout: screen.layout,
+              pricing: screen.pricing,
+              totalSeats: screen.totalSeats,
+              status: screen.status
+            },
+            screenIndex: index
+          });
+        });
+      }
+    });
+
+    res.json({ success: true, screens: screensData });
+  } catch (error) {
+    console.error("[fetchAllScreens]", error);
     res.json({ success: false, message: error.message });
   }
 };
@@ -170,11 +255,15 @@ export const dashboardAdminData = async (req, res) => {
 // Get All Theatres - New
 export const getAllTheatres = async (req, res) => {
   try {
-    const theatres = await Theatre.find()
+    const theatres = await Theatre.find({ disabled: { $ne: true } })
       .populate("manager_id", "name email phone")
       .sort({ name: 1 });
     
-    res.json({ success: true, theatres });
+    const disabledTheatres = await Theatre.find({ disabled: true })
+      .populate("manager_id", "name email phone")
+      .sort({ name: 1 });
+    
+    res.json({ success: true, theatres, disabledTheatres });
   } catch (error) {
     console.error("[getAllTheatres]", error);
     res.json({ success: false, message: error.message });
@@ -203,7 +292,7 @@ export const getTheatreDetails = async (req, res) => {
 // Create Theatre - New
 export const createTheatre = async (req, res) => {
   try {
-    const { name, location, contact_no, managerId, address, city, state, zipCode, email } = req.body;
+    const { name, location, contact_no, managerId } = req.body;
 
     if (!name || !location || !contact_no) {
       return res.json({ success: false, message: "Missing required fields" });
@@ -224,11 +313,6 @@ export const createTheatre = async (req, res) => {
       location,
       contact_no,
       manager_id: managerId,
-      address: address || "",
-      city: city || "",
-      state: state || "",
-      zipCode: zipCode || "",
-      email: email || "",
       screens: [],
     });
 
@@ -245,17 +329,17 @@ export const createTheatre = async (req, res) => {
 export const updateTheatre = async (req, res) => {
   try {
     const { theatreId } = req.params;
-    const { name, location, contact_no, managerId, address, city, state, zipCode, email } = req.body;
+    const { name, location, contact_no, email, address, city, state, zipCode, managerId } = req.body;
 
     const updateData = {};
     if (name) updateData.name = name;
     if (location) updateData.location = location;
     if (contact_no) updateData.contact_no = contact_no;
-    if (address) updateData.address = address;
-    if (city) updateData.city = city;
-    if (state) updateData.state = state;
-    if (zipCode) updateData.zipCode = zipCode;
-    if (email) updateData.email = email;
+    if (email !== undefined) updateData.email = email;
+    if (address !== undefined) updateData.address = address;
+    if (city !== undefined) updateData.city = city;
+    if (state !== undefined) updateData.state = state;
+    if (zipCode !== undefined) updateData.zipCode = zipCode;
     
     if (managerId) {
       const manager = await User.findById(managerId);
@@ -275,6 +359,56 @@ export const updateTheatre = async (req, res) => {
     res.json({ success: true, message: "Theatre updated successfully", theatre });
   } catch (error) {
     console.error("[updateTheatre]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Disable Theatre - New
+export const disableTheatre = async (req, res) => {
+  try {
+    const { theatreId } = req.params;
+
+    const theatre = await Theatre.findByIdAndUpdate(
+      theatreId,
+      { 
+        disabled: true, 
+        disabled_date: new Date() 
+      }, 
+      { new: true }
+    ).populate("manager_id", "name email phone");
+
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+
+    res.json({ success: true, message: "Theatre disabled successfully", theatre });
+  } catch (error) {
+    console.error("[disableTheatre]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Enable Theatre - New
+export const enableTheatre = async (req, res) => {
+  try {
+    const { theatreId } = req.params;
+
+    const theatre = await Theatre.findByIdAndUpdate(
+      theatreId,
+      { 
+        disabled: false, 
+        disabled_date: null 
+      }, 
+      { new: true }
+    ).populate("manager_id", "name email phone");
+
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+
+    res.json({ success: true, message: "Theatre enabled successfully", theatre });
+  } catch (error) {
+    console.error("[enableTheatre]", error);
     res.json({ success: false, message: error.message });
   }
 };

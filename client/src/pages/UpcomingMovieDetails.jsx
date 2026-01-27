@@ -16,10 +16,14 @@ const UpcomingMovieDetails = () => {
   const [upcomingMovie, setUpcomingMovie] = useState();
 
   const fetchUpcomingMovie = async () => {
-    const movie = upcomingMovies.find((movie) => movie.id === Number(id));
+    const movie = upcomingMovies.find((movie) => String(movie.id) === String(id));
 
     if (movie) {
       setUpcomingMovie(movie);
+    } else {
+      // Debug: Check if movie exists with different ID format
+      console.log("Looking for movie with ID:", id, "type:", typeof id);
+      console.log("Available movie IDs:", upcomingMovies.map(m => ({id: m.id, type: typeof m.id})));
     }
   };
 

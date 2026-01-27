@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
-import { dummyShowsData, dummyTrailers, dummyDateTimeData, dummyTheatersData, dummyBookingData, dummyOccupiedSeats } from "../assets/assets";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuthContext } from "./AuthContext.jsx";
@@ -62,21 +61,43 @@ export const AppProvider = ({ children }) => {
 
   const fetchShows = async () => {
     try {
-      // Use dummy data instead of API
-      setShows(dummyShowsData);
+      // First try to get shows (movies with future showtimes)
+      const { data } = await axios.get("/api/show/all");
+      if (data.success && data.shows && data.shows.length > 0) {
+        setShows(data.shows || []);
+      } else {
+        // If no shows exist, fall back to getting all active movies
+        const moviesResponse = await axios.get("/api/show/movies");
+        if (moviesResponse.data.success && moviesResponse.data.movies) {
+          setShows(moviesResponse.data.movies);
+        } else {
+          setShows([]);
+        }
+      }
     } catch (error) {
       handleError("fetchShows", error);
+      // On error, try fallback to movies
+      try {
+        const moviesResponse = await axios.get("/api/show/movies");
+        if (moviesResponse.data.success && moviesResponse.data.movies) {
+          setShows(moviesResponse.data.movies);
+        }
+      } catch (movieError) {
+        console.error("Failed to fetch movies as fallback:", movieError);
+      }
     }
   };
 
   const fetchUpcomingMovies = async () => {
     try {
-      // Use a slice of dummy shows as upcoming movies and add genre_ids for UI
-      const movies = dummyShowsData.slice(0, 6).map((m) => ({
-        ...m,
-        genre_ids: Array.isArray(m.genres) ? m.genres.map((g) => g.id) : [],
-      }));
-      setUpcomingMovies(movies);
+      const { data } = await axios.get("/api/show/upcoming-movies");
+      if (data.success) {
+        const movies = (data.movies || []).map((m) => ({
+          ...m,
+          genre_ids: Array.isArray(m.genres) ? m.genres.map((g) => g.id) : [],
+        }));
+        setUpcomingMovies(movies);
+      }
     } catch (error) {
       handleError("fetchUpcomingMovies", error);
     }
@@ -86,12 +107,26 @@ export const AppProvider = ({ children }) => {
     if (!upcomingMovies.length) return;
 
     const trailersMap = { ...trailer };
-    upcomingMovies.forEach((movie, idx) => {
+    
+    // Fetch trailers for each upcoming movie
+    for (const movie of upcomingMovies) {
       if (!trailersMap[movie.id]) {
-        const pick = dummyTrailers[idx % dummyTrailers.length];
-        trailersMap[movie.id] = { url: pick.videoUrl, key: null };
+        try {
+          const { data } = await axios.get(`/api/show/trailer/${movie.id}`);
+          if (data.success) {
+            trailersMap[movie.id] = { url: data.trailer_url, key: data.video_key };
+          } else {
+            // If no trailer found, use a fallback
+            trailersMap[movie.id] = { url: "", key: null };
+          }
+        } catch (error) {
+          console.error(`Error fetching trailer for movie ${movie.id}:`, error);
+          // Use empty fallback on error
+          trailersMap[movie.id] = { url: "", key: null };
+        }
       }
-    });
+    }
+    
     setTrailer(trailersMap);
   };
 
@@ -141,179 +176,7 @@ export const AppProvider = ({ children }) => {
   }, [user]);
 
   const value = {
-    // Axios wrapper: intercept movie endpoints to return dummy data,
-    // fall back to real axios for everything else.
-    axios: {
-      get: async (url, config) => {
-        try {
-          // 1) All movies (listing pages / theatres page)
-          if (url === "/api/show/all") {
-            return Promise.resolve({ data: { success: true, shows: dummyShowsData.map((m, i) => ({ _id: `dshow-${m.id}-${i}`, movie: m, theater: { _id: dummyTheatersData[0]?.id || "th1" }, showDateTime: Object.values(dummyDateTimeData)[0]?.[0]?.time || new Date().toISOString() })) } });
-          }
-
-          // 2) Upcoming movies
-          if (url === "/api/show/upcoming-movies") {
-            return Promise.resolve({ data: { success: true, movies: dummyShowsData.slice(0, 6) } });
-          }
-
-          // 3) Trailer by movie id
-          if (url.startsWith("/api/show/trailer/")) {
-            const id = url.split("/").pop();
-            const index = Math.abs(parseInt(id, 10)) % dummyTrailers.length || 0;
-            return Promise.resolve({ data: { success: true, trailer_url: dummyTrailers[index]?.videoUrl || "", video_key: null } });
-          }
-
-          // 3b) All movies (manager view)
-          if (url === "/api/show/all-movies") {
-            return Promise.resolve({ data: { success: true, movies: dummyShowsData } });
-          }
-
-          // 4) Movie details by id
-          if (/^\/api\/show\/(?!by-movie|trailer|show\/).+/.test(url)) {
-            const id = url.split("/").pop();
-            const found = dummyShowsData.find((m) => String(m.id) === String(id) || String(m._id) === String(id));
-            if (found) {
-              return Promise.resolve({ data: { success: true, movie: found, dateTime: dummyDateTimeData } });
-            }
-            return Promise.resolve({ data: { success: false, message: "Movie not found" } });
-          }
-
-          // 5) Grouped shows by movie id
-          if (url.startsWith("/api/show/by-movie/")) {
-            const id = url.split("/").pop();
-            const theatre = dummyTheatersData[0] || { id: "th1", name: "PVR PUNE", location: "PUNE" };
-            const theatreId = theatre.id || theatre._id || "th1";
-
-            // Build a minimal groupedShows structure compatible with DateTimePicker/MovieDetails
-            const times = Object.values(dummyDateTimeData).flat().map((t) => t.time);
-            const showsA = times.filter((_, i) => i % 2 === 0).map((t, i) => ({ _id: `dshow-${id}-a-${i}`, showDateTime: t }));
-            const showsB = times.filter((_, i) => i % 2 === 1).map((t, i) => ({ _id: `dshow-${id}-b-${i}`, showDateTime: t }));
-
-            const groupedShows = {
-              [theatreId]: {
-                theater: { _id: theatreId, name: theatre.name, location: theatre.location },
-                screens: {
-                  "screen-1": { screen: { screenNumber: 1, seatLayout: { totalSeats: 120 } }, shows: showsA },
-                  "screen-2": { screen: { screenNumber: 2, seatLayout: { totalSeats: 80 } }, shows: showsB },
-                },
-              },
-            };
-
-            return Promise.resolve({ data: { success: true, groupedShows } });
-          }
-
-          // 6) Show details by show id (SeatLayout_New)
-          if (url.startsWith("/api/show/show/")) {
-            const showId = url.split("/").pop();
-            const movie = dummyShowsData[0];
-            const theatre = dummyTheatersData[0] || { id: "th1", name: "PVR PUNE", location: "PUNE" };
-            const show = {
-              _id: showId,
-              movie,
-              theater: { name: theatre.name, location: theatre.location },
-              screen: { screenNumber: 1, seatLayout: { rows: 10, seatsPerRow: 12, totalSeats: 120 } },
-              showDateTime: Object.values(dummyDateTimeData)[0]?.[0]?.time || new Date().toISOString(),
-              seatTiers: [
-                { tierName: "Standard", price: 150, rows: ["A", "B", "C", "D"] },
-                { tierName: "Premium", price: 250, rows: ["E", "F", "G"] },
-                { tierName: "VIP", price: 400, rows: ["H", "I", "J"] },
-              ],
-            };
-            return Promise.resolve({ data: { success: true, show } });
-          }
-
-          // 7) Admin endpoints - return dummy data
-          if (url.startsWith("/api/admin/")) {
-            // Admin theatres
-            if (url === "/api/admin/theatres") {
-              return Promise.resolve({ 
-                data: { 
-                  success: true, 
-                  theatres: dummyTheatersData.map((t, i) => ({ ...t, _id: t.id || `theatre-${i}`, disabled: false })) 
-                } 
-              });
-            }
-            
-            // Admin movies
-            if (url === "/api/admin/movies") {
-              return Promise.resolve({ 
-                data: { 
-                  success: true, 
-                  movies: dummyShowsData.map((m, i) => ({ ...m, _id: m.id || `movie-${i}`, disabled: false })) 
-                } 
-              });
-            }
-            
-            // Admin shows
-            if (url === "/api/admin/all-shows") {
-              const shows = dummyShowsData.slice(0, 6).map((m, i) => ({
-                _id: `show-${i}`,
-                movie: m,
-                theatre: dummyTheatersData[0],
-                screen: { screenNumber: 1, seatLayout: { totalSeats: 120, rows: 10, seatsPerRow: 12 } },
-                showDateTime: Object.values(dummyDateTimeData)[0]?.[0]?.time || new Date().toISOString(),
-                showPrice: 150 + (i * 25),
-                occupiedSeats: dummyOccupiedSeats[`68395b407f6329be2bb45bd${i + 1}`] || {}
-              }));
-              return Promise.resolve({ data: { success: true, shows } });
-            }
-            
-            // Admin bookings
-            if (url === "/api/admin/all-bookings") {
-              return Promise.resolve({ 
-                data: { 
-                  success: true, 
-                  bookings: dummyBookingData.map((b, i) => ({ ...b, _id: b._id || `booking-${i}` })) 
-                } 
-              });
-            }
-            
-            // Admin payments
-            if (url === "/api/admin/payments") {
-              const payments = dummyBookingData.filter(b => b.isPaid).map((b, i) => ({
-                _id: `payment-${i}`,
-                transactionId: `txn_${Date.now()}${i}`,
-                user: b.user,
-                movie: b.show?.movie,
-                theatre: b.show?.theater,
-                amount: b.amount,
-                status: "success",
-                method: "Online",
-                createdAt: b.createdAt || new Date().toISOString(),
-                paidAt: b.createdAt || new Date().toISOString(),
-                showDateTime: b.show?.showDateTime,
-                seats: b.bookedSeats,
-                screenNumber: 1
-              }));
-              return Promise.resolve({ data: { success: true, payments } });
-            }
-            
-            // Admin dashboard
-            if (url === "/api/admin/dashboard-admin") {
-              return Promise.resolve({
-                data: {
-                  success: true,
-                  data: {
-                    totalTheatres: dummyTheatersData.length,
-                    activeUsers: 1250,
-                    totalRevenue: dummyBookingData.reduce((sum, b) => sum + (b.amount || 0), 0),
-                    totalBookings: dummyBookingData.length
-                  }
-                }
-              });
-            }
-          }
-
-          // Fallback to real axios
-          return await axios.get(url, config);
-        } catch (err) {
-          throw err;
-        }
-      },
-      post: (...args) => axios.post(...args),
-      put: (...args) => axios.put(...args),
-      delete: (...args) => axios.delete(...args),
-    },
+    axios,
     fetchIsAdmin,
     user,
     getAuthHeaders,

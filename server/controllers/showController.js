@@ -10,45 +10,36 @@ export const getMovieTrailer = async (req, res) => {
     // Get movie ID from the request parameters, e.g., /api/trailer/1287536
     const { movieId } = req.params;
 
-    // Corrected API call with the api_key as a query parameter
-    const { data } = await axios.get(
-      `https://api.themoviedb.org/3/movie/${movieId}/videos`,
+    // Use predefined trailer data instead of TMDB API
+    // These are our "database" trailers for demo purposes
+    const databaseTrailers = [
       {
-        headers: {
-          Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-        },
+        video_key: "WpW36ldAqnM",
+        trailer_url: "https://www.youtube.com/watch?v=WpW36ldAqnM"
+      },
+      {
+        video_key: "-sAOWhvheK8", 
+        trailer_url: "https://www.youtube.com/watch?v=-sAOWhvheK8"
+      },
+      {
+        video_key: "1pHDWnXmK7Y",
+        trailer_url: "https://www.youtube.com/watch?v=1pHDWnXmK7Y"
+      },
+      {
+        video_key: "umiKiW4En9g",
+        trailer_url: "https://www.youtube.com/watch?v=umiKiW4En9g"
       }
-    );
+    ];
 
-    // --- Improvement: Find the official trailer ---
-    const trailer = data.results.find(
-      (video) =>
-        video.site === "YouTube" &&
-        video.type === "Trailer" &&
-        video.official === true
-    );
+    // Select a trailer based on movie ID (cyclic selection for demo)
+    const trailerIndex = parseInt(movieId.slice(-1), 16) % databaseTrailers.length;
+    const selectedTrailer = databaseTrailers[trailerIndex];
 
-    // If no official trailer, find any trailer
-    const anyTrailer = data.results.find(
-      (video) => video.site === "YouTube" && video.type === "Trailer"
-    );
-
-    const videoToSend = trailer || anyTrailer; // Prioritize the official one
-
-    if (videoToSend) {
-      // Send back just the YouTube key or the full URL
-      const trailerUrl = `https://www.youtube.com/watch?v=${videoToSend.key}`;
-      res.status(200).json({
-        success: true,
-        trailer_url: trailerUrl,
-        video_key: videoToSend.key,
-      });
-    } else {
-      // No trailer found
-      res
-        .status(404)
-        .json({ success: false, message: "No trailer found for this movie." });
-    }
+    res.status(200).json({
+      success: true,
+      trailer_url: selectedTrailer.trailer_url,
+      video_key: selectedTrailer.video_key,
+    });
   } catch (error) {
     // --- Proper Error Handling ---
     console.error("[GET MOVIE TRAILER]", error.message);
@@ -264,45 +255,31 @@ export const fetchShowsByMovie = async (req, res) => {
   }
 };
 
-//API to get all upcoming movies
+//API to get all upcoming movies from database
 export const fetchUpcomingMovies = async (req, res) => {
   try {
-    const upcomingMovies = [];
+    const today = new Date();
 
-    const { data: firstPage } = await axios.get(
-      `https://api.themoviedb.org/3/movie/upcoming?language=en-US&page=1`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-        },
-      }
+    // Fetch upcoming movies from our database (movie_tbls collection)
+    // Since all our current movies are from 2025 and today is 2026, 
+    // we'll fetch the most recent movies as upcoming for demo purposes
+    const upcomingMovies = await Movie.find({
+      isActive: true // Only active movies
+    })
+    .sort({ release_date: -1 }) // Sort by newest first
+    .limit(20) // Limit to 20 movies
+    .select(
+      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
     );
 
-    upcomingMovies.push(...firstPage.results);
-
-    const totalPages = Math.min(firstPage.total_pages, 5);
-
-    for (let page = 2; page <= totalPages; page++) {
-      const { data } = await axios.get(
-        `https://api.themoviedb.org/3/movie/upcoming?language=en-US&page=${page}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-          },
-        }
-      );
-      upcomingMovies.push(...data.results);
-    }
-
-    const today = new Date().toISOString().split("T")[0];
-
-    // Filter movies that are upcoming and non-adult
-    const movies = upcomingMovies.filter(
-      (movie) =>
-        movie.release_date > today &&
-        movie.adult === false &&
-        movie.original_language === "en"
-    );
+    // Format the response to match the expected structure
+    const movies = upcomingMovies.map(movie => ({
+      ...movie.toObject(),
+      id: movie._id, // Map _id to id for consistency with frontend
+      genre_ids: movie.genres ? movie.genres.map(g => g.id) : [],
+      adult: false, // Assume all our movies are non-adult
+      original_language: movie.original_language || "en"
+    }));
 
     res.json({ success: true, movies });
   } catch (error) {
@@ -332,7 +309,7 @@ export const fetchShow = async (req, res) => {
   }
 };
 
-//API to get show details by movie ID (backward compatibility)
+//API to get show details by movie ID (backward compatibility) - Database only
 export const fetchShowByMovieId = async (req, res) => {
   try {
     const { movieId } = req.params;
@@ -343,44 +320,12 @@ export const fetchShowByMovieId = async (req, res) => {
       showDateTime: { $gte: new Date() },
     }).populate("theater").populate("screen");
 
-    let movie = await Movie.findById(movieId);
+    // Get movie details from our database only
+    const movie = await Movie.findById(movieId);
 
-    // If movie isn't present in our DB, fetch details from TMDB so frontend
-    // (MovieDetails) can render TMDB-only movies as well.
+    // If movie isn't found in our database, return not found
     if (!movie) {
-      try {
-        const [movieDetailsResponse, movieCreditsResponse] = await Promise.all([
-          axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
-            headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-          }),
-          axios.get(`https://api.themoviedb.org/3/movie/${movieId}/credits`, {
-            headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-          }),
-        ]);
-
-        const movieDetailsData = movieDetailsResponse.data;
-        const movieCreditsData = movieCreditsResponse.data;
-
-        // Build a movie object shaped like the Movie model so frontend can use it
-        movie = {
-          _id: movieId,
-          title: movieDetailsData.title,
-          overview: movieDetailsData.overview,
-          poster_path: movieDetailsData.poster_path,
-          backdrop_path: movieDetailsData.backdrop_path,
-          genres: movieDetailsData.genres,
-          casts: movieCreditsData.cast,
-          release_date: movieDetailsData.release_date,
-          original_language: movieDetailsData.original_language,
-          tagline: movieDetailsData.tagline || "",
-          vote_average: movieDetailsData.vote_average,
-          runtime: movieDetailsData.runtime,
-        };
-      } catch (tmdbErr) {
-        console.error("[fetchShowByMovieId - TMDB fetch]", tmdbErr.message);
-        // If TMDB fetch also fails, return movie not found
-        return res.json({ success: false, message: "Movie not found" });
-      }
+      return res.json({ success: false, message: "Movie not found in database" });
     }
 
     const dateTime = {};
@@ -419,7 +364,6 @@ export const getAvailableMoviesForCustomers = async (req, res) => {
       .distinct("movie")
       .populate("movie");
 
-    // Get details of those movies
     const movies = await Movie.find({
       _id: { $in: moviesWithShows },
       isActive: true,
@@ -430,6 +374,21 @@ export const getAvailableMoviesForCustomers = async (req, res) => {
     res.json({ success: true, movies, count: movies.length });
   } catch (error) {
     console.error("[getAvailableMoviesForCustomers]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// API to get all active movies (public endpoint) - fallback when no shows exist
+export const getAllActiveMovies = async (req, res) => {
+  try {
+    // Get all active movies regardless of shows
+    const movies = await Movie.find({ isActive: true }).select(
+      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
+    );
+
+    res.json({ success: true, movies, count: movies.length });
+  } catch (error) {
+    console.error("[getAllActiveMovies]", error);
     res.json({ success: false, message: error.message });
   }
 };

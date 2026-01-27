@@ -76,13 +76,18 @@ const TheatreRegistration = ({ onClose }) => {
     name: "",
     location: "",
     contact_no: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    email: "",
   });
 
-  // Screens Management - Initialize with one empty screen
+  // Screens Management - Initialize with one screen with default pricing
   const [screens, setScreens] = useState([{
     name: '',
     layout: null,
-    pricing: {}
+    pricing: { unified: 150 } // Default pricing
   }]);
 
   const validateEmail = (email) => {
@@ -151,6 +156,25 @@ const TheatreRegistration = ({ onClose }) => {
       newErrors.contact_no = "Contact number is required";
     } else if (!validatePhone(theatreData.contact_no)) {
       newErrors.contact_no = "Please enter a valid phone number";
+    }
+    if (!theatreData.address.trim()) {
+      newErrors.address = "Address is required";
+    }
+    if (!theatreData.city.trim()) {
+      newErrors.city = "City is required";
+    }
+    if (!theatreData.state.trim()) {
+      newErrors.state = "State is required";
+    }
+    if (!theatreData.zipCode.trim()) {
+      newErrors.zipCode = "Zip code is required";
+    } else if (!/^\d{5}(-\d{4})?$/.test(theatreData.zipCode)) {
+      newErrors.zipCode = "Please enter a valid zip code (e.g., 12345 or 12345-6789)";
+    }
+    if (!theatreData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!validateEmail(theatreData.email)) {
+      newErrors.email = "Please enter a valid email address";
     }
 
     setErrors(newErrors);
@@ -223,11 +247,29 @@ const TheatreRegistration = ({ onClose }) => {
       if (validateManagerData()) {
         setStep(2);
         setErrors({});
+      } else {
+        // Show validation errors for manager data
+        toast.error("Please fill in all required manager information");
       }
     } else if (step === 2) {
       if (validateTheatreData()) {
         setStep(3);
         setErrors({});
+      } else {
+        // Show validation errors for theatre data
+        const missingFields = [];
+        if (!theatreData.name.trim()) missingFields.push("Theatre Name");
+        if (!theatreData.location.trim()) missingFields.push("Location");
+        if (!theatreData.contact_no.trim()) missingFields.push("Contact Number");
+        if (!theatreData.address.trim()) missingFields.push("Address");
+        if (!theatreData.city.trim()) missingFields.push("City");
+        if (!theatreData.state.trim()) missingFields.push("State");
+        if (!theatreData.zipCode.trim()) missingFields.push("Zip Code");
+        if (!theatreData.email.trim()) missingFields.push("Email");
+        
+        if (missingFields.length > 0) {
+          toast.error(`Please fill in: ${missingFields.join(", ")}`);
+        }
       }
     }
   };
@@ -235,12 +277,36 @@ const TheatreRegistration = ({ onClose }) => {
   // Handle registration submission - Request OTP
   const handleSubmit = async () => {
     // Validate all screens have required data
-    const invalidScreens = screens.filter(screen => 
-      !screen.name?.trim() || !screen.layout || !screen.pricing
-    );
+    const invalidScreens = screens.filter(screen => {
+      // Check if screen has basic required fields
+      if (!screen.name?.trim() || !screen.layout) {
+        return true;
+      }
+      
+      // Check pricing - it should not be empty object and should have valid prices
+      if (!screen.pricing || Object.keys(screen.pricing).length === 0) {
+        return true;
+      }
+      
+      // Check if pricing has valid values
+      const pricingValues = Object.values(screen.pricing);
+      if (pricingValues.length === 0) {
+        return true;
+      }
+      
+      // Check if any price is invalid (0, negative, or NaN)
+      const hasInvalidPrice = pricingValues.some(price => {
+        if (typeof price === 'object') {
+          return !price.price || price.price <= 0 || isNaN(price.price);
+        }
+        return !price || price <= 0 || isNaN(price);
+      });
+      
+      return hasInvalidPrice;
+    });
     
     if (invalidScreens.length > 0) {
-      toast.error("Please complete all screen configurations");
+      toast.error("Please complete all screen configurations with valid pricing");
       return;
     }
 
@@ -445,6 +511,54 @@ const TheatreRegistration = ({ onClose }) => {
                 onBlur={handleTheatreBlur}
                 error={errors.contact_no}
                 placeholder="10 digit mobile number"
+              />
+              <InputField
+                label="Email Address"
+                name="email"
+                type="email"
+                value={theatreData.email}
+                onChange={handleTheatreInputChange}
+                onBlur={handleTheatreBlur}
+                error={errors.email}
+                placeholder="theatre@email.com"
+              />
+              <InputField
+                label="Address"
+                name="address"
+                value={theatreData.address}
+                onChange={handleTheatreInputChange}
+                onBlur={handleTheatreBlur}
+                error={errors.address}
+                placeholder="Street address"
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <InputField
+                  label="City"
+                  name="city"
+                  value={theatreData.city}
+                  onChange={handleTheatreInputChange}
+                  onBlur={handleTheatreBlur}
+                  error={errors.city}
+                  placeholder="City"
+                />
+                <InputField
+                  label="State"
+                  name="state"
+                  value={theatreData.state}
+                  onChange={handleTheatreInputChange}
+                  onBlur={handleTheatreBlur}
+                  error={errors.state}
+                  placeholder="State"
+                />
+              </div>
+              <InputField
+                label="Zip Code"
+                name="zipCode"
+                value={theatreData.zipCode}
+                onChange={handleTheatreInputChange}
+                onBlur={handleTheatreBlur}
+                error={errors.zipCode}
+                placeholder="12345 or 12345-6789"
               />
 
               <div className="flex gap-4">

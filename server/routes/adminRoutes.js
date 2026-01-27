@@ -3,7 +3,6 @@ import { protectAdminOnly } from "../middleware/auth.js";
 import {
   fetchAllBookings,
   fetchAllShows,
-  fetchAllScreens,
   fetchDashboardData,
   isAdmin,
   dashboardAdminData,
@@ -11,10 +10,12 @@ import {
   getTheatreDetails,
   createTheatre,
   updateTheatre,
-  enableTheatre,
+  deleteTheatre,
   disableTheatre,
-  getPendingTheatres,
+  enableTheatre,
   getTheatrePayments,
+  getPendingTheatres,
+  approveTheatre,
 } from "../controllers/adminController.js";
 import {
   syncMoviesFromTMDB,
@@ -34,17 +35,20 @@ const adminRouter = express.Router();
 adminRouter.get("/is-admin", protectAdminOnly, isAdmin);
 adminRouter.get("/dashboard", protectAdminOnly, fetchDashboardData);
 adminRouter.get("/all-shows", protectAdminOnly, fetchAllShows);
-adminRouter.get("/all-screens", protectAdminOnly, fetchAllScreens);
 adminRouter.get("/all-bookings", protectAdminOnly, fetchAllBookings);
 adminRouter.get("/all-feedbacks", protectAdminOnly, fetchAllFeedbacks);
 
 // New admin dashboard
 adminRouter.get("/dashboard-admin", protectAdminOnly, dashboardAdminData);
 
+// Theatre Management Routes
 adminRouter.get("/theatres", protectAdminOnly, getAllTheatres);
 adminRouter.get("/theatres/pending", protectAdminOnly, getPendingTheatres);
 adminRouter.get("/theatres/:theatreId", protectAdminOnly, getTheatreDetails);
 adminRouter.post("/theatres", protectAdminOnly, createTheatre);
+adminRouter.put("/theatres/:theatreId", protectAdminOnly, updateTheatre);
+adminRouter.delete("/theatres/:theatreId", protectAdminOnly, deleteTheatre);
+adminRouter.put("/theatres/:theatreId/approve", protectAdminOnly, approveTheatre);
 adminRouter.put("/theatres/:theatreId/disable", protectAdminOnly, disableTheatre);
 adminRouter.put("/theatres/:theatreId/enable", protectAdminOnly, enableTheatre);
 
