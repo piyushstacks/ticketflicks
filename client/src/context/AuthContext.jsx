@@ -73,6 +73,12 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const getTheatresByManager = async (managerId) => {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const { data } = await axios.get(`/api/theatre/manager/${managerId}`, { headers });
+    return data;
+  };
+
   const resendLogin = async (payload) => {
     // This function is no longer used (login OTP removed)
     console.warn("[AuthContext] resendLogin is deprecated - login no longer requires OTP");
@@ -108,6 +114,7 @@ export const AuthProvider = ({ children }) => {
     signup,
     logout,
     getAuthHeaders,
+    getTheatresByManager,
     forgotPassword,
     resetPassword,
     resendLogin,

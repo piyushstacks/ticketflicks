@@ -77,10 +77,170 @@ export const syncMoviesFromTMDB = async (req, res) => {
   }
 };
 
+// Create new movie with auto-assignment to all active theatres
+export const createMovie = async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Only admin can create movies",
+      });
+    }
+
+    const movieData = req.body;
+    
+    // Get all active theatres
+    const activeTheatres = await Theatre.find({ disabled: false });
+    const theatreIds = activeTheatres.map(theatre => theatre._id);
+
+    // Create movie with auto-assignment
+    const newMovie = new Movie({
+      ...movieData,
+      isActive: true,
+      addedByAdmin: req.user.id,
+      theatres: theatreIds,
+      excludedTheatres: []
+    });
+
+    await newMovie.save();
+
+    // Update theatres to include this movie
+    await Theatre.updateMany(
+      { disabled: false },
+      { $addToSet: { movies: newMovie._id } }
+    );
+
+    res.json({
+      success: true,
+      message: "Movie created and auto-assigned to all theatres",
+      movie: newMovie
+    });
+  } catch (error) {
+    console.error("[createMovie]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Exclude theatres from movie
+export const excludeTheatresFromMovie = async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Only admin can exclude theatres",
+      });
+    }
+
+    const { movieId } = req.params;
+    const { theatreIds } = req.body;
+
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found" });
+    }
+
+    // Add theatres to excluded list (avoid duplicates)
+    const excludedSet = new Set(movie.excludedTheatres.map(t => t.toString()));
+    theatreIds.forEach(id => excludedSet.add(id));
+    movie.excludedTheatres = Array.from(excludedSet);
+
+    // Remove theatres from movie's theatre list
+    movie.theatres = movie.theatres.filter(t => !theatreIds.includes(t.toString()));
+    
+    await movie.save();
+
+    // Remove movie from theatres
+    await Theatre.updateMany(
+      { _id: { $in: theatreIds } },
+      { $pull: { movies: movieId } }
+    );
+
+    res.json({
+      success: true,
+      message: "Theatres excluded from movie successfully",
+      movie
+    });
+  } catch (error) {
+    console.error("[excludeTheatresFromMovie]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Include theatres back to movie
+export const includeTheatresForMovie = async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Only admin can include theatres",
+      });
+    }
+
+    const { movieId } = req.params;
+    const { theatreIds } = req.body;
+
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found" });
+    }
+
+    // Remove theatres from excluded list
+    movie.excludedTheatres = movie.excludedTheatres.filter(t => !theatreIds.includes(t.toString()));
+
+    // Add theatres back to movie's theatre list (avoid duplicates)
+    const theatreSet = new Set(movie.theatres.map(t => t.toString()));
+    theatreIds.forEach(id => theatreSet.add(id));
+    movie.theatres = Array.from(theatreSet);
+    
+    await movie.save();
+
+    // Add movie back to theatres
+    await Theatre.updateMany(
+      { _id: { $in: theatreIds } },
+      { $addToSet: { movies: movieId } }
+    );
+
+    res.json({
+      success: true,
+      message: "Theatres included back to movie successfully",
+      movie
+    });
+  } catch (error) {
+    console.error("[includeTheatresForMovie]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 // Get all available movies for managers
 export const getAllAvailableMovies = async (req, res) => {
   try {
-    const movies = await Movie.find({ isActive: true }).select(
+    // Get the current user (manager)
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Only managers can view available movies",
+      });
+    }
+
+    // Get manager's theatre ID
+    const managerTheatreId = manager.managedTheaterId;
+    if (!managerTheatreId) {
+      return res.json({
+        success: false,
+        message: "Manager is not assigned to any theatre",
+      });
+    }
+
+    // Find movies that are active, assigned to manager's theatre, and not excluded
+    const movies = await Movie.find({
+      isActive: true,
+      theatres: managerTheatreId,
+      excludedTheatres: { $ne: managerTheatreId }
+    }).select(
       "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
     );
 

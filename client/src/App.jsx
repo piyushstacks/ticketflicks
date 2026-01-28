@@ -40,6 +40,7 @@ import TheatreVerifyWrapper from "./pages/TheatreVerifyWrapper";
 import RegistrationPending from "./pages/RegistrationPending";
 import ManagerLayout from "./pages/manager/ManagerLayout";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
+import ManagerMovies from "./pages/manager/ManagerMovies";
 import ManagerShows from "./pages/manager/ManagerShows";
 import ManagerScreens from "./pages/manager/ManagerScreens";
 import ManagerBookings from "./pages/manager/ManagerBookings";
@@ -126,6 +127,7 @@ const App = () => {
         >
           <Route index element={<ManagerDashboard />} />
           <Route path="dashboard" element={<ManagerDashboard />} />
+          <Route path="movies" element={<ManagerMovies />} />
           <Route path="shows" element={<ManagerShows />} />
           <Route path="screens" element={<ManagerScreens />} />
           <Route path="bookings" element={<ManagerBookings />} />

@@ -3,6 +3,7 @@ import { protectAdminOnly } from "../middleware/auth.js";
 import {
   fetchAllBookings,
   fetchAllShows,
+  fetchAllScreens,
   fetchDashboardData,
   isAdmin,
   dashboardAdminData,
@@ -11,11 +12,11 @@ import {
   createTheatre,
   updateTheatre,
   deleteTheatre,
-  disableTheatre,
   enableTheatre,
+  disableTheatre,
+  approveTheatre,
   getTheatrePayments,
   getPendingTheatres,
-  approveTheatre,
 } from "../controllers/adminController.js";
 import {
   syncMoviesFromTMDB,
@@ -26,6 +27,9 @@ import {
   updateMovie,
   assignMoviesToTheatre,
   removeMoviesFromTheatre,
+  createMovie,
+  excludeTheatresFromMovie,
+  includeTheatresForMovie,
 } from "../controllers/adminMovieController.js";
 import { fetchAllFeedbacks } from "../controllers/feedbackController.js";
 
@@ -34,12 +38,11 @@ const adminRouter = express.Router();
 // Existing admin routes
 adminRouter.get("/is-admin", protectAdminOnly, isAdmin);
 adminRouter.get("/dashboard", protectAdminOnly, fetchDashboardData);
-adminRouter.get("/all-shows", protectAdminOnly, fetchAllShows);
-adminRouter.get("/all-bookings", protectAdminOnly, fetchAllBookings);
-adminRouter.get("/all-feedbacks", protectAdminOnly, fetchAllFeedbacks);
-
-// New admin dashboard
 adminRouter.get("/dashboard-admin", protectAdminOnly, dashboardAdminData);
+adminRouter.get("/all-bookings", protectAdminOnly, fetchAllBookings);
+adminRouter.get("/all-screens", protectAdminOnly, fetchAllScreens);
+adminRouter.get("/theatres/pending", protectAdminOnly, getPendingTheatres);
+adminRouter.get("/all-feedbacks", protectAdminOnly, fetchAllFeedbacks);
 
 // Theatre Management Routes
 adminRouter.get("/theatres", protectAdminOnly, getAllTheatres);
@@ -56,12 +59,17 @@ adminRouter.put("/theatres/:theatreId/enable", protectAdminOnly, enableTheatre);
 adminRouter.get("/payments/:theatreId", protectAdminOnly, getTheatrePayments);
 
 // Movie Management Routes
+adminRouter.post("/movies/create", protectAdminOnly, createMovie);
 adminRouter.post("/movies/sync-tmdb", protectAdminOnly, syncMoviesFromTMDB);
 adminRouter.get("/movies", protectAdminOnly, getAllMovies);
 adminRouter.get("/movies/available", protectAdminOnly, getAllAvailableMovies);
 adminRouter.get("/movies/:movieId", protectAdminOnly, getMovieById);
 adminRouter.put("/movies/:movieId/deactivate", protectAdminOnly, deactivateMovie);
 adminRouter.put("/movies/:movieId", protectAdminOnly, updateMovie);
+
+// Movie Exclusion Routes
+adminRouter.post("/movies/:movieId/exclude-theatres", protectAdminOnly, excludeTheatresFromMovie);
+adminRouter.post("/movies/:movieId/include-theatres", protectAdminOnly, includeTheatresForMovie);
 
 // Movie-Theatre Assignment Routes
 adminRouter.post("/theatres/:theatreId/assign-movies", protectAdminOnly, assignMoviesToTheatre);

@@ -23,13 +23,25 @@ export const deleteTheater = async (req, res) => {
 // Screen-related forwards
 export const createScreen = theatreController.addScreen;
 export const fetchScreensByTheater = async (req, res) => {
-  // The theatre controller stores screens embedded; return that list for compatibility
-  if (req.params.theaterId && !req.params.id) req.params.id = req.params.theaterId;
-  const { id } = req.params;
-  const { default: Theatre } = await import("../models/Theatre.js");
-  const theatre = await Theatre.findById(id);
-  if (!theatre) return res.json({ success: false, message: "Theatre not found" });
-  return res.json({ success: true, screens: theatre.screens || [] });
+  try {
+    const { id } = req.params;
+    
+    // Use the Theatre model to get embedded screens data
+    const { default: Theatre } = await import("../models/Theatre.js");
+    const theatre = await Theatre.findById(id);
+    
+    if (!theatre) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+    
+    // Return the embedded screens data
+    const screens = theatre.screens || [];
+    
+    res.json({ success: true, screens });
+  } catch (error) {
+    console.error("[fetchScreensByTheater]", error);
+    res.json({ success: false, message: error.message });
+  }
 };
 export const fetchScreen = theatreController.fetchTheatre; // Not a direct mapping; kept for compatibility
 export const updateScreen = theatreController.updateScreen;

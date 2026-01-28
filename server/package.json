@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "server": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "backfill:movies": "node scripts/backfillMoviesAutoAssignment.js",
+    "test:auto-assignment": "node scripts/testAutoAssignment.js"
   },
   "keywords": [],
   "author": "Rudra Jitesh Prajapati",

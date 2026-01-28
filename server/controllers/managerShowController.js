@@ -15,16 +15,14 @@ export const getAvailableMovies = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheatreId;
-
-    // Get movies that are active, assigned to this theatre, and NOT excluded
+    // Get all active movies (simplified approach)
     const movies = await Movie.find({
-      isActive: true,
-      theatres: theatreId,
-      excludedTheatres: { $ne: theatreId },
-    }).select(
-      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
-    );
+      isActive: true
+    })
+      .select(
+        "title overview poster_path backdrop_path release_date vote_average runtime genres original_language isActive _id"
+      )
+      .sort({ createdAt: -1 });
 
     res.json({ success: true, movies });
   } catch (error) {
@@ -69,18 +67,26 @@ export const addShow = async (req, res) => {
     }
 
     const theatreId = manager.managedTheatreId;
-    const { movieId, screenId, showDateTime, language } = req.body;
+    const { 
+      movie, 
+      screen, 
+      showTime, 
+      language = "English", 
+      startDate, 
+      endDate, 
+      isActive = true 
+    } = req.body;
 
-    if (!movieId || !screenId || !showDateTime) {
+    if (!movie || !screen || !showTime) {
       return res.json({
         success: false,
-        message: "Movie ID, Screen ID, and Show Date/Time are required",
+        message: "Movie, Screen, and Show Time are required",
       });
     }
 
     // Validate movie exists and is active
-    const movie = await Movie.findOne({ _id: movieId, isActive: true });
-    if (!movie) {
+    const movieDoc = await Movie.findOne({ _id: movie, isActive: true });
+    if (!movieDoc) {
       return res.json({
         success: false,
         message: "Movie not found or is inactive",
@@ -88,84 +94,100 @@ export const addShow = async (req, res) => {
     }
 
     // Validate screen exists and belongs to this theatre
-    const screen = await Screen.findOne({
-      _id: screenId,
+    const screenDoc = await Screen.findOne({
+      _id: screen,
       theatre: theatreId,
     });
-    if (!screen) {
+    if (!screenDoc) {
       return res.json({
         success: false,
         message: "Screen not found for this theatre",
       });
     }
 
-    // Check if show already exists for this time slot
+    // Set default dates if not provided (current week)
+    const currentWeek = getCurrentWeekDates();
+    const showStartDate = startDate || currentWeek.start;
+    const showEndDate = endDate || currentWeek.end;
+
+    // Check if show already exists for this time slot and date range
     const existingShow = await Show.findOne({
-      movie: movieId,
-      screen: screenId,
-      showDateTime: new Date(showDateTime),
+      movie,
+      screen,
+      showTime,
+      startDate: showStartDate,
+      endDate: showEndDate,
+      theatre: theatreId
     });
 
     if (existingShow) {
       return res.json({
         success: false,
-        message: "Show already exists for this time slot",
+        message: "Show already exists for this time slot and date range",
       });
     }
 
-    // Use default base price
-    const basePrice = 150;
-
-    // Create seat tiers with default pricing
-    const seatTiers = [
-      {
-        tierName: "Standard",
-        price: basePrice,
-        seatsPerRow: screen.seatsPerRow || 20,
-        rowCount: screen.rows || 10,
-        totalSeats: (screen.seatsPerRow || 20) * (screen.rows || 10),
-        occupiedSeats: {},
-      },
-      {
-        tierName: "Premium",
-        price: Math.round(basePrice * 1.5),
-        seatsPerRow: 5,
-        rowCount: 2,
-        totalSeats: 10,
-        occupiedSeats: {},
-      },
-    ];
-
-    const totalCapacity = seatTiers.reduce(
-      (sum, tier) => sum + tier.totalSeats,
-      0
-    );
-
+    // Create the show with new structure
     const show = await Show.create({
-      movie: movieId,
+      movie,
       theatre: theatreId,
-      screen: screenId,
-      showDateTime: new Date(showDateTime),
-      basePrice,
-      language: language || "en",
-      seatTiers,
-      totalCapacity,
-      occupiedSeatsCount: 0,
-      isActive: true,
+      screen,
+      showTime,
+      language,
+      startDate: showStartDate,
+      endDate: showEndDate,
+      isActive,
+      // Legacy fields for compatibility
+      showDateTime: new Date(`${showStartDate} ${showTime}`),
+      basePrice: 150,
+      seatTiers: [
+        {
+          tierName: "Standard",
+          price: 150,
+          seatsPerRow: screenDoc.seatsPerRow || 20,
+          rowCount: screenDoc.rows || 10,
+          totalSeats: (screenDoc.seatsPerRow || 20) * (screenDoc.rows || 10),
+          occupiedSeats: {},
+        },
+        {
+          tierName: "Premium",
+          price: Math.round(150 * 1.5),
+          seatsPerRow: 5,
+          rowCount: 2,
+          totalSeats: 10,
+          occupiedSeats: {},
+        },
+      ],
+      totalCapacity: ((screenDoc.seatsPerRow || 20) * (screenDoc.rows || 10)) + 10,
     });
 
-    const populatedShow = await show.populate("movie screen");
+    // Populate the show with movie and screen details
+    await show.populate('movie screen');
 
     res.json({
       success: true,
       message: "Show added successfully",
-      show: populatedShow,
+      show,
     });
   } catch (error) {
     console.error("[addShow]", error);
     res.json({ success: false, message: error.message });
   }
 };
+
+// Helper function to get current week dates
+function getCurrentWeekDates() {
+  const today = new Date();
+  const currentDay = today.getDay();
+  const diff = today.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
+  const monday = new Date(today.setDate(diff));
+  const sunday = new Date(today.setDate(diff + 6));
+  
+  return {
+    start: monday.toISOString().split('T')[0],
+    end: sunday.toISOString().split('T')[0]
+  };
+}
 
 // Get all shows for manager's theatre
 export const getTheatreShows = async (req, res) => {
@@ -323,6 +345,106 @@ export const dashboardManagerData = async (req, res) => {
     });
   } catch (error) {
     console.error("[dashboardManagerData]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Toggle Show Status (Enable/Disable)
+export const toggleShowStatus = async (req, res) => {
+  try {
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Manager access required",
+      });
+    }
+
+    const { showId } = req.params;
+    const { isActive } = req.body;
+
+    const show = await Show.findById(showId);
+    if (!show) {
+      return res.json({ success: false, message: "Show not found" });
+    }
+
+    // Verify show belongs to manager's theatre
+    if (show.theatre.toString() !== manager.managedTheatreId.toString()) {
+      return res.json({ success: false, message: "Not authorized to manage this show" });
+    }
+
+    show.isActive = isActive;
+    await show.save();
+
+    res.json({ 
+      success: true, 
+      message: `Show ${isActive ? 'enabled' : 'disabled'} successfully`,
+      show 
+    });
+  } catch (error) {
+    console.error("[toggleShowStatus]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Repeat Shows for Next Week
+export const repeatShowsForNextWeek = async (req, res) => {
+  try {
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Manager access required",
+      });
+    }
+
+    const { currentWeekStart, currentWeekEnd, nextWeekStart, nextWeekEnd } = req.body;
+
+    // Get current week shows
+    const currentShows = await Show.find({
+      theatre: manager.managedTheatreId,
+      startDate: { $gte: new Date(currentWeekStart) },
+      endDate: { $lte: new Date(currentWeekEnd) },
+      isActive: true
+    }).populate('movie screen');
+
+    let repeatedShows = 0;
+
+    for (const show of currentShows) {
+      // Check if show already exists for next week
+      const existingShow = await Show.findOne({
+        theatre: manager.managedTheatreId,
+        movie: show.movie._id,
+        screen: show.screen._id,
+        showTime: show.showTime,
+        language: show.language,
+        startDate: { $gte: new Date(nextWeekStart) },
+        endDate: { $lte: new Date(nextWeekEnd) }
+      });
+
+      if (!existingShow) {
+        // Create new show for next week
+        await Show.create({
+          theatre: manager.managedTheatreId,
+          movie: show.movie._id,
+          screen: show.screen._id,
+          showTime: show.showTime,
+          language: show.language,
+          startDate: nextWeekStart,
+          endDate: nextWeekEnd,
+          isActive: true
+        });
+        repeatedShows++;
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Successfully repeated ${repeatedShows} shows for next week`,
+      count: repeatedShows
+    });
+  } catch (error) {
+    console.error("[repeatShowsForNextWeek]", error);
     res.json({ success: false, message: error.message });
   }
 };

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Film, Tv, Bookmark } from "lucide-react";
+import { LayoutDashboard, Film, Tv, Bookmark, Clapperboard } from "lucide-react";
 
 const ManagerSidebar = () => {
   const location = useLocation();
@@ -10,6 +10,11 @@ const ManagerSidebar = () => {
       name: "Dashboard",
       path: "/manager",
       icon: LayoutDashboard,
+    },
+    {
+      name: "Manage Movies",
+      path: "/manager/movies",
+      icon: Clapperboard,
     },
     {
       name: "Manage Shows",

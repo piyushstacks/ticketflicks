@@ -11,6 +11,7 @@ import {
   getTheatresByManager,
   deleteTheatre,
 } from "../controllers/theatreController.js";
+import { fetchScreensByTheater } from "../controllers/theaterController.js";
 import { protectUser } from "../middleware/protectUser.js";
 
 const router = express.Router();
@@ -61,6 +62,9 @@ router.get("/debug/manager/:managerId", async (req, res) => {
     });
   }
 });
+
+// Get screens for a specific theater
+router.get("/:id/screens", fetchScreensByTheater);
 
 // Protected routes (require authentication)
 router.get("/manager/:managerId", protectUser, getTheatresByManager);

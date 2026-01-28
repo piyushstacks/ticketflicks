@@ -22,6 +22,7 @@ showRouter.get("/upcoming-movies", fetchUpcomingMovies);
 showRouter.get("/trailer/:movieId", getMovieTrailer);
 showRouter.get("/movies-available", getAvailableMoviesForCustomers); // Public: Get available movies for customers
 showRouter.get("/movies", getAllActiveMovies); // Public: Get all active movies (fallback when no shows exist)
+showRouter.get("/all-movies", getAllActiveMovies); // Public: Get all movies (alias for /movies)
 showRouter.get("/by-movie/:movieId", fetchShowsByMovie); // Get shows grouped by theater/screen
 // Important: place specific routes before parameter routes to avoid collisions
 showRouter.get("/show/:showId", fetchShow); // Get specific show details
