@@ -14,6 +14,9 @@ const AdminMovies = () => {
   const [formData, setFormData] = useState({
     title: "",
     overview: "",
+    poster_path: "",
+    backdrop_path: "",
+    trailer_path: "",
     release_date: "",
     runtime: "",
     tagline: "",
@@ -25,7 +28,7 @@ const AdminMovies = () => {
   const fetchMovies = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/show/all-movies", {
+      const { data } = await axios.get("/api/admin/movies", {
         headers: getAuthHeaders(),
       });
 
@@ -125,7 +128,7 @@ const AdminMovies = () => {
           { headers: getAuthHeaders() }
         );
       } else {
-        response = await axios.post("/api/admin/movies", formData, {
+        response = await axios.post("/api/admin/movies/create", formData, {
           headers: getAuthHeaders(),
         });
       }
@@ -136,6 +139,9 @@ const AdminMovies = () => {
         setFormData({
           title: "",
           overview: "",
+          poster_path: "",
+          backdrop_path: "",
+          trailer_path: "",
           release_date: "",
           runtime: "",
           tagline: "",
@@ -159,6 +165,9 @@ const AdminMovies = () => {
     setFormData({
       title: movie.title,
       overview: movie.overview,
+      poster_path: movie.poster_path || "",
+      backdrop_path: movie.backdrop_path || "",
+      trailer_path: movie.trailer_path || "",
       release_date: movie.release_date,
       runtime: movie.runtime,
       tagline: movie.tagline || "",
@@ -175,7 +184,7 @@ const AdminMovies = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/admin/movies/${movieId}/disable`,
+        `/api/admin/movies/${movieId}/deactivate`,
         {},
         { headers: getAuthHeaders() }
       );
@@ -198,6 +207,9 @@ const AdminMovies = () => {
     setFormData({
       title: "",
       overview: "",
+      poster_path: "",
+      backdrop_path: "",
+      trailer_path: "",
       release_date: "",
       runtime: "",
       tagline: "",
@@ -253,6 +265,30 @@ const AdminMovies = () => {
                 value={formData.release_date}
                 onChange={handleInputChange}
                 required
+                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+              />
+              <input
+                type="url"
+                name="poster_path"
+                placeholder="Poster URL"
+                value={formData.poster_path}
+                onChange={handleInputChange}
+                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+              />
+              <input
+                type="url"
+                name="backdrop_path"
+                placeholder="Backdrop URL"
+                value={formData.backdrop_path}
+                onChange={handleInputChange}
+                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+              />
+              <input
+                type="url"
+                name="trailer_path"
+                placeholder="Trailer URL (YouTube/Vimeo)"
+                value={formData.trailer_path}
+                onChange={handleInputChange}
                 className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
               <input

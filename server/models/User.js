@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true },
     password_hash: { type: String, required: true },
     role: { type: String, enum: ["customer", "admin", "manager"], default: "customer" },
-    managedTheaterId: { type: mongoose.Schema.Types.ObjectId, ref: "Theater" },
+    managedTheaterId: { type: mongoose.Schema.Types.ObjectId, ref: "Theatre" },
     last_login: { type: Date },
     favorites: { type: [String], default: [] },
   },

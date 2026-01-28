@@ -88,15 +88,105 @@ export const createMovie = async (req, res) => {
       });
     }
 
-    const movieData = req.body;
+    const {
+      title,
+      overview,
+      poster_path,
+      backdrop_path,
+      trailer_path,
+      release_date,
+      original_language,
+      tagline,
+      genres,
+      casts,
+      vote_average,
+      runtime,
+      tmdbId
+    } = req.body;
+
+    // Validate required fields
+    if (!title || title.trim() === '') {
+      return res.json({
+        success: false,
+        message: "Movie title is required",
+      });
+    }
+
+    if (!release_date) {
+      return res.json({
+        success: false,
+        message: "Release date is required",
+      });
+    }
+
+    // Validate date format
+    const releaseDateObj = new Date(release_date);
+    if (isNaN(releaseDateObj.getTime())) {
+      return res.json({
+        success: false,
+        message: "Invalid release date format",
+      });
+    }
+
+    // Check for duplicate title
+    const existingMovie = await Movie.findOne({ 
+      title: title.trim(),
+      isActive: true 
+    });
     
+    if (existingMovie) {
+      return res.json({
+        success: false,
+        message: "A movie with this title already exists",
+      });
+    }
+
+    // Check for duplicate TMDB ID if provided
+    if (tmdbId) {
+      const existingTmdbMovie = await Movie.findOne({ tmdbId });
+      if (existingTmdbMovie) {
+        return res.json({
+          success: false,
+          message: "A movie with this TMDB ID already exists",
+        });
+      }
+    }
+
+    // Validate runtime if provided
+    if (runtime && (isNaN(runtime) || runtime <= 0)) {
+      return res.json({
+        success: false,
+        message: "Runtime must be a positive number",
+      });
+    }
+
+    // Validate vote_average if provided
+    if (vote_average && (isNaN(vote_average) || vote_average < 0 || vote_average > 10)) {
+      return res.json({
+        success: false,
+        message: "Vote average must be between 0 and 10",
+      });
+    }
+
     // Get all active theatres
     const activeTheatres = await Theatre.find({ disabled: false });
     const theatreIds = activeTheatres.map(theatre => theatre._id);
 
     // Create movie with auto-assignment
     const newMovie = new Movie({
-      ...movieData,
+      title: title.trim(),
+      overview: overview || '',
+      poster_path: poster_path || '',
+      backdrop_path: backdrop_path || '',
+      trailer_path: trailer_path || '',
+      release_date: releaseDateObj,
+      original_language: original_language || 'en',
+      tagline: tagline || '',
+      genres: genres || [],
+      casts: casts || [],
+      vote_average: vote_average || 0,
+      runtime: runtime || null,
+      tmdbId: tmdbId || null,
       isActive: true,
       addedByAdmin: req.user.id,
       theatres: theatreIds,

@@ -6,6 +6,7 @@ const movieSchema = new mongoose.Schema(
     overview: { type: String },
     poster_path: { type: String },
     backdrop_path: { type: String },
+    trailer_path: { type: String },
     release_date: { type: Date },
     original_language: { type: String, default: "en" },
     tagline: { type: String },
@@ -18,7 +19,7 @@ const movieSchema = new mongoose.Schema(
     addedByAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     theatres: {
       type: [mongoose.Schema.Types.ObjectId],
-      ref: "Theater",
+      ref: "Theatre",
       default: [],
     }, // Theatres showing this movie
     excludedTheatres: {
