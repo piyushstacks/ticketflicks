@@ -88,7 +88,34 @@ export const requestTheatreRegistrationOtp = async (req, res) => {
   } catch (error) {
     console.error("=== THEATRE OTP REQUEST ERROR ===");
     console.error("Error sending theatre registration OTP:", error);
-    res.status(500).json({ success: false, message: "Failed to send OTP" });
+    
+    // Handle specific error cases
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "This email is already registered for theatre management." 
+      });
+    }
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format. Please enter a valid email address."
+      });
+    }
+    
+    if (error.message && error.message.includes('timeout')) {
+      return res.status(500).json({
+        success: false,
+        message: "Request is taking too long. Please try again."
+      });
+    }
+    
+    // Generic error with user-friendly message
+    res.status(500).json({ 
+      success: false, 
+      message: "Unable to send OTP right now. Please try again in a few minutes." 
+    });
   }
 };
 
@@ -158,10 +185,18 @@ export const registerTheatre = async (req, res) => {
 
     // Validate theatre data
     const { name: theatreName, location, contact_no, email: theatreEmail, address, city, state, zipCode } = theatre;
-    if (!theatreName || !location || !contact_no) {
+    if (!theatreName || !location) {
       return res.status(400).json({
         success: false,
-        message: "All theatre fields (name, location, contact_no) are required",
+        message: "Theatre name and location are required",
+      });
+    }
+
+    // Validate contact number if provided
+    if (contact_no && !/^\d{10}$/.test(contact_no)) {
+      return res.status(400).json({
+        success: false,
+        message: "Contact number must be exactly 10 digits",
       });
     }
 
@@ -220,6 +255,22 @@ export const registerTheatre = async (req, res) => {
 
     // Create Screen documents linked to the theatre
     const screenDocs = screens.map((screenData, index) => {
+      console.log(`Processing screen ${index + 1}:`, {
+        name: screenData.name,
+        hasLayout: !!screenData.layout,
+        hasPricing: !!screenData.pricing,
+        layoutKeys: screenData.layout ? Object.keys(screenData.layout) : null
+      });
+
+      if (!screenData.name || !screenData.layout || !screenData.pricing) {
+        throw new Error(`Screen ${index + 1} is missing required fields (name, layout, or pricing)`);
+      }
+
+      // Validate layout structure
+      if (!screenData.layout.layout || !Array.isArray(screenData.layout.layout)) {
+        throw new Error(`Screen ${index + 1} has invalid layout structure`);
+      }
+
       // Generate row labels (A, B, C...)
       const rowLabels = [];
       for (let i = 0; i < screenData.layout.rows; i++) {
@@ -280,9 +331,11 @@ export const registerTheatre = async (req, res) => {
       }
 
       return {
+        name: screenData.name || `Screen ${index + 1}`, // Add name field for Screen model
         screenNumber: screenData.name || `Screen ${index + 1}`,
         theatre: savedTheatre._id,
         seatLayout: {
+          layout: screenData.layout.layout || [], // Add the 2D layout array
           rows: screenData.layout.rows,
           seatsPerRow: screenData.layout.seatsPerRow,
           totalSeats: screenData.layout.totalSeats,
@@ -292,8 +345,42 @@ export const registerTheatre = async (req, res) => {
       };
     });
 
+    // Validate screen documents before insertion
+    for (let i = 0; i < screenDocs.length; i++) {
+      const screenDoc = screenDocs[i];
+      if (!screenDoc.seatLayout.layout || screenDoc.seatLayout.layout.length === 0) {
+        throw new Error(`Screen ${i + 1} has invalid seat layout`);
+      }
+      if (!screenDoc.seatTiers || screenDoc.seatTiers.length === 0) {
+        throw new Error(`Screen ${i + 1} has no seat tiers defined`);
+      }
+    }
+
     if (screenDocs.length > 0) {
-      await Screen.insertMany(screenDocs);
+      try {
+        console.log("Attempting to insert screen documents:", screenDocs.map(doc => ({
+          name: doc.name,
+          theatre: doc.theatre,
+          layoutRows: doc.seatLayout.rows,
+          layoutCols: doc.seatLayout.seatsPerRow,
+          totalSeats: doc.seatLayout.totalSeats,
+          tierCount: doc.seatTiers.length
+        })));
+        
+        const insertedScreens = await Screen.insertMany(screenDocs);
+        console.log("Successfully inserted screens:", insertedScreens.length);
+      } catch (screenError) {
+        console.error("Error inserting screens:", screenError);
+        // Clean up created user and theatre if screen insertion fails
+        await User.findByIdAndDelete(savedManager._id);
+        await Theatre.findByIdAndDelete(savedTheatre._id);
+        
+        return res.status(500).json({
+          success: false,
+          message: "Error creating screen configurations",
+          error: screenError.message,
+        });
+      }
     }
 
     // Delete all OTPs for this email after successful registration
@@ -338,10 +425,48 @@ export const registerTheatre = async (req, res) => {
     });
   } catch (error) {
     console.error("Error registering theatre:", error);
+    
+    // Handle specific error cases
+    if (error.code === 11000) {
+      // MongoDB duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(409).json({
+        success: false,
+        message: `${field} already exists`,
+        error: error.message,
+      });
+    }
+    
+    if (error.name === 'ValidationError') {
+      // Mongoose validation error
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: errors,
+      });
+    }
+    
+    // Handle custom errors from our validation
+    if (error.message.includes('Screen') && error.message.includes('missing required fields')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    
+    if (error.message.includes('invalid seat layout')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    
+    // Generic error with user-friendly message
     res.status(500).json({
       success: false,
-      message: "Error registering theatre",
-      error: error.message,
+      message: "Unable to complete theatre registration right now. Please try again in a few minutes.",
+      hint: "Please check all required fields and try again. If the problem persists, contact support."
     });
   }
 };

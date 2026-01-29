@@ -9,16 +9,19 @@ const HeroSection = () => {
   return (
     <div
       className="flex flex-col items-start justify-center gap-4 px-6 md:px-16 lg:px-36 
-        bg-[url('/backgroundImage.png')] bg-cover bg-center h-screen"
+        bg-[url('/backgroundImage.png')] bg-cover bg-center h-screen relative"
     >
+      {/* Gradient overlay for better text readability */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent"></div>
+      <div className="relative z-10">
       <img
         src={assets.marvelLogo}
         alt="Marvel Logo"
         className="max-h-11 lg:h-11 mt-20"
       />
 
-      <h1 className="text-5xl md:text-[70px] md:leading-18 font-semibold max-w-110">
-        Guardians <br /> of the Galaxy
+      <h1 className="text-5xl mt-2 md:text-[70px] md:leading-18 font-semibold max-w-110">
+        Thunderbolts <br />
       </h1>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-gray-300 max-w-full">
@@ -26,30 +29,29 @@ const HeroSection = () => {
 
         <div className="flex items-center gap-1 max-md:w-full">
           <CalendarIcon className="w-4 h-4" />
-          <span>July 21, 2014</span>
+          <span>Feb 06, 2026</span>
         </div>
 
         <div className="flex items-center gap-1 max-md:w-full">
           <ClockIcon className="w-4 h-4" />
-          <span>2h 1m</span>
+          <span>02h 06m</span>
         </div>
       </div>
 
-      <p className="max-w-md text-gray-300">
-        A bunch of skilled criminals led by brash adventurer Peter Quill join
-        hands to fight a villain named Ronan the Accuser who wants to control
-        the universe with the help of a mystical orb.
+      <p className="max-w-md mt-2 text-gray-300">
+        After finding themselves ensnared in a death trap, an unconventional team of antiheroes must go on a dangerous mission that will force them to confront the darkest corners of their pasts.
       </p>
       <button
         onClick={() => {
           navigate("/movies");
           scrollTo(0, 0);
         }}
-        className="flex items-center gap-1 px-6 py-3 text-sm 
+        className="flex items-center gap-1 px-6 py-3 mt-3 text-sm 
         bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer"
       >
         Explore Movies<ArrowRight className="w-5 h-5" />
       </button>
+      </div>
     </div>
   );
 };

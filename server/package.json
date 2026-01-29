@@ -8,7 +8,8 @@
     "server": "nodemon server.js",
     "start": "node server.js",
     "backfill:movies": "node scripts/backfillMoviesAutoAssignment.js",
-    "test:auto-assignment": "node scripts/testAutoAssignment.js"
+    "test:auto-assignment": "node scripts/testAutoAssignment.js",
+    "test:forms": "node ../test-form-routes.js"
   },
   "keywords": [],
   "author": "Rudra Jitesh Prajapati",
@@ -26,6 +27,7 @@
     "inngest": "^3.48.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.20.4",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.5",
     "stripe": "^18.3.0",
     "svix": "^1.69.0"

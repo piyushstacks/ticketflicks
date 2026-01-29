@@ -17,7 +17,7 @@ const ManagerScreens = () => {
   const fetchScreens = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/manager/screens", {
+      const { data } = await axios.get("/api/manager/screens-tbl", {
         headers: getAuthHeaders(),
       });
 
@@ -81,13 +81,13 @@ const ManagerScreens = () => {
       let response;
       if (editingId) {
         response = await axios.put(
-          `/api/manager/screens/${editingId}`,
+          `/api/manager/screens-tbl/${editingId}`,
           payload,
           { headers: getAuthHeaders() }
         );
       } else {
         response = await axios.post(
-          "/api/manager/screens/add",
+          "/api/manager/screens-tbl/add",
           { ...payload, status: 'active' },
           { headers: getAuthHeaders() }
         );
@@ -154,8 +154,8 @@ const ManagerScreens = () => {
 
     try {
       const { data } = await axios.patch(
-        `/api/manager/screens/${screen._id}/toggle`,
-        { status: action === 'disable' ? 'disabled' : 'active' },
+        `/api/manager/screens-tbl/${screen._id}/toggle`,
+        { status: action === 'disable' ? 'inactive' : 'active' },
         { headers: getAuthHeaders() }
       );
 

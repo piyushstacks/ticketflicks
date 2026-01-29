@@ -81,8 +81,8 @@ const Signup = () => {
     if (!name.trim()) nextErrors.name = "Name is required.";
     if (!email) {
       nextErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      nextErrors.email = "Enter a valid email address.";
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      nextErrors.email = "Enter a valid email address (e.g., user@example.com)";
     }
     if (!phone.trim()) {
       nextErrors.phone = "Phone number is required.";
@@ -114,17 +114,25 @@ const Signup = () => {
     setErrors({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
     setLoading(true);
     try {
-      // Step 1: request OTP
+      // Step 1: Request OTP for signup
       const data = await requestSignupOtp({ email });
       if (!data.success) {
         toast.error(data.message || "Failed to send OTP");
         return;
       }
-      toast.success("OTP sent to your email");
-      // Step 2: go to verification page with form data
-      navigate("/verify-email", { state: { name, email, phone, password } });
-    } catch {
-      toast.error("Something went wrong");
+      toast.success("OTP sent to your email for verification");
+      // Step 2: Go to verification page with form data
+      navigate("/verify-email", { 
+        state: { 
+          name, 
+          email, 
+          phone, 
+          password,
+          purpose: "signup"
+        } 
+      });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -161,83 +169,88 @@ const Signup = () => {
 
           <form className="space-y-6 text-white" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-sm text-white/80">Full Name</label>
-              <div className="relative">
+              <label className="text-sm text-white/80 font-medium">Full Name</label>
+              <div className="relative group">
                 <input
                   type="text"
-                  className="w-full px-4 py-3 pr-10 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80"
+                  className="w-full px-4 py-3 pr-10 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80 transition-all duration-200 hover:bg-white/10"
                   value={name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="John Doe"
+                  placeholder="Enter your full name"
                   required
                   name="name"
                   autoComplete="name"
+                  title="Enter your full name as it appears on official documents"
                 />
-                <UserIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
+                <UserIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200" />
               </div>
               {errors.name && (
-                <p className="text-xs text-red-400 mt-1">{errors.name}</p>
+                <p className="text-xs text-red-400 mt-1 animate-pulse">{errors.name}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-white/80">Email Address</label>
-              <div className="relative">
+              <label className="text-sm text-white/80 font-medium">Email Address</label>
+              <div className="relative group">
                 <input
                   type="email"
-                  className="w-full px-4 py-3 pr-10 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80"
+                  className="w-full px-4 py-3 pr-10 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80 transition-all duration-200 hover:bg-white/10"
                   value={email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="name@example.com"
+                  placeholder="Enter your email address"
                   required
                   name="email"
                   autoComplete="email"
+                  title="Enter a valid email address for account verification"
                 />
-                <MailIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
+                <MailIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200" />
               </div>
               {errors.email && (
-                <p className="text-xs text-red-400 mt-1">{errors.email}</p>
+                <p className="text-xs text-red-400 mt-1 animate-pulse">{errors.email}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-white/80">Phone Number</label>
-              <div className="relative">
+              <label className="text-sm text-white/80 font-medium">Phone Number</label>
+              <div className="relative group">
                 <input
                   type="tel"
-                  className="w-full px-4 py-3 pr-10 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80"
+                  className="w-full px-4 py-3 pr-10 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80 transition-all duration-200 hover:bg-white/10"
                   value={phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="9876543210"
+                  placeholder="Enter your 10-digit mobile number"
                   required
                   name="tel"
                   autoComplete="tel"
+                  title="Enter your 10-digit mobile number without country code"
                 />
-                <PhoneIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
+                <PhoneIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200" />
               </div>
               {errors.phone && (
-                <p className="text-xs text-red-400 mt-1">{errors.phone}</p>
+                <p className="text-xs text-red-400 mt-1 animate-pulse">{errors.phone}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-white/80">Password</label>
-              <div className="relative">
+              <label className="text-sm text-white/80 font-medium">Password</label>
+              <div className="relative group">
                 <input
                   type={showPassword ? "text" : "password"}
-                  className="w-full px-4 py-3 pr-20 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80"
+                  className="w-full px-4 py-3 pr-20 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80 transition-all duration-200 hover:bg-white/10"
                   value={password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  placeholder="Min 8 chars, 1 upper, 1 lower, 1 digit, 1 special"
+                  placeholder="Create a strong password"
                   required
                   name="new-password"
                   autoComplete="new-password"
+                  title="Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters"
                 />
-                <LockIcon className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
+                <LockIcon className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200" />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white focus:outline-none transition-colors duration-200 hover:scale-110 active:scale-95"
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <EyeOffIcon className="w-4 h-4" />
@@ -247,42 +260,29 @@ const Signup = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-red-400 mt-1">{errors.password}</p>
+                <p className="text-xs text-red-400 mt-1 animate-pulse">{errors.password}</p>
               )}
               <div className="mt-1 text-xs">
                 <p>
-                  Strength:{" "}
-                  <span className={passwordStrength.color}>
-                    {passwordStrength.text}
-                  </span>
+                  Strength: <span className={passwordStrength.color}>{passwordStrength.text}</span>
                 </p>
                 <p className="text-white/60 mt-1">
-                  <span className={password.length >= 8 ? "text-green-400" : "text-white/60"}>
-                    ✓ 8+ characters
-                  </span>
+                  <span className={password.length >= 8 ? "text-green-400" : "text-white/60"}>✓ 8+ characters</span>
                   {"\n"}
-                  <span className={/[A-Z]/.test(password) ? "text-green-400" : "text-white/60"}>
-                    ✓ Uppercase
-                  </span>
+                  <span className={/[A-Z]/.test(password) ? "text-green-400" : "text-white/60"}>✓ Uppercase</span>
                   {"\n"}
-                  <span className={/[a-z]/.test(password) ? "text-green-400" : "text-white/60"}>
-                    ✓ Lowercase
-                  </span>
+                  <span className={/[a-z]/.test(password) ? "text-green-400" : "text-white/60"}>✓ Lowercase</span>
                   {"\n"}
-                  <span className={/\d/.test(password) ? "text-green-400" : "text-white/60"}>
-                    ✓ Number
-                  </span>
+                  <span className={/\d/.test(password) ? "text-green-400" : "text-white/60"}>✓ Number</span>
                   {"\n"}
-                  <span className={/[@$!%*?&]/.test(password) ? "text-green-400" : "text-white/60"}>
-                    ✓ Special char (@$!%*?&)
-                  </span>
+                  <span className={/[@$!%*?&]/.test(password) ? "text-green-400" : "text-white/60"}>✓ Special char (@$!%*?&)</span>
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-white/80">Confirm Password</label>
-              <div className="relative">
+              <label className="text-sm text-white/80 font-medium">Confirm Password</label>
+              <div className="relative group">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   className={`w-full px-4 py-3 pr-20 bg-white/5 rounded-full text-white border ${
@@ -291,19 +291,21 @@ const Signup = () => {
                       : confirmPassword && passwordsMatch
                       ? "border-green-500"
                       : "border-white/15"
-                  } focus:outline-none focus:border-primary/80`}
+                  } focus:outline-none focus:border-primary/80 transition-all duration-200 hover:bg-white/10`}
                   value={confirmPassword}
                   onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                  placeholder="Re-enter password"
+                  placeholder="Re-enter your password"
                   required
                   name="confirm-password"
                   autoComplete="new-password"
+                  title="Re-enter your password to confirm"
                 />
-                <LockIcon className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
+                <LockIcon className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200" />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white focus:outline-none transition-colors duration-200 hover:scale-110 active:scale-95"
+                  title={showConfirmPassword ? "Hide password" : "Show password"}
                 >
                   {showConfirmPassword ? (
                     <EyeOffIcon className="w-4 h-4" />
@@ -313,10 +315,10 @@ const Signup = () => {
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-xs text-red-400 mt-1">{errors.confirmPassword}</p>
+                <p className="text-xs text-red-400 mt-1 animate-pulse">{errors.confirmPassword}</p>
               )}
               {confirmPassword && !passwordsMatch && (
-                <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
+                <p className="text-xs text-red-400 mt-1 animate-pulse">Passwords do not match</p>
               )}
               {confirmPassword && passwordsMatch && (
                 <p className="text-xs text-green-400 mt-1">Passwords match ✓</p>
@@ -326,7 +328,8 @@ const Signup = () => {
             <button
               type="submit"
               disabled={loading || !passwordsMatch || passwordStrength.score < 3}
-              className="w-full py-3 text-base bg-white text-black font-medium rounded-full hover:bg-white/90 active:scale-95 transition disabled:opacity-60"
+              className="w-full py-3 text-base bg-white text-black font-medium rounded-full hover:bg-white/90 active:scale-95 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-white/20"
+              title={loading ? "Creating your account..." : "Create your TicketFlicks account"}
             >
               {loading ? "Creating account..." : "Sign Up"}
             </button>

@@ -78,7 +78,7 @@ const AdminShows = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Shows & Screen Details</h1>
+        <h1 className="text-3xl font-bold">Shows Running</h1>
         <select
           value={selectedTheatre}
           onChange={(e) => setSelectedTheatre(e.target.value)}

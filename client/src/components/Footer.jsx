@@ -18,20 +18,20 @@ const Footer = () => {
             <br />
             <span>
               {" "}
-              Created & Modified By{" "}
+              Created By{" "}
               <span className="font-bold underline">
-                Team Group 20
+                Team Group 20 - SXCA
               </span>
             </span>{" "}
           </p>
-          <div className="flex items-center gap-2 mt-4">
+          {/* <div className="flex items-center gap-2 mt-4">
             <img
               src={assets.googlePlay}
               alt="google play"
               className="h-9 w-auto"
             />
             <img src={assets.appStore} alt="app store" className="h-9 w-auto" />
-          </div>
+          </div> */}
         </div>
         <div className="flex-1 flex items-start md:justify-end gap-20 md:gap-40">
           <div>
@@ -67,12 +67,12 @@ const Footer = () => {
           <div>
             <h2 className="font-semibold mb-5">Get in touch</h2>
             <div className="text-sm space-y-2">
-              <p>+91 9999900000 </p>
+              <p>+91 9724176300 </p>
               <a
-                href="mailto:example@sxca.edu.in"
+                href="mailto:ticketflicks@gmail.com"
                 className="text-primary underline"
               >
-                example@sxca.edu.in
+                ticketflicks@gmail.com
               </a>
             </div>
           </div>

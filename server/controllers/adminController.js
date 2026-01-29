@@ -194,35 +194,34 @@ export const fetchAllBookings = async (req, res) => {
 //API to get all screens from all theatres
 export const fetchAllScreens = async (req, res) => {
   try {
-    const theatres = await Theatre.find({ disabled: { $ne: true } })
-      .populate("manager_id", "name email phone")
-      .sort({ name: 1 });
+    const screens = await Screen.find({ isActive: true })
+      .populate("theatre", "name location city manager_id")
+      .populate("theatre.manager_id", "name email phone")
+      .sort({ "theatre.name": 1, screenNumber: 1 });
 
-    const screensData = [];
-    
-    theatres.forEach(theatre => {
-      if (theatre.screens && theatre.screens.length > 0) {
-        theatre.screens.forEach((screen, index) => {
-          screensData.push({
-            _id: `${theatre._id}-screen-${index}`,
-            theatre: {
-              _id: theatre._id,
-              name: theatre.name,
-              location: theatre.location,
-              manager: theatre.manager_id
-            },
-            screen: {
-              name: screen.name,
-              layout: screen.layout,
-              pricing: screen.pricing,
-              totalSeats: screen.totalSeats,
-              status: screen.status
-            },
-            screenIndex: index
-          });
-        });
-      }
-    });
+    const screensData = screens.map(screen => ({
+      _id: screen._id,
+      theatre: {
+        _id: screen.theatre._id,
+        name: screen.theatre.name,
+        location: screen.theatre.location,
+        city: screen.theatre.city,
+        manager: screen.theatre.manager_id
+      },
+      screen: {
+        name: screen.name,
+        screenNumber: screen.screenNumber,
+        seatLayout: screen.seatLayout,
+        seatTiers: screen.seatTiers,
+        isActive: screen.isActive,
+        layout: screen.seatLayout?.layout,
+        totalSeats: screen.seatLayout?.totalSeats,
+        rows: screen.seatLayout?.rows,
+        seatsPerRow: screen.seatLayout?.seatsPerRow,
+        status: screen.isActive ? "Active" : "Inactive"
+      },
+      screenIndex: screen.screenNumber
+    }));
 
     res.json({ success: true, screens: screensData });
   } catch (error) {
@@ -477,7 +476,7 @@ export const getAllShows = async (req, res) => {
     const shows = await Show.find({})
       .populate("movie", "title poster_path overview genres")
       .populate("theatre", "name location city")
-      .populate("screen", "screenNumber name seatLayout")
+      .populate("screen", "screenNumber name seatLayout seatTiers isActive")
       .sort({ showDateTime: -1 });
 
     console.log("Found shows for admin:", shows.length);

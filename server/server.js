@@ -9,6 +9,7 @@ import showRouter from "./routes/showRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import managerRouter from "./routes/managerRoutes.js";
+import managerScreenTblRouter from "./routes/managerScreenTblRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import theatreRouter from "./routes/theatreRoutes.js";
 import debugRouter from "./routes/debugRoutes.js";
@@ -40,6 +41,7 @@ app.use("/api/show", showRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/manager", managerRouter);
+app.use("/api/manager", managerScreenTblRouter); // SCREEN_TBL routes
 app.use("/api/user", userRouter);
 app.use("/api/theatre", theatreRouter);
 // Debug routes (safe: requires DEBUG_EMAIL_SECRET when NODE_ENV=production)

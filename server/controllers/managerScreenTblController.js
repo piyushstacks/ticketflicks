@@ -1,0 +1,313 @@
+import ScreenTbl from '../models/ScreenTbl.js';
+import Theatre from '../models/Theatre.js';
+import User from '../models/User.js';
+import mongoose from 'mongoose';
+
+// Get all screens for manager's theatre
+export const getTheatreScreensTbl = async (req, res) => {
+  try {
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Manager access required",
+      });
+    }
+
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+
+    const screens = await ScreenTbl.find({
+      theatre: theatreId,
+    })
+    .populate("theatre", "name location")
+    .populate("createdBy", "name email")
+    .populate("lastModifiedBy", "name email")
+    .sort({ created_at: -1 });
+
+    res.json({ success: true, screens });
+  } catch (error) {
+    console.error("[getTheatreScreensTbl]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Add new screen to SCREEN_TBL
+export const addScreenTbl = async (req, res) => {
+  try {
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Manager access required",
+      });
+    }
+
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const { name, screenNumber, seatLayout, seatTiers, status = 'active' } = req.body;
+
+    if (!name || !screenNumber || !seatLayout) {
+      return res.json({
+        success: false,
+        message: "Name, Screen Number, and Seat Layout are required",
+      });
+    }
+
+    // Validate theatre exists and belongs to this manager
+    const theatre = await Theatre.findOne({ 
+      _id: theatreId, 
+      manager_id: manager._id 
+    });
+    
+    if (!theatre) {
+      return res.json({
+        success: false,
+        message: "Theatre not found or unauthorized access",
+      });
+    }
+
+    // Check if screen name already exists for this theatre
+    const existingScreen = await ScreenTbl.findOne({
+      name,
+      theatre: theatreId,
+    });
+
+    if (existingScreen) {
+      return res.json({
+        success: false,
+        message: "Screen with this name already exists for your theatre",
+      });
+    }
+
+    const newScreen = new ScreenTbl({
+      name,
+      screenNumber,
+      theatre: theatreId,
+      seatLayout,
+      seatTiers: seatTiers || [],
+      isActive: status === 'active',
+      status,
+      createdBy: manager._id,
+      lastModifiedBy: manager._id,
+    });
+
+    await newScreen.save();
+
+    const populatedScreen = await ScreenTbl.findById(newScreen._id)
+      .populate("theatre", "name location")
+      .populate("createdBy", "name email");
+
+    res.json({ 
+      success: true, 
+      message: "Screen added successfully",
+      screen: populatedScreen 
+    });
+  } catch (error) {
+    console.error("[addScreenTbl]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Edit screen in SCREEN_TBL
+export const editScreenTbl = async (req, res) => {
+  try {
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Manager access required",
+      });
+    }
+
+    const { screenId } = req.params;
+    const { name, screenNumber, seatLayout, seatTiers, status } = req.body;
+
+    // Find the screen and verify it belongs to manager's theatre
+    const screen = await ScreenTbl.findOne({
+      _id: screenId,
+      theatre: manager.managedTheaterId || manager.managedTheatreId,
+    });
+
+    if (!screen) {
+      return res.json({
+        success: false,
+        message: "Screen not found or unauthorized access",
+      });
+    }
+
+    // Check if name conflicts with another screen
+    if (name && name !== screen.name) {
+      const nameConflict = await ScreenTbl.findOne({
+        name,
+        theatre: screen.theatre,
+        _id: { $ne: screenId },
+      });
+
+      if (nameConflict) {
+        return res.json({
+          success: false,
+          message: "Another screen with this name already exists",
+        });
+      }
+    }
+
+    // Update screen fields
+    if (name) screen.name = name;
+    if (screenNumber) screen.screenNumber = screenNumber;
+    if (seatLayout) screen.seatLayout = seatLayout;
+    if (seatTiers) screen.seatTiers = seatTiers;
+    if (status) {
+      screen.status = status;
+      screen.isActive = status === 'active';
+    }
+    screen.lastModifiedBy = manager._id;
+
+    await screen.save();
+
+    const updatedScreen = await ScreenTbl.findById(screen._id)
+      .populate("theatre", "name location")
+      .populate("lastModifiedBy", "name email");
+
+    res.json({ 
+      success: true, 
+      message: "Screen updated successfully",
+      screen: updatedScreen 
+    });
+  } catch (error) {
+    console.error("[editScreenTbl]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Toggle screen status in SCREEN_TBL
+export const toggleScreenStatusTbl = async (req, res) => {
+  try {
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Manager access required",
+      });
+    }
+
+    const { screenId } = req.params;
+
+    const screen = await ScreenTbl.findOne({
+      _id: screenId,
+      theatre: manager.managedTheaterId || manager.managedTheatreId,
+    });
+
+    if (!screen) {
+      return res.json({
+        success: false,
+        message: "Screen not found or unauthorized access",
+      });
+    }
+
+    // Toggle between active and inactive
+    const newStatus = screen.status === 'active' ? 'inactive' : 'active';
+    screen.status = newStatus;
+    screen.isActive = newStatus === 'active';
+    screen.lastModifiedBy = manager._id;
+
+    await screen.save();
+
+    const updatedScreen = await ScreenTbl.findById(screen._id)
+      .populate("theatre", "name location")
+      .populate("lastModifiedBy", "name email");
+
+    res.json({ 
+      success: true, 
+      message: `Screen ${newStatus === 'active' ? 'enabled' : 'disabled'} successfully`,
+      screen: updatedScreen 
+    });
+  } catch (error) {
+    console.error("[toggleScreenStatusTbl]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Delete screen from SCREEN_TBL
+export const deleteScreenTbl = async (req, res) => {
+  try {
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Manager access required",
+      });
+    }
+
+    const { screenId } = req.params;
+
+    const screen = await ScreenTbl.findOne({
+      _id: screenId,
+      theatre: manager.managedTheaterId || manager.managedTheatreId,
+    });
+
+    if (!screen) {
+      return res.json({
+        success: false,
+        message: "Screen not found or unauthorized access",
+      });
+    }
+
+    // Check if there are any active shows for this screen
+    const Show = mongoose.model('Show');
+    const activeShows = await Show.countDocuments({
+      screen: screenId,
+      isActive: true
+    });
+
+    if (activeShows > 0) {
+      return res.json({
+        success: false,
+        message: "Cannot delete screen with active shows. Please disable shows first.",
+      });
+    }
+
+    await ScreenTbl.findByIdAndDelete(screenId);
+
+    res.json({ 
+      success: true, 
+      message: "Screen deleted successfully" 
+    });
+  } catch (error) {
+    console.error("[deleteScreenTbl]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get single screen details
+export const getScreenTblById = async (req, res) => {
+  try {
+    const manager = await User.findById(req.user.id);
+    if (!manager || manager.role !== "manager") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Manager access required",
+      });
+    }
+
+    const { screenId } = req.params;
+
+    const screen = await ScreenTbl.findOne({
+      _id: screenId,
+      theatre: manager.managedTheaterId || manager.managedTheatreId,
+    })
+    .populate("theatre", "name location")
+    .populate("createdBy", "name email")
+    .populate("lastModifiedBy", "name email");
+
+    if (!screen) {
+      return res.json({
+        success: false,
+        message: "Screen not found or unauthorized access",
+      });
+    }
+
+    res.json({ success: true, screen });
+  } catch (error) {
+    console.error("[getScreenTblById]", error);
+    res.json({ success: false, message: error.message });
+  }
+};

@@ -14,8 +14,13 @@ const connectDB = async () => {
     });
 
     const dbName = process.env.DB_NAME || "ticketflicks";
-    // const uri = `${process.env.MONGODB_URI.replace(/\/$/, "")}/${dbName}`;
-    const uri = process.env.MONGODB_URI;
+    const mongoUri = process.env.MONGODB_URI;
+    
+    if (!mongoUri) {
+      throw new Error("MONGODB_URI is not defined in environment variables");
+    }
+    
+    const uri = `${mongoUri.replace(/\/$/, "")}/${dbName}`;
 
     const opts = {
       serverSelectionTimeoutMS: 10000,

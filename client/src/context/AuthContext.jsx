@@ -1,7 +1,11 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 
-axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
+// Set base URL with fallback
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000";
+axios.defaults.baseURL = baseURL;
+
+console.log("AuthContext: Using baseURL:", baseURL);
 
 const AuthContext = createContext();
 
@@ -101,11 +105,45 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signup = async (payload) => {
-    const { data } = await axios.post("/api/user/signup", payload);
-    if (data.success) {
-      saveAuth(data.user, data.token, true);
+    console.log("AuthContext: Direct signup called with payload:", payload);
+    try {
+      const { data } = await axios.post("/api/user/signup", payload);
+      console.log("AuthContext: Direct signup response:", data);
+      if (data.success) {
+        saveAuth(data.user, data.token, true);
+      }
+      return data;
+    } catch (error) {
+      console.error("AuthContext: Direct signup error:", error);
+      throw error;
     }
-    return data;
+  };
+
+  const requestSignupOtp = async (payload) => {
+    console.log("AuthContext: Requesting signup OTP for:", payload.email);
+    try {
+      const { data } = await axios.post("/api/user/signup/request-otp", payload);
+      console.log("AuthContext: Signup OTP response:", data);
+      return data;
+    } catch (error) {
+      console.error("AuthContext: Request signup OTP error:", error);
+      throw error;
+    }
+  };
+
+  const completeSignupWithOtp = async (payload) => {
+    console.log("AuthContext: Completing signup with OTP for:", payload.email);
+    try {
+      const { data } = await axios.post("/api/user/signup/complete", payload);
+      console.log("AuthContext: Complete signup response:", data);
+      if (data.success) {
+        saveAuth(data.user, data.token, true);
+      }
+      return data;
+    } catch (error) {
+      console.error("AuthContext: Complete signup error:", error);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -122,13 +160,15 @@ export const AuthProvider = ({ children }) => {
     login,
     verifyOtp,
     signup,
+    requestSignupOtp,
+    completeSignupWithOtp,
     logout,
     getAuthHeaders,
     getTheatresByManager,
     forgotPassword,
     resetPassword,
-    resendLogin,
     resendForgot,
+    resendLogin,
     changePassword,
     requestTheatreRegistrationOtp,
     completeTheatreRegistration,

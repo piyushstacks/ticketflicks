@@ -94,77 +94,92 @@ const ChangePassword = () => {
       <h2 className="text-2xl text-white mb-4">Change Password</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm text-white/80">Current Password</label>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => handleInputChange("currentPassword", e.target.value)}
-            className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20"
-            required
-          />
+          <label className="text-sm text-white/80 font-medium">Current Password</label>
+          <div className="relative group">
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => handleInputChange("currentPassword", e.target.value)}
+              className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
+              required
+              title="Enter your current password for verification"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+          </div>
         </div>
 
         <div>
-          <label className="text-sm text-white/80">New Password</label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => handleInputChange("newPassword", e.target.value)}
-            className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20"
-            placeholder="Min 8 chars, 1 upper, 1 lower, 1 digit, 1 special"
-            required
-          />
+          <label className="text-sm text-white/80 font-medium">New Password</label>
+          <div className="relative group">
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => handleInputChange("newPassword", e.target.value)}
+              className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
+              placeholder="Create a strong password"
+              required
+              title="Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+          </div>
           <div className="mt-1 text-xs">
             <p>
-              Strength:{" "}
-              <span className={passwordStrength.color}>
-                {passwordStrength.text}
-              </span>
+              Strength: <span className={passwordStrength.color}>{passwordStrength.text}</span>
             </p>
             <p className="text-white/60 mt-1">
-              <span className={newPassword.length >= 8 ? "text-green-400" : "text-white/60"}>
-                ✓ 8+ characters
-              </span>
+              <span className={newPassword.length >= 8 ? "text-green-400" : "text-white/60"}>✓ 8+ characters</span>
               {"\n"}
-              <span className={/[A-Z]/.test(newPassword) ? "text-green-400" : "text-white/60"}>
-                ✓ Uppercase
-              </span>
+              <span className={/[A-Z]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Uppercase</span>
               {"\n"}
-              <span className={/[a-z]/.test(newPassword) ? "text-green-400" : "text-white/60"}>
-                ✓ Lowercase
-              </span>
+              <span className={/[a-z]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Lowercase</span>
               {"\n"}
-              <span className={/\d/.test(newPassword) ? "text-green-400" : "text-white/60"}>
-                ✓ Number
-              </span>
+              <span className={/\d/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Number</span>
               {"\n"}
-              <span className={/[@$!%*?&]/.test(newPassword) ? "text-green-400" : "text-white/60"}>
-                ✓ Special char (@$!%*?&)
-              </span>
+              <span className={/[@$!%*?&]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Special char (@$!%*?&)</span>
             </p>
           </div>
         </div>
 
         <div>
-          <label className="text-sm text-white/80">Confirm New Password</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-            className={`w-full px-3 py-2 rounded-md bg-black/40 text-white border ${
-              confirmPassword && !passwordsMatch
-                ? "border-red-500"
-                : confirmPassword && passwordsMatch
-                ? "border-green-500"
-                : "border-white/20"
-            }`}
-            required
-          />
+          <label className="text-sm text-white/80 font-medium">Confirm New Password</label>
+          <div className="relative group">
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+              className={`w-full px-3 py-2 rounded-md bg-black/40 text-white border transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80 ${
+                confirmPassword && !passwordsMatch
+                  ? "border-red-500"
+                  : confirmPassword && passwordsMatch
+                  ? "border-green-500"
+                  : "border-white/20"
+              }`}
+              placeholder="Re-enter your new password"
+              required
+              title="Re-enter your new password to confirm"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+          </div>
           {confirmPassword && !passwordsMatch && (
-            <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
+            <p className="text-xs text-red-400 mt-1 animate-pulse">Passwords do not match</p>
           )}
           {confirmPassword && passwordsMatch && !passwordsDifferent && (
-            <p className="text-xs text-red-400 mt-1">New password must be different from current password</p>
+            <p className="text-xs text-red-400 mt-1 animate-pulse">New password must be different from current password</p>
           )}
           {confirmPassword && passwordsMatch && passwordsDifferent && (
             <p className="text-xs text-green-400 mt-1">Passwords match ✓</p>
@@ -175,14 +190,16 @@ const ChangePassword = () => {
           <button
             type="submit"
             disabled={loading || !passwordsMatch || !isPasswordValid || !passwordsDifferent}
-            className="px-4 py-2 bg-indigo-600 rounded-md text-white disabled:opacity-60"
+            className="px-4 py-2 bg-indigo-600 rounded-md text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/20"
+            title={loading ? "Changing your password..." : "Update your account password"}
           >
             {loading ? "Saving..." : "Change Password"}
           </button>
           <button
             type="button"
-            className="text-sm text-white/70 hover:underline"
+            className="text-sm text-white/70 hover:text-white hover:underline transition-all duration-200 hover:scale-105 active:scale-95"
             onClick={() => navigate(-1)}
+            title="Go back to previous page"
           >
             Cancel
           </button>

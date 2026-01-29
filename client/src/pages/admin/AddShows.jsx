@@ -94,15 +94,16 @@ const AddShows = () => {
       <Title text1="Assign" text2="Movies to Theatres" />
 
       <div className="mt-6">
-        <label className="block text-sm font-medium mb-2">Select Theatre</label>
+        <label className="block text-sm font-medium mb-2 text-white/80">Select Theatre</label>
         <select
           value={selectedTheatre}
           onChange={(e) => setSelectedTheatre(e.target.value)}
-          className="border border-gray-600 px-3 py-2 rounded-md"
+          className="w-full border border-gray-600 px-3 py-2 rounded-md bg-black/40 text-white transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
+          title="Choose a theatre to assign movies to"
         >
-          <option value="">-- Select Theatre --</option>
+          <option value="" className="bg-black/40">-- Select Theatre --</option>
           {theatres.map((t) => (
-            <option key={t._id || t.id} value={t._id || t.id}>
+            <option key={t._id || t.id} value={t._id || t.id} className="bg-black/40">
               {t.name || t.name}
             </option>
           ))}

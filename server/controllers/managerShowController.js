@@ -1,5 +1,5 @@
 import Show from "../models/Show.js";
-import Screen from "../models/Screen.js";
+import ScreenTbl from "../models/ScreenTbl.js";
 import Movie from "../models/Movie.js";
 import Theatre from "../models/Theatre.js";
 import User from "../models/User.js";
@@ -44,7 +44,7 @@ export const getTheatreScreens = async (req, res) => {
 
     const theatreId = manager.managedTheaterId || manager.managedTheatreId;
 
-    const screens = await Screen.find({
+    const screens = await ScreenTbl.find({
       theatre: theatreId,
     }).populate("theatre", "name");
 
@@ -94,7 +94,7 @@ export const addShow = async (req, res) => {
     }
 
     // Validate screen exists and belongs to this theatre
-    const screenDoc = await Screen.findOne({
+    const screenDoc = await ScreenTbl.findOne({
       _id: screen,
       theatre: theatreId,
     });

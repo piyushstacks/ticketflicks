@@ -198,7 +198,7 @@ export const fetchShows = async (req, res) => {
   try {
     const shows = await Show.find({ showDateTime: { $gte: new Date() } })
       .populate("movie")
-      .populate("theater")
+      .populate("theatre")
       .populate("screen")
       .sort({ showDateTime: 1 });
 
@@ -221,7 +221,7 @@ export const fetchShowsByMovie = async (req, res) => {
       movie: movieId,
       showDateTime: { $gte: new Date() },
     })
-      .populate("theater")
+      .populate("theatre")
       .populate("screen")
       .sort({ showDateTime: 1 });
 
@@ -295,7 +295,7 @@ export const fetchShow = async (req, res) => {
 
     const show = await Show.findById(showId)
       .populate("movie")
-      .populate("theater")
+      .populate("theatre")
       .populate("screen");
 
     if (!show) {
@@ -318,7 +318,7 @@ export const fetchShowByMovieId = async (req, res) => {
     const shows = await Show.find({
       movie: movieId,
       showDateTime: { $gte: new Date() },
-    }).populate("theater").populate("screen");
+    }).populate("theatre").populate("screen");
 
     // Get movie details from our database only
     const movie = await Movie.findById(movieId);

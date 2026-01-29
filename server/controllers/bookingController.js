@@ -163,7 +163,48 @@ export const createBooking = async (req, res) => {
     res.json({ success: true, url: session.url });
   } catch (error) {
     console.error("[createBooking]", error);
-    res.json({ success: false, message: error.message });
+    
+    // Handle specific error cases
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid booking data. Please check all fields and try again."
+      });
+    }
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid data format. Please check your selection and try again."
+      });
+    }
+    
+    if (error.type === 'StripeCardError') {
+      return res.status(400).json({
+        success: false,
+        message: "Payment failed. Please check your card details and try again."
+      });
+    }
+    
+    if (error.type === 'StripeRateLimitError') {
+      return res.status(429).json({
+        success: false,
+        message: "Too many requests. Please wait a moment and try again."
+      });
+    }
+    
+    if (error.message && error.message.includes('timeout')) {
+      return res.status(500).json({
+        success: false,
+        message: "Booking is taking too long. Please try again."
+      });
+    }
+    
+    // Generic error with user-friendly message
+    res.status(500).json({ 
+      success: false, 
+      message: "Unable to process your booking right now. Please try again in a few minutes." 
+    });
   }
 };
 
@@ -192,7 +233,27 @@ export const fetchOccupiedSeats = async (req, res) => {
     });
   } catch (error) {
     console.error("[fetchOccupiedSeats]", error);
-    res.json({ success: false, message: error.message });
+    
+    // Handle specific error cases
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid show ID format."
+      });
+    }
+    
+    if (error.message && error.message.includes('timeout')) {
+      return res.status(500).json({
+        success: false,
+        message: "Unable to load seat information right now. Please try again."
+      });
+    }
+    
+    // Generic error with user-friendly message
+    res.status(500).json({ 
+      success: false, 
+      message: "Unable to load seat information. Please try again in a few minutes." 
+    });
   }
 };
 
@@ -207,7 +268,27 @@ export const fetchUserBookings = async (req, res) => {
     res.json({ success: true, bookings });
   } catch (error) {
     console.error("[fetchUserBookings]", error);
-    res.json({ success: false, message: error.message });
+    
+    // Handle specific error cases
+    if (error.name === 'CastError') {
+      return res.status(500).json({
+        success: false,
+        message: "Unable to load your bookings. Please log out and log back in."
+      });
+    }
+    
+    if (error.message && error.message.includes('timeout')) {
+      return res.status(500).json({
+        success: false,
+        message: "Loading your bookings is taking too long. Please try again."
+      });
+    }
+    
+    // Generic error with user-friendly message
+    res.status(500).json({ 
+      success: false, 
+      message: "Unable to load your bookings right now. Please try again in a few minutes." 
+    });
   }
 };
 
@@ -259,7 +340,27 @@ export const cancelBooking = async (req, res) => {
     res.json({ success: true, message: "Booking cancelled successfully" });
   } catch (error) {
     console.error("[cancelBooking]", error);
-    res.json({ success: false, message: error.message });
+    
+    // Handle specific error cases
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid booking ID format."
+      });
+    }
+    
+    if (error.message && error.message.includes('timeout')) {
+      return res.status(500).json({
+        success: false,
+        message: "Cancellation is taking too long. Please try again."
+      });
+    }
+    
+    // Generic error with user-friendly message
+    res.status(500).json({ 
+      success: false, 
+      message: "Unable to cancel your booking right now. Please try again in a few minutes." 
+    });
   }
 };
 
