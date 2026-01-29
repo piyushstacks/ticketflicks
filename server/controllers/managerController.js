@@ -170,26 +170,114 @@ export const addScreen = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    let theatreId = manager.managedTheaterId || manager.managedTheatreId;
     if (!theatreId) {
-      return res.json({ success: false, message: "Manager has no theatre assigned" });
+      const theatreDoc = await Theatre.findOne({ manager_id: manager._id, disabled: { $ne: true } });
+      if (!theatreDoc) {
+        return res.json({ success: false, message: "Manager has no theatre assigned" });
+      }
+      theatreId = theatreDoc._id;
+      await User.findByIdAndUpdate(manager._id, { managedTheaterId: theatreId });
     }
-    const { screenNumber, seatLayout } = req.body;
+    const { screenNumber, seatLayout, pricing } = req.body; // Expecting pricing from frontend
 
     if (!screenNumber || !seatLayout) {
       return res.json({ success: false, message: "Missing required fields" });
     }
 
+    // Convert pricing to seatTiers if provided
+    let seatTiers = [];
+    if (pricing) {
+      // Map for seat codes to row labels
+      const tierRows = {};
+      const seatCodes = {
+        'S': 'Standard',
+        'D': 'Deluxe',
+        'P': 'Premium',
+        'R': 'Recliner',
+        'C': 'Couple'
+      };
+
+      // Helper to get row label (A, B, C...)
+      const getRowLabel = (index) => String.fromCharCode(65 + index);
+
+      // Iterate layout to find which rows belong to which tier
+      if (seatLayout.layout && Array.isArray(seatLayout.layout)) {
+        seatLayout.layout.forEach((row, rowIndex) => {
+          // Find distinct seat types in this row (ignoring empty '')
+          const uniqueSeats = [...new Set(row.filter(s => s !== ''))];
+          uniqueSeats.forEach(code => {
+            if (!tierRows[code]) tierRows[code] = [];
+            tierRows[code].push(getRowLabel(rowIndex));
+          });
+        });
+      }
+
+      // Construct seatTiers array
+      // Handle unified pricing
+      if (pricing.unified) {
+         // If unified, we might not have tier codes or just one. 
+         // But usually layout still has 'S' or something.
+         // If layout has multiple codes but unified pricing, we should probably just use "Standard" for all?
+         // Or apply unified price to all tiers found.
+         Object.keys(tierRows).forEach(code => {
+           seatTiers.push({
+             tierName: seatCodes[code] || 'Standard',
+             price: Number(pricing.unified),
+             rows: tierRows[code]
+           });
+         });
+         
+         // If no tiers found (empty layout?), default to one tier
+         if (seatTiers.length === 0) {
+            seatTiers.push({
+              tierName: 'Standard',
+              price: Number(pricing.unified),
+              rows: seatLayout.layout.map((_, i) => getRowLabel(i))
+            });
+         }
+      } else {
+        // Tier based pricing
+        Object.keys(pricing).forEach(code => {
+          if (pricing[code] && pricing[code].price) {
+            seatTiers.push({
+              tierName: seatCodes[code] || code,
+              price: Number(pricing[code].price),
+              rows: tierRows[code] || []
+            });
+          }
+        });
+      }
+    }
+
     const screen = await Screen.create({
       theatre: theatreId,
+      name: screenNumber,
       screenNumber,
       seatLayout,
+      seatTiers
     });
 
-    // Add screen to theatre
-    await Theatre.findByIdAndUpdate(theatreId, {
-      $push: { screens: screen._id },
-    });
+    // Add screen to theatre (using $push for ref array if configured, or just ignoring if embedded)
+    // To support the embedded schema requirement for Registration/Admin view:
+    // We should ideally push the full object to Theatre.screens
+    try {
+      await Theatre.findByIdAndUpdate(theatreId, {
+        $push: { 
+          screens: {
+            _id: screen._id, // If schema allows
+            name: screenNumber,
+            layout: seatLayout,
+            pricing: pricing || { unified: 150 }, // Store original pricing config
+            totalSeats: seatLayout.totalSeats,
+            status: 'active'
+          } 
+        }
+      });
+    } catch (err) {
+      console.warn("Failed to update Theatre embedded screens (likely schema mismatch or strict mode):", err.message);
+      // We continue since Screen doc is created
+    }
 
     res.json({ success: true, message: "Screen added successfully", screen });
   } catch (error) {
@@ -208,7 +296,7 @@ export const editScreen = async (req, res) => {
 
     const theatreId = manager.managedTheaterId || manager.managedTheatreId;
     const { screenId } = req.params;
-    const { screenNumber, seatLayout } = req.body;
+    const { screenNumber, seatLayout, pricing } = req.body;
 
     const screen = await Screen.findById(screenId);
     if (!screen || screen.theatre.toString() !== theatreId.toString()) {
@@ -216,10 +304,67 @@ export const editScreen = async (req, res) => {
     }
 
     const updateData = {};
-    if (screenNumber) updateData.screenNumber = screenNumber;
+    if (screenNumber) {
+      updateData.screenNumber = screenNumber;
+      updateData.name = screenNumber;
+    }
     if (seatLayout) updateData.seatLayout = seatLayout;
+    
+    if (pricing) {
+       // Re-calculate seatTiers (same logic as addScreen)
+       let seatTiers = [];
+       const tierRows = {};
+       const seatCodes = {
+         'S': 'Standard', 'D': 'Deluxe', 'P': 'Premium', 'R': 'Recliner', 'C': 'Couple'
+       };
+       const getRowLabel = (index) => String.fromCharCode(65 + index);
+       
+       const layoutToUse = seatLayout || screen.seatLayout;
+       
+       if (layoutToUse.layout && Array.isArray(layoutToUse.layout)) {
+         layoutToUse.layout.forEach((row, rowIndex) => {
+           const uniqueSeats = [...new Set(row.filter(s => s !== ''))];
+           uniqueSeats.forEach(code => {
+             if (!tierRows[code]) tierRows[code] = [];
+             tierRows[code].push(getRowLabel(rowIndex));
+           });
+         });
+       }
+
+       if (pricing.unified) {
+          Object.keys(tierRows).forEach(code => {
+            seatTiers.push({
+              tierName: seatCodes[code] || 'Standard',
+              price: Number(pricing.unified),
+              rows: tierRows[code]
+            });
+          });
+           if (seatTiers.length === 0 && layoutToUse.layout) {
+            seatTiers.push({
+              tierName: 'Standard',
+              price: Number(pricing.unified),
+              rows: layoutToUse.layout.map((_, i) => getRowLabel(i))
+            });
+         }
+       } else {
+         Object.keys(pricing).forEach(code => {
+           if (pricing[code] && pricing[code].price) {
+             seatTiers.push({
+               tierName: seatCodes[code] || code,
+               price: Number(pricing[code].price),
+               rows: tierRows[code] || []
+             });
+           }
+         });
+       }
+       updateData.seatTiers = seatTiers;
+    }
 
     const updatedScreen = await Screen.findByIdAndUpdate(screenId, updateData, { new: true });
+
+    // Try to update Theatre embedded screen if possible (complex with array filters, maybe skip for now or just do best effort)
+    // Since we don't have a stable ID for embedded array items (unless we generated one), this is hard.
+    // We'll skip updating Theatre embedded screens on Edit for now, assuming Screen doc is source of truth for Manager.
 
     res.json({ success: true, message: "Screen updated successfully", screen: updatedScreen });
   } catch (error) {
@@ -405,11 +550,12 @@ export const toggleScreenStatus = async (req, res) => {
     }
 
     // Verify screen belongs to manager's theatre
-    if (screen.theatre.toString() !== manager.managedTheatreId.toString()) {
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    if (screen.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Not authorized to manage this screen" });
     }
 
-    screen.status = status;
+    screen.isActive = (status === 'active');
     await screen.save();
 
     res.json({ 

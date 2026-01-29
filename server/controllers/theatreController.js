@@ -1,6 +1,7 @@
 import Theatre from "../models/Theatre.js";
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
+import Screen from "../models/Screen.js";
 import bcryptjs from "bcryptjs";
 import sendEmail from "../configs/nodeMailer.js";
 
@@ -215,7 +216,85 @@ export const registerTheatre = async (req, res) => {
       approval_status: 'pending', // Set to pending until admin approval
     });
 
-    await newTheatre.save();
+    const savedTheatre = await newTheatre.save();
+
+    // Create Screen documents linked to the theatre
+    const screenDocs = screens.map((screenData, index) => {
+      // Generate row labels (A, B, C...)
+      const rowLabels = [];
+      for (let i = 0; i < screenData.layout.rows; i++) {
+        // Handle > 26 rows (AA, AB...) if necessary, but simple A-Z is usually enough
+        // Using simple generation for now
+        let label = "";
+        if (i < 26) {
+          label = String.fromCharCode(65 + i);
+        } else {
+          label = "R" + (i + 1); // Fallback for very large screens
+        }
+        rowLabels.push(label);
+      }
+
+      let seatTiers = [];
+      if (screenData.pricing.unified) {
+        seatTiers.push({
+          tierName: "Standard",
+          price: Number(screenData.pricing.unified),
+          rows: rowLabels,
+          seatsPerRow: screenData.layout.seatsPerRow,
+        });
+      } else {
+        // Group rows by tier code
+        const tierGroups = {}; // code -> [rowLabels]
+
+        screenData.layout.layout.forEach((rowSeats, rowIndex) => {
+          // Find first non-empty seat to determine tier
+          const firstSeat = rowSeats.find((s) => s && s !== "");
+          if (firstSeat) {
+            if (!tierGroups[firstSeat]) tierGroups[firstSeat] = [];
+            tierGroups[firstSeat].push(rowLabels[rowIndex]);
+          }
+        });
+
+        // Build seatTiers from groups
+        for (const [code, rows] of Object.entries(tierGroups)) {
+          // Get price from pricing object
+          // pricing[code] is { price: 150, enabled: true }
+          const tierPrice = screenData.pricing[code]?.price || 0;
+
+          // Map code to descriptive name if possible (optional)
+          const tierNames = {
+            S: "Standard",
+            D: "Deluxe",
+            P: "Premium",
+            R: "Recliner",
+            C: "Couple",
+          };
+
+          seatTiers.push({
+            tierName: tierNames[code] || code,
+            price: Number(tierPrice),
+            rows: rows,
+            seatsPerRow: screenData.layout.seatsPerRow,
+          });
+        }
+      }
+
+      return {
+        screenNumber: screenData.name || `Screen ${index + 1}`,
+        theatre: savedTheatre._id,
+        seatLayout: {
+          rows: screenData.layout.rows,
+          seatsPerRow: screenData.layout.seatsPerRow,
+          totalSeats: screenData.layout.totalSeats,
+        },
+        seatTiers: seatTiers,
+        isActive: true,
+      };
+    });
+
+    if (screenDocs.length > 0) {
+      await Screen.insertMany(screenDocs);
+    }
 
     // Delete all OTPs for this email after successful registration
     await Otp.deleteMany({ email: normalizedEmail, purpose: "theatre-registration" });

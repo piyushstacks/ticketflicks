@@ -17,6 +17,8 @@ import {
   approveTheatre,
   getTheatrePayments,
   getPendingTheatres,
+  getAllShows,
+  getTheatreScreens,
 } from "../controllers/adminController.js";
 import {
   syncMoviesFromTMDB,
@@ -41,6 +43,7 @@ adminRouter.get("/dashboard", protectAdminOnly, fetchDashboardData);
 adminRouter.get("/dashboard-admin", protectAdminOnly, dashboardAdminData);
 adminRouter.get("/all-bookings", protectAdminOnly, fetchAllBookings);
 adminRouter.get("/all-screens", protectAdminOnly, fetchAllScreens);
+adminRouter.get("/all-shows", protectAdminOnly, getAllShows);
 adminRouter.get("/theatres/pending", protectAdminOnly, getPendingTheatres);
 adminRouter.get("/all-feedbacks", protectAdminOnly, fetchAllFeedbacks);
 
@@ -48,6 +51,7 @@ adminRouter.get("/all-feedbacks", protectAdminOnly, fetchAllFeedbacks);
 adminRouter.get("/theatres", protectAdminOnly, getAllTheatres);
 adminRouter.get("/theatres/pending", protectAdminOnly, getPendingTheatres);
 adminRouter.get("/theatres/:theatreId", protectAdminOnly, getTheatreDetails);
+adminRouter.get("/theatres/:theatreId/screens", protectAdminOnly, getTheatreScreens);
 adminRouter.post("/theatres", protectAdminOnly, createTheatre);
 adminRouter.put("/theatres/:theatreId", protectAdminOnly, updateTheatre);
 adminRouter.delete("/theatres/:theatreId", protectAdminOnly, deleteTheatre);

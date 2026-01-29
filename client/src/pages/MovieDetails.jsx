@@ -224,11 +224,14 @@ const MovieDetails = () => {
               Watch Trailer
             </a>
             <a
-              href="#bookingSection"
+              onClick={() => {
+                navigate(`/select-show/${id}`);
+                scrollTo(0, 0);
+              }}
               className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium
               cursor-pointer active:scale-95"
             >
-              Buy Tickets
+              Book Tickets
             </a>
             <FavoriteButton className="max-md:hidden" />
           </div>

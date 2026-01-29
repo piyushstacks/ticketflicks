@@ -64,12 +64,18 @@ const ManagerShows = () => {
   const fetchShows = async () => {
     try {
       setLoading(true);
+      console.log("Fetching shows...");
       const { data } = await axios.get("/api/manager/shows", {
         headers: getAuthHeaders(),
       });
 
+      console.log("Shows response:", data);
+
       if (data.success) {
         setShows(data.shows || []);
+        console.log("Shows set:", data.shows);
+      } else {
+        console.error("Shows API error:", data.message);
       }
     } catch (error) {
       console.error("Error fetching shows:", error);
@@ -133,6 +139,16 @@ const ManagerShows = () => {
     if (!formData.movie || !formData.screen || !formData.showTime) {
       toast.error("Please fill all required fields");
       return;
+    }
+
+    // Validate dates
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      if (end < start) {
+        toast.error("End date cannot be before start date");
+        return;
+      }
     }
 
     try {
@@ -242,6 +258,38 @@ const ManagerShows = () => {
     }
   };
 
+  const handleExtendShow = async (showId) => {
+    if (!window.confirm("Are you sure you want to extend this show by 7 days?")) return;
+
+    try {
+      const show = shows.find(s => s._id === showId);
+      if (!show) {
+        toast.error("Show not found");
+        return;
+      }
+
+      const currentEndDate = new Date(show.endDate);
+      const newEndDate = new Date(currentEndDate);
+      newEndDate.setDate(newEndDate.getDate() + 7);
+
+      const { data } = await axios.put(
+        `/api/manager/shows/${showId}`,
+        { endDate: newEndDate.toISOString().split('T')[0] },
+        { headers: getAuthHeaders() }
+      );
+
+      if (data.success) {
+        toast.success("Show extended by 7 days successfully");
+        fetchShows();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error("Error extending show:", error);
+      toast.error("Failed to extend show");
+    }
+  };
+
   const handleRepeatForNextWeek = async () => {
     const confirmMessage = "Are you sure you want to repeat all current shows for next week?";
     if (!window.confirm(confirmMessage)) return;
@@ -304,6 +352,7 @@ const ManagerShows = () => {
   };
 
   const formatShowTime = (time) => {
+    if (!time) return 'Not set';
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -325,13 +374,6 @@ const ManagerShows = () => {
           <p className="text-gray-400 mt-1">Create and manage movie show schedules</p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={handleRepeatForNextWeek}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition font-medium"
-          >
-            <Repeat className="w-5 h-5" />
-            Repeat for Next Week
-          </button>
           <button
             onClick={() => setShowForm(!showForm)}
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dull rounded-lg transition font-medium"
@@ -646,6 +688,14 @@ const ManagerShows = () => {
                       title={show.isActive ? "Disable Show" : "Enable Show"}
                     >
                       {show.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                    </button>
+                    
+                    <button
+                      onClick={() => handleExtendShow(show._id)}
+                      className="p-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg transition"
+                      title="Extend by 7 Days"
+                    >
+                      <Repeat className="w-4 h-4" />
                     </button>
                     
                     <button

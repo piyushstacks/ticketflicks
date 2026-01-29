@@ -7,6 +7,7 @@ import Movies from "./pages/Movies";
 import MovieDetails from "./pages/MovieDetails";
 import SeatLayout from "./pages/SeatLayout";
 import BuyTicketsFlow from "./pages/BuyTicketsFlow";
+import MovieShowSelector from "./components/MovieShowSelector";
 import MyBooking from "./pages/MyBookings";
 import Favorite from "./pages/Favorite";
 import { Toaster } from "react-hot-toast";
@@ -62,6 +63,7 @@ const App = () => {
         <Route path="/movies" element={<Movies />} />
         <Route path="/movies/:id" element={<MovieDetails />} />
         <Route path="/buy-tickets/:id" element={<BuyTicketsFlow />} />
+        <Route path="/select-show/:id" element={<MovieShowSelector />} />
         <Route path="/movies/:id/:date" element={<SeatLayout />} />
         <Route path="/seat-layout/:id" element={<SeatLayout />} />
         <Route path="/upcoming-movies" element={<Upcoming />} />

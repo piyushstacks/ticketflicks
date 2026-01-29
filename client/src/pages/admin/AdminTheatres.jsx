@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Edit2, Ban, Plus, MapPin, Users, Phone, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Edit2, Ban, Plus, MapPin, Users, Phone, CheckCircle, XCircle, Clock, Monitor, Eye } from "lucide-react";
 
 const AdminTheatres = () => {
   const { axios, getAuthHeaders } = useAppContext();
@@ -12,6 +12,9 @@ const AdminTheatres = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [activeTab, setActiveTab] = useState("pending"); // "pending" or "approved"
+  const [viewingScreens, setViewingScreens] = useState(null);
+  const [screens, setScreens] = useState([]);
+  const [screensLoading, setScreensLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -22,6 +25,31 @@ const AdminTheatres = () => {
     phone: "",
     email: "",
   });
+
+  const fetchScreens = async (theatreId) => {
+    try {
+      setScreensLoading(true);
+      const { data } = await axios.get(`/api/admin/theatres/${theatreId}/screens`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (data.success) {
+        setScreens(data.screens || []);
+      } else {
+        toast.error(data.message || "Failed to load screens");
+      }
+    } catch (error) {
+      console.error("Error fetching screens:", error);
+      toast.error("Failed to load screens");
+    } finally {
+      setScreensLoading(false);
+    }
+  };
+
+  const handleViewScreens = (theatre) => {
+    setViewingScreens(theatre);
+    fetchScreens(theatre._id);
+  };
 
   const fetchTheatres = async () => {
     try {
@@ -474,6 +502,13 @@ const AdminTheatres = () => {
 
                   <div className="flex gap-2 pt-4">
                     <button
+                      onClick={() => handleViewScreens(theatre)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg transition text-sm font-medium"
+                    >
+                      <Monitor className="w-4 h-4" />
+                      View Screens
+                    </button>
+                    <button
                       onClick={() => handleEdit(theatre)}
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-sm font-medium"
                     >
@@ -565,6 +600,132 @@ const AdminTheatres = () => {
               </div>
             )}
           </div>
+          </div>
+        </div>
+      )}
+
+      {/* Screens Modal */}
+      {viewingScreens && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold">Screens - {viewingScreens.name}</h2>
+                <p className="text-gray-400 mt-1">{viewingScreens.location}, {viewingScreens.city}</p>
+              </div>
+              <button
+                onClick={() => setViewingScreens(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {screensLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : screens.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {screens.map((screen) => (
+                  <div key={screen._id} className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-start">
+                        <h3 className="text-xl font-bold">{screen.name || `Screen ${screen.screenNumber}`}</h3>
+                        <span className={`px-3 py-1 rounded-full text-sm ${
+                          screen.isActive 
+                            ? 'bg-green-600/20 text-green-400' 
+                            : 'bg-red-600/20 text-red-400'
+                        }`}>
+                          {screen.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+
+                      {/* Screen Layout Preview */}
+                      {screen.seatLayout?.layout && (
+                        <div className="bg-gray-900/50 rounded-lg p-4">
+                          <h4 className="font-semibold text-primary mb-3">Seat Layout Preview</h4>
+                          <div className="flex justify-center">
+                            <div className="inline-block">
+                              {screen.seatLayout.layout.slice(0, 6).map((row, rIdx) => (
+                                <div key={rIdx} className="flex justify-center gap-1 mb-1">
+                                  {row.slice(0, 8).map((seat, cIdx) => (
+                                    <div
+                                      key={cIdx}
+                                      className={`w-2 h-2 rounded-sm ${
+                                        seat === '' 
+                                          ? 'invisible' 
+                                          : 'bg-gray-600'
+                                      }`}
+                                      title={seat}
+                                    />
+                                  ))}
+                                </div>
+                              ))}
+                              {screen.seatLayout.layout.length > 6 && (
+                                <div className="text-center text-gray-500 text-xs mt-1">...and more rows</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Screen Details */}
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-400">Screen Number:</span>
+                            <span className="ml-2 text-gray-300">{screen.screenNumber}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Status:</span>
+                            <span className={`ml-2 ${screen.isActive ? 'text-green-400' : 'text-red-400'}`}>
+                              {screen.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {screen.seatLayout && (
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-400">Total Seats:</span>
+                              <span className="ml-2 text-gray-300">{screen.seatLayout.totalSeats}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400">Layout:</span>
+                              <span className="ml-2 text-gray-300">
+                                {screen.seatLayout.rows} rows × {screen.seatLayout.seatsPerRow} seats
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {screen.seatTiers && screen.seatTiers.length > 0 && (
+                          <div>
+                            <h5 className="font-semibold text-primary mb-2">Seat Tiers</h5>
+                            <div className="space-y-1">
+                              {screen.seatTiers.map((tier, idx) => (
+                                <div key={idx} className="flex justify-between text-sm">
+                                  <span className="text-gray-400">{tier.tierName}:</span>
+                                  <span className="text-gray-300">₹{tier.price}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Monitor className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No screens found for this theatre</p>
+              </div>
+            )}
           </div>
         </div>
       )}

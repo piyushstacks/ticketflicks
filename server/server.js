@@ -12,6 +12,7 @@ import managerRouter from "./routes/managerRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import theatreRouter from "./routes/theatreRoutes.js";
 import debugRouter from "./routes/debugRoutes.js";
+import publicRouter from "./routes/publicRoutes.js";
 import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use(clerkMiddleware());
 //API Routes
 app.get("/", (req, res) => res.send("Server is Live!"));
 app.use("/api/inngest", serve({ client: inngest, functions }));
+app.use("/api/public", publicRouter);
 app.use("/api/show", showRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/admin", adminRouter);

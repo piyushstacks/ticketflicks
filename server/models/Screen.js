@@ -2,9 +2,11 @@ import mongoose from "mongoose";
 
 const screenSchema = new mongoose.Schema(
   {
+    name: { type: String, required: true }, // e.g., "Screen 1", "Screen 2"
     screenNumber: { type: String, required: true }, // e.g., "Screen 1", "Screen 2"
     theatre: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Theatre" },
     seatLayout: {
+      layout: { type: [[String]], required: true }, // 2D array of seat types
       rows: { type: Number, required: true }, // Number of rows
       seatsPerRow: { type: Number, required: true }, // Seats per row
       totalSeats: { type: Number, required: true }, // Total seats in the screen
