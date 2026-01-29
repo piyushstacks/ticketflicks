@@ -54,6 +54,19 @@ const AdminShows = () => {
     ? shows.filter((show) => show.theatre?._id === selectedTheatre)
     : shows;
 
+  // Group shows by theatre
+  const showsByTheatre = filteredShows.reduce((acc, show) => {
+    const theatreId = show.theatre?._id;
+    if (!acc[theatreId]) {
+      acc[theatreId] = {
+        theatre: show.theatre,
+        shows: []
+      };
+    }
+    acc[theatreId].shows.push(show);
+    return acc;
+  }, {});
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -80,155 +93,149 @@ const AdminShows = () => {
         </select>
       </div>
 
-      {/* Shows Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredShows.map((show) => (
-          <div
-            key={show._id}
-            className="bg-gray-900/30 border border-gray-700 rounded-lg p-6 hover:border-primary/50 transition"
-          >
-            <div className="space-y-4">
-              {/* Movie Info */}
-              <div className="flex gap-4">
-                {show.movie?.poster_path && (
-                  <img
-                    src={
-                      show.movie.poster_path.startsWith("http")
-                        ? show.movie.poster_path
-                        : `https://image.tmdb.org/t/p/w200${show.movie.poster_path}`
-                    }
-                    alt={show.movie.title}
-                    className="w-20 h-28 rounded object-cover"
-                  />
-                )}
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold">{show.movie?.title || "Unknown Movie"}</h3>
-                  <p className="text-gray-400 text-sm mt-1">
-                    {show.movie?.overview?.substring(0, 80)}...
-                  </p>
-                  {show.movie?.genres && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {show.movie.genres.slice(0, 3).map((genre) => (
-                        <span
-                          key={genre.id}
-                          className="px-2 py-1 bg-primary/20 text-primary text-xs rounded"
-                        >
-                          {genre.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+      {/* Shows Organized by Theatre */}
+      <div className="space-y-8">
+        {Object.values(showsByTheatre).map(({ theatre, shows: theatreShows }) => (
+          <div key={theatre._id} className="space-y-4">
+            {/* Theatre Header */}
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <MapPin className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-bold">{theatre.name}</h2>
+                <span className="text-gray-400">
+                  {theatre.city && `${theatre.city}, ${theatre.location || ''}`}
+                </span>
+                <span className="ml-auto px-3 py-1 bg-primary/20 text-primary rounded-full text-sm">
+                  {theatreShows.length} Shows
+                </span>
               </div>
+            </div>
 
-              {/* Theatre & Screen Info */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <span className="text-gray-300">{show.theatre?.name || "Unknown Theatre"}</span>
-                  </div>
-                  {show.screen && (
-                    <div className="flex items-center gap-2">
-                      <Monitor className="w-4 h-4 text-primary" />
-                      <span className="text-gray-300">Screen {show.screen.screenNumber}</span>
+            {/* Shows Grid for this Theatre */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {theatreShows.map((show) => (
+                <div
+                  key={show._id}
+                  className="bg-gray-900/30 border border-gray-700 rounded-lg p-6 hover:border-primary/50 transition"
+                >
+                  <div className="space-y-4">
+                    {/* Movie Info */}
+                    <div className="flex gap-4">
+                      {show.movie?.poster_path && (
+                        <img
+                          src={
+                            show.movie.poster_path.startsWith("http")
+                              ? show.movie.poster_path
+                              : `https://image.tmdb.org/t/p/w200${show.movie.poster_path}`
+                          }
+                          alt={show.movie.title}
+                          className="w-20 h-28 rounded object-cover"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold">{show.movie?.title || "Unknown Movie"}</h3>
+                        <p className="text-gray-400 text-sm mt-1">
+                          {show.movie?.overview?.substring(0, 80)}...
+                        </p>
+                        {show.movie?.genres && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {show.movie.genres.slice(0, 3).map((genre) => (
+                              <span
+                                key={genre.id}
+                                className="px-2 py-1 bg-primary/20 text-primary text-xs rounded"
+                              >
+                                {genre.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    <span className="text-gray-300">
-                      {show.showDateTime
-                        ? new Date(show.showDateTime).toLocaleDateString()
-                        : "No date"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <span className="text-gray-300">
-                      {show.showDateTime
-                        ? new Date(show.showDateTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "No time"}
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Screen Details */}
-              {show.screen && (
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h4 className="font-semibold text-primary mb-2">Screen Details</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-gray-400">Screen Number:</span>
-                      <span className="ml-2 text-gray-300">{show.screen.screenNumber}</span>
+                    {/* Show Details */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Monitor className="w-4 h-4 text-primary" />
+                          <span className="text-gray-300">Screen {show.screen?.screenNumber || show.screen?.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-primary" />
+                          <span className="text-gray-300">
+                            {show.showDateTime
+                              ? new Date(show.showDateTime).toLocaleDateString()
+                              : show.startDate
+                              ? new Date(show.startDate).toLocaleDateString()
+                              : "No date"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <span className="text-gray-300">
+                            {show.showTime
+                              ? show.showTime
+                              : show.showDateTime
+                              ? new Date(show.showDateTime).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "No time"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 bg-primary/20 text-primary text-xs rounded">
+                            {show.language || "English"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-gray-400">Total Seats:</span>
-                      <span className="ml-2 text-gray-300">
-                        {show.screen.seatLayout?.totalSeats || "N/A"}
-                      </span>
-                    </div>
-                    {show.screen.seatLayout?.rows && (
-                      <div>
-                        <span className="text-gray-400">Rows:</span>
-                        <span className="ml-2 text-gray-300">{show.screen.seatLayout.rows}</span>
+
+                    {/* Screen Details */}
+                    {show.screen && (
+                      <div className="bg-gray-800/50 rounded-lg p-4">
+                        <h4 className="font-semibold text-primary mb-2">Screen Details</h4>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="text-gray-400">Screen Number:</span>
+                            <span className="ml-2 text-gray-300">{show.screen.screenNumber || show.screen.name}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Total Seats:</span>
+                            <span className="ml-2 text-gray-300">
+                              {show.screen.seatLayout?.totalSeats || "N/A"}
+                            </span>
+                          </div>
+                          {show.screen.seatLayout?.rows && (
+                            <div>
+                              <span className="text-gray-400">Rows:</span>
+                              <span className="ml-2 text-gray-300">{show.screen.seatLayout.rows}</span>
+                            </div>
+                          )}
+                          {show.screen.seatLayout?.seatsPerRow && (
+                            <div>
+                              <span className="text-gray-400">Seats per Row:</span>
+                              <span className="ml-2 text-gray-300">
+                                {show.screen.seatLayout.seatsPerRow}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
-                    {show.screen.seatLayout?.seatsPerRow && (
-                      <div>
-                        <span className="text-gray-400">Seats per Row:</span>
-                        <span className="ml-2 text-gray-300">
-                          {show.screen.seatLayout.seatsPerRow}
-                        </span>
-                      </div>
-                    )}
+
+                    {/* View Details Button */}
+                    <button
+                      onClick={() => setViewingShow(show)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dull rounded-lg transition font-medium"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Full Details
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {/* Booking Summary */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h4 className="font-semibold text-primary mb-2">Booking Summary</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-gray-400">Booked Seats:</span>
-                    <span className="ml-2 text-gray-300">
-                      {Object.keys(show.occupiedSeats || {}).length}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Available Seats:</span>
-                    <span className="ml-2 text-gray-300">
-                      {(show.screen?.seatLayout?.totalSeats || 0) -
-                        Object.keys(show.occupiedSeats || {}).length}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Ticket Price:</span>
-                    <span className="ml-2 text-gray-300">₹{show.showPrice || "N/A"}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Revenue:</span>
-                    <span className="ml-2 text-gray-300">
-                      ₹{Object.keys(show.occupiedSeats || {}).length * (show.showPrice || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* View Details Button */}
-              <button
-                onClick={() => setViewingShow(show)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dull rounded-lg transition font-medium"
-              >
-                <Eye className="w-4 h-4" />
-                View Full Details
-              </button>
+              ))}
             </div>
           </div>
         ))}

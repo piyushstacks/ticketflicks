@@ -2,6 +2,8 @@ import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import User from "../models/User.js";
 import Theatre from "../models/Theatre.js";
+import Movie from "../models/Movie.js";
+import Screen from "../models/Screen.js";
 import bcryptjs from "bcryptjs";
 import sendEmail from "../configs/nodeMailer.js";
 
@@ -457,6 +459,58 @@ export const getTheatrePayments = async (req, res) => {
     });
   } catch (error) {
     console.error("[getTheatrePayments]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get all shows for admin - organized by theatre
+export const getAllShows = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
+    const shows = await Show.find({})
+      .populate("movie", "title poster_path overview genres")
+      .populate("theatre", "name location city")
+      .populate("screen", "screenNumber name seatLayout")
+      .sort({ showDateTime: -1 });
+
+    console.log("Found shows for admin:", shows.length);
+
+    res.json({ success: true, shows });
+  } catch (error) {
+    console.error("[getAllShows]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get screens for a specific theatre
+export const getTheatreScreens = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
+    const { theatreId } = req.params;
+
+    const screens = await Screen.find({ theatre: theatreId })
+      .populate("theatre", "name location city")
+      .sort({ screenNumber: 1 });
+
+    console.log("Found screens for theatre:", theatreId, screens.length);
+
+    res.json({ success: true, screens });
+  } catch (error) {
+    console.error("[getTheatreScreens]", error);
     res.json({ success: false, message: error.message });
   }
 };

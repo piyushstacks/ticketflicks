@@ -42,7 +42,7 @@ export const getTheatreScreens = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheatreId;
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
 
     const screens = await Screen.find({
       theatre: theatreId,
@@ -66,7 +66,7 @@ export const addShow = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheatreId;
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
     const { 
       movie, 
       screen, 
@@ -110,13 +110,11 @@ export const addShow = async (req, res) => {
     const showStartDate = startDate || currentWeek.start;
     const showEndDate = endDate || currentWeek.end;
 
-    // Check if show already exists for this time slot and date range
+    // Check if show already exists for this time slot
     const existingShow = await Show.findOne({
       movie,
       screen,
-      showTime,
-      startDate: showStartDate,
-      endDate: showEndDate,
+      showDateTime: new Date(`${showStartDate} ${showTime}`),
       theatre: theatreId
     });
 
@@ -127,26 +125,35 @@ export const addShow = async (req, res) => {
       });
     }
 
-    // Create the show with new structure
-    const show = await Show.create({
+    console.log("Creating show with data:", {
       movie,
       theatre: theatreId,
       screen,
       showTime,
+      showStartDate,
+      showEndDate,
       language,
-      startDate: showStartDate,
-      endDate: showEndDate,
-      isActive,
-      // Legacy fields for compatibility
+      isActive
+    });
+
+    // Create the show with correct structure
+    const show = await Show.create({
+      movie,
+      theatre: theatreId,
+      screen,
       showDateTime: new Date(`${showStartDate} ${showTime}`),
+      showTime,
+      startDate: new Date(showStartDate),
+      endDate: new Date(showEndDate),
+      language,
       basePrice: 150,
       seatTiers: [
         {
           tierName: "Standard",
           price: 150,
-          seatsPerRow: screenDoc.seatsPerRow || 20,
-          rowCount: screenDoc.rows || 10,
-          totalSeats: (screenDoc.seatsPerRow || 20) * (screenDoc.rows || 10),
+          seatsPerRow: screenDoc.seatLayout?.seatsPerRow || 20,
+          rowCount: screenDoc.seatLayout?.rows || 10,
+          totalSeats: (screenDoc.seatLayout?.seatsPerRow || 20) * (screenDoc.seatLayout?.rows || 10),
           occupiedSeats: {},
         },
         {
@@ -158,8 +165,11 @@ export const addShow = async (req, res) => {
           occupiedSeats: {},
         },
       ],
-      totalCapacity: ((screenDoc.seatsPerRow || 20) * (screenDoc.rows || 10)) + 10,
+      totalCapacity: ((screenDoc.seatLayout?.seatsPerRow || 20) * (screenDoc.seatLayout?.rows || 10)) + 10,
+      isActive,
     });
+
+    console.log("Show created successfully:", show);
 
     // Populate the show with movie and screen details
     await show.populate('movie screen');
@@ -193,6 +203,8 @@ function getCurrentWeekDates() {
 export const getTheatreShows = async (req, res) => {
   try {
     const manager = await User.findById(req.user.id);
+    console.log("Manager found:", manager?._id, manager?.role);
+    
     if (!manager || manager.role !== "manager") {
       return res.json({
         success: false,
@@ -200,10 +212,13 @@ export const getTheatreShows = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheatreId;
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    console.log("Theatre ID:", theatreId);
+    
     const { movieId, status = "all" } = req.query;
 
     let query = { theatre: theatreId };
+    console.log("Show query:", query);
 
     if (movieId) {
       query.movie = movieId;
@@ -215,10 +230,13 @@ export const getTheatreShows = async (req, res) => {
       query.showDateTime = { $lt: new Date() };
     }
 
+    console.log("Final query:", query);
     const shows = await Show.find(query)
       .populate("movie", "title poster_path")
-      .populate("screen", "screenNumber")
+      .populate("screen", "screenNumber name")
       .sort({ showDateTime: -1 });
+
+    console.log("Found shows:", shows.length, shows);
 
     res.json({ success: true, shows });
   } catch (error) {
@@ -238,7 +256,7 @@ export const editShow = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheatreId;
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
     const { showId } = req.params;
     const updates = req.body;
 
@@ -281,7 +299,7 @@ export const deleteShow = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheatreId;
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
     const { showId } = req.params;
 
     const show = await Show.findOne({
@@ -319,7 +337,7 @@ export const dashboardManagerData = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheatreId;
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
 
     const activeShows = await Show.countDocuments({
       theatre: theatreId,
@@ -369,7 +387,7 @@ export const toggleShowStatus = async (req, res) => {
     }
 
     // Verify show belongs to manager's theatre
-    if (show.theatre.toString() !== manager.managedTheatreId.toString()) {
+    if (show.theatre.toString() !== (manager.managedTheaterId || manager.managedTheatreId).toString()) {
       return res.json({ success: false, message: "Not authorized to manage this show" });
     }
 
@@ -402,7 +420,7 @@ export const repeatShowsForNextWeek = async (req, res) => {
 
     // Get current week shows
     const currentShows = await Show.find({
-      theatre: manager.managedTheatreId,
+      theatre: manager.managedTheaterId || manager.managedTheatreId,
       startDate: { $gte: new Date(currentWeekStart) },
       endDate: { $lte: new Date(currentWeekEnd) },
       isActive: true
@@ -413,7 +431,7 @@ export const repeatShowsForNextWeek = async (req, res) => {
     for (const show of currentShows) {
       // Check if show already exists for next week
       const existingShow = await Show.findOne({
-        theatre: manager.managedTheatreId,
+        theatre: manager.managedTheaterId || manager.managedTheatreId,
         movie: show.movie._id,
         screen: show.screen._id,
         showTime: show.showTime,
@@ -425,13 +443,17 @@ export const repeatShowsForNextWeek = async (req, res) => {
       if (!existingShow) {
         // Create new show for next week
         await Show.create({
-          theatre: manager.managedTheatreId,
+          theatre: manager.managedTheaterId || manager.managedTheatreId,
           movie: show.movie._id,
           screen: show.screen._id,
+          showDateTime: new Date(`${nextWeekStart} ${show.showTime}`),
           showTime: show.showTime,
+          startDate: new Date(nextWeekStart),
+          endDate: new Date(nextWeekEnd),
           language: show.language,
-          startDate: nextWeekStart,
-          endDate: nextWeekEnd,
+          basePrice: show.basePrice || 150,
+          seatTiers: show.seatTiers || [],
+          totalCapacity: show.totalCapacity || 200,
           isActive: true
         });
         repeatedShows++;

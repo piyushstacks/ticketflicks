@@ -18,6 +18,9 @@ const showSchema = mongoose.Schema(
       ref: "Screen",
     },
     showDateTime: { type: Date, required: true },
+    showTime: { type: String }, // HH:MM format
+    startDate: { type: Date }, // Show start date
+    endDate: { type: Date }, // Show end date
     basePrice: { type: Number, required: true },
     language: { type: String, default: "en" },
     seatTiers: [

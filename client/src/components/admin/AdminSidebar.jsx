@@ -24,7 +24,7 @@ const AdminSidebar = () => {
     { name: "Dashboard", path: "/admin", icon: LayoutDashboardIcon },
     { name: "Manage Theatres", path: "/admin/theatres", icon: Building2 },
     { name: "Manage Movies", path: "/admin/movies", icon: Film },
-    { name: "Shows & Screens", path: "/admin/shows", icon: Monitor },
+    { name: "Shows Running", path: "/admin/shows", icon: Monitor },
     { name: "Bookings", path: "/admin/bookings", icon: Ticket },
     { name: "Payments", path: "/admin/payments-list", icon: CreditCard },
   ];

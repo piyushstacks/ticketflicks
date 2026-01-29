@@ -73,6 +73,16 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const requestTheatreRegistrationOtp = async (payload) => {
+    const { data } = await axios.post("/api/theatre/request-otp", payload);
+    return data;
+  };
+
+  const completeTheatreRegistration = async (payload) => {
+    const { data } = await axios.post("/api/theatre/register", payload);
+    return data;
+  };
+
   const getTheatresByManager = async (managerId) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const { data } = await axios.get(`/api/theatre/manager/${managerId}`, { headers });
@@ -120,6 +130,8 @@ export const AuthProvider = ({ children }) => {
     resendLogin,
     resendForgot,
     changePassword,
+    requestTheatreRegistrationOtp,
+    completeTheatreRegistration,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
