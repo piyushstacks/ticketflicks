@@ -72,6 +72,16 @@ const Signup = () => {
     return { ...strengthMap[score], score };
   };
 
+  // Enhanced password validation
+  const validatePassword = (pwd) => {
+    if (!pwd) return "Password is required";
+    if (pwd.length < 8) return "Password must be at least 8 characters";
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(pwd)) {
+      return "Password must contain at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character (@$!%*?&)";
+    }
+    return "";
+  };
+
   const passwordStrength = getPasswordStrength(password);
   const passwordsMatch = password === confirmPassword;
 
@@ -91,10 +101,9 @@ const Signup = () => {
     }
     if (!password) {
       nextErrors.password = "Password is required.";
-    } else if (password.length < 8) {
-      nextErrors.password = "Password must be at least 8 characters.";
-    } else if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[@$!%*?&]/.test(password)) {
-      nextErrors.password = "Password must include uppercase, lowercase, numbers, and special characters (@$!%*?&)";
+    } else {
+      const pwdError = validatePassword(password);
+      if (pwdError) nextErrors.password = pwdError;
     }
     if (!confirmPassword) {
       nextErrors.confirmPassword = "Please confirm your password.";

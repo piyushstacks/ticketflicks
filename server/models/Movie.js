@@ -27,8 +27,12 @@ const movieSchema = new mongoose.Schema(
       ref: "Theatre",
       default: [],
     }, // Theatres excluded from showing this movie
+    reviews: {
+      type: [String], // Array of Twitter/X post URLs
+      default: [],
+    },
   },
-  { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
+  { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } },
 );
 
 const Movie = mongoose.model("Movie", movieSchema, "movie_tbls");

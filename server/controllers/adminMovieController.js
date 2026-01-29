@@ -101,11 +101,12 @@ export const createMovie = async (req, res) => {
       casts,
       vote_average,
       runtime,
-      tmdbId
+      tmdbId,
+      reviews,
     } = req.body;
 
     // Validate required fields
-    if (!title || title.trim() === '') {
+    if (!title || title.trim() === "") {
       return res.json({
         success: false,
         message: "Movie title is required",
@@ -129,11 +130,11 @@ export const createMovie = async (req, res) => {
     }
 
     // Check for duplicate title
-    const existingMovie = await Movie.findOne({ 
+    const existingMovie = await Movie.findOne({
       title: title.trim(),
-      isActive: true 
+      isActive: true,
     });
-    
+
     if (existingMovie) {
       return res.json({
         success: false,
@@ -161,7 +162,10 @@ export const createMovie = async (req, res) => {
     }
 
     // Validate vote_average if provided
-    if (vote_average && (isNaN(vote_average) || vote_average < 0 || vote_average > 10)) {
+    if (
+      vote_average &&
+      (isNaN(vote_average) || vote_average < 0 || vote_average > 10)
+    ) {
       return res.json({
         success: false,
         message: "Vote average must be between 0 and 10",
@@ -169,22 +173,22 @@ export const createMovie = async (req, res) => {
     }
 
     // Get all active theatres
-    const activeTheatres = await Theatre.find({ 
+    const activeTheatres = await Theatre.find({
       disabled: false,
-      approval_status: 'approved' 
+      approval_status: "approved",
     });
-    const theatreIds = activeTheatres.map(theatre => theatre._id);
+    const theatreIds = activeTheatres.map((theatre) => theatre._id);
 
     // Create movie with auto-assignment
     const newMovie = new Movie({
       title: title.trim(),
-      overview: overview || '',
-      poster_path: poster_path || '',
-      backdrop_path: backdrop_path || '',
-      trailer_path: trailer_path || '',
+      overview: overview || "",
+      poster_path: poster_path || "",
+      backdrop_path: backdrop_path || "",
+      trailer_path: trailer_path || "",
       release_date: releaseDateObj,
-      original_language: original_language || 'en',
-      tagline: tagline || '',
+      original_language: original_language || "en",
+      tagline: tagline || "",
       genres: genres || [],
       casts: casts || [],
       vote_average: vote_average || 0,
@@ -193,7 +197,8 @@ export const createMovie = async (req, res) => {
       isActive: true,
       addedByAdmin: req.user.id,
       theatres: theatreIds,
-      excludedTheatres: []
+      excludedTheatres: [],
+      reviews: reviews || [],
     });
 
     await newMovie.save();
@@ -201,13 +206,13 @@ export const createMovie = async (req, res) => {
     // Update theatres to include this movie
     await Theatre.updateMany(
       { disabled: false },
-      { $addToSet: { movies: newMovie._id } }
+      { $addToSet: { movies: newMovie._id } },
     );
 
     res.json({
       success: true,
       message: "Movie created and auto-assigned to all theatres",
-      movie: newMovie
+      movie: newMovie,
     });
   } catch (error) {
     console.error("[createMovie]", error);
@@ -235,25 +240,29 @@ export const excludeTheatresFromMovie = async (req, res) => {
     }
 
     // Add theatres to excluded list (avoid duplicates)
-    const excludedSet = new Set(movie.excludedTheatres.map(t => t.toString()));
-    theatreIds.forEach(id => excludedSet.add(id));
+    const excludedSet = new Set(
+      movie.excludedTheatres.map((t) => t.toString()),
+    );
+    theatreIds.forEach((id) => excludedSet.add(id));
     movie.excludedTheatres = Array.from(excludedSet);
 
     // Remove theatres from movie's theatre list
-    movie.theatres = movie.theatres.filter(t => !theatreIds.includes(t.toString()));
-    
+    movie.theatres = movie.theatres.filter(
+      (t) => !theatreIds.includes(t.toString()),
+    );
+
     await movie.save();
 
     // Remove movie from theatres
     await Theatre.updateMany(
       { _id: { $in: theatreIds } },
-      { $pull: { movies: movieId } }
+      { $pull: { movies: movieId } },
     );
 
     res.json({
       success: true,
       message: "Theatres excluded from movie successfully",
-      movie
+      movie,
     });
   } catch (error) {
     console.error("[excludeTheatresFromMovie]", error);
@@ -281,25 +290,27 @@ export const includeTheatresForMovie = async (req, res) => {
     }
 
     // Remove theatres from excluded list
-    movie.excludedTheatres = movie.excludedTheatres.filter(t => !theatreIds.includes(t.toString()));
+    movie.excludedTheatres = movie.excludedTheatres.filter(
+      (t) => !theatreIds.includes(t.toString()),
+    );
 
     // Add theatres back to movie's theatre list (avoid duplicates)
-    const theatreSet = new Set(movie.theatres.map(t => t.toString()));
-    theatreIds.forEach(id => theatreSet.add(id));
+    const theatreSet = new Set(movie.theatres.map((t) => t.toString()));
+    theatreIds.forEach((id) => theatreSet.add(id));
     movie.theatres = Array.from(theatreSet);
-    
+
     await movie.save();
 
     // Add movie back to theatres
     await Theatre.updateMany(
       { _id: { $in: theatreIds } },
-      { $addToSet: { movies: movieId } }
+      { $addToSet: { movies: movieId } },
     );
 
     res.json({
       success: true,
       message: "Theatres included back to movie successfully",
-      movie
+      movie,
     });
   } catch (error) {
     console.error("[includeTheatresForMovie]", error);
@@ -332,9 +343,9 @@ export const getAllAvailableMovies = async (req, res) => {
     const movies = await Movie.find({
       isActive: true,
       theatres: managerTheatreId,
-      excludedTheatres: { $ne: managerTheatreId }
+      excludedTheatres: { $ne: managerTheatreId },
     }).select(
-      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
+      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id",
     );
 
     res.json({ success: true, movies });
@@ -360,9 +371,9 @@ export const getAllMovies = async (req, res) => {
       .populate("theatres", "name location");
 
     // Add disabled status for frontend compatibility
-    const moviesWithStatus = movies.map(movie => ({
+    const moviesWithStatus = movies.map((movie) => ({
       ...movie.toObject(),
-      disabled: !movie.isActive // Frontend expects 'disabled' property
+      disabled: !movie.isActive, // Frontend expects 'disabled' property
     }));
 
     res.json({ success: true, movies: moviesWithStatus });
@@ -407,7 +418,7 @@ export const deactivateMovie = async (req, res) => {
     const movie = await Movie.findByIdAndUpdate(
       movieId,
       { isActive: false },
-      { new: true }
+      { new: true },
     );
 
     if (!movie) {
@@ -441,7 +452,7 @@ export const activateMovie = async (req, res) => {
     const movie = await Movie.findByIdAndUpdate(
       movieId,
       { isActive: true },
-      { new: true }
+      { new: true },
     );
 
     if (!movie) {
@@ -505,7 +516,12 @@ export const assignMoviesToTheatre = async (req, res) => {
 
     const { theatreId, movieIds } = req.body;
 
-    if (!theatreId || !movieIds || !Array.isArray(movieIds) || movieIds.length === 0) {
+    if (
+      !theatreId ||
+      !movieIds ||
+      !Array.isArray(movieIds) ||
+      movieIds.length === 0
+    ) {
       return res.json({
         success: false,
         message: "Theatre ID and movie IDs array are required",
@@ -518,7 +534,10 @@ export const assignMoviesToTheatre = async (req, res) => {
       return res.json({ success: false, message: "Theatre not found" });
     }
     if (theatre.approval_status !== "approved") {
-      return res.json({ success: false, message: "Movies can only be assigned to approved theatres" });
+      return res.json({
+        success: false,
+        message: "Movies can only be assigned to approved theatres",
+      });
     }
 
     // Verify all movies exist
@@ -531,7 +550,9 @@ export const assignMoviesToTheatre = async (req, res) => {
     }
 
     // Add movies to theatre (avoid duplicates)
-    const theatre_movies = new Set(theatre.movies?.map(m => m.toString()) || []);
+    const theatre_movies = new Set(
+      theatre.movies?.map((m) => m.toString()) || [],
+    );
     for (const movieId of movieIds) {
       theatre_movies.add(movieId.toString());
     }
@@ -548,7 +569,10 @@ export const assignMoviesToTheatre = async (req, res) => {
       }
     }
 
-    const updatedTheatre = await theatre.populate("movies", "title poster_path release_date");
+    const updatedTheatre = await theatre.populate(
+      "movies",
+      "title poster_path release_date",
+    );
 
     res.json({
       success: true,
@@ -574,7 +598,12 @@ export const removeMoviesFromTheatre = async (req, res) => {
 
     const { theatreId, movieIds } = req.body;
 
-    if (!theatreId || !movieIds || !Array.isArray(movieIds) || movieIds.length === 0) {
+    if (
+      !theatreId ||
+      !movieIds ||
+      !Array.isArray(movieIds) ||
+      movieIds.length === 0
+    ) {
       return res.json({
         success: false,
         message: "Theatre ID and movie IDs array are required",
@@ -587,12 +616,15 @@ export const removeMoviesFromTheatre = async (req, res) => {
       return res.json({ success: false, message: "Theatre not found" });
     }
     if (theatre.approval_status !== "approved") {
-      return res.json({ success: false, message: "Only approved theatres can have movie assignments modified" });
+      return res.json({
+        success: false,
+        message: "Only approved theatres can have movie assignments modified",
+      });
     }
 
     // Remove movies from theatre
     theatre.movies = theatre.movies.filter(
-      m => !movieIds.includes(m.toString())
+      (m) => !movieIds.includes(m.toString()),
     );
     await theatre.save();
 
@@ -600,12 +632,17 @@ export const removeMoviesFromTheatre = async (req, res) => {
     for (const movieId of movieIds) {
       const movie = await Movie.findById(movieId);
       if (movie) {
-        movie.theatres = movie.theatres.filter(t => t.toString() !== theatreId);
+        movie.theatres = movie.theatres.filter(
+          (t) => t.toString() !== theatreId,
+        );
         await movie.save();
       }
     }
 
-    const updatedTheatre = await theatre.populate("movies", "title poster_path release_date");
+    const updatedTheatre = await theatre.populate(
+      "movies",
+      "title poster_path release_date",
+    );
 
     res.json({
       success: true,
@@ -614,6 +651,157 @@ export const removeMoviesFromTheatre = async (req, res) => {
     });
   } catch (error) {
     console.error("[removeMoviesFromTheatre]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Add reviews to a movie
+export const addMovieReviews = async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Only admin can add reviews",
+      });
+    }
+
+    const { movieId } = req.params;
+    const { reviews } = req.body;
+
+    if (!Array.isArray(reviews)) {
+      return res.json({
+        success: false,
+        message: "Reviews must be an array of URLs",
+      });
+    }
+
+    const movie = await Movie.findByIdAndUpdate(
+      movieId,
+      { $addToSet: { reviews: { $each: reviews } } },
+      { new: true },
+    );
+
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Reviews added successfully",
+      reviews: movie.reviews,
+    });
+  } catch (error) {
+    console.error("[addMovieReviews]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Update movie reviews (replace all)
+export const updateMovieReviews = async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Only admin can update reviews",
+      });
+    }
+
+    const { movieId } = req.params;
+    const { reviews } = req.body;
+
+    if (!Array.isArray(reviews)) {
+      return res.json({
+        success: false,
+        message: "Reviews must be an array of URLs",
+      });
+    }
+
+    // Filter out empty strings
+    const validReviews = reviews.filter((url) => url && url.trim() !== "");
+
+    const movie = await Movie.findByIdAndUpdate(
+      movieId,
+      { reviews: validReviews },
+      { new: true },
+    );
+
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Reviews updated successfully",
+      reviews: movie.reviews,
+    });
+  } catch (error) {
+    console.error("[updateMovieReviews]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Delete a specific review from movie
+export const deleteMovieReview = async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Only admin can delete reviews",
+      });
+    }
+
+    const { movieId } = req.params;
+    const { reviewUrl } = req.body;
+
+    if (!reviewUrl) {
+      return res.json({
+        success: false,
+        message: "Review URL is required",
+      });
+    }
+
+    const movie = await Movie.findByIdAndUpdate(
+      movieId,
+      { $pull: { reviews: reviewUrl } },
+      { new: true },
+    );
+
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Review deleted successfully",
+      reviews: movie.reviews,
+    });
+  } catch (error) {
+    console.error("[deleteMovieReview]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get movie reviews
+export const getMovieReviews = async (req, res) => {
+  try {
+    const { movieId } = req.params;
+
+    const movie = await Movie.findById(movieId).select("reviews title");
+
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found" });
+    }
+
+    res.json({
+      success: true,
+      reviews: movie.reviews || [],
+      movieTitle: movie.title,
+    });
+  } catch (error) {
+    console.error("[getMovieReviews]", error);
     res.json({ success: false, message: error.message });
   }
 };

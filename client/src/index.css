@@ -2,30 +2,60 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #f84565;
-  --color-primary-dull: #d63854;
+    --color-primary: #f84565;
+    --color-primary-dull: #d63854;
 }
 
 * {
-  font-family: "Outfit", sans-serif;
-  scrollbar-width: thin;
-  scrollbar-color: #787777 #1e1e1e;
+    font-family: "Outfit", sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: #787777 #1e1e1e;
 }
 
 body {
-  color: white;
-  background-color: #09090b;
+    color: white;
+    background-color: #09090b;
 }
 
 .no-scrollbar {
-  scrollbar-width: none;
+    scrollbar-width: none;
 }
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
+    -webkit-appearance: none;
 }
 
 ::-webkit-calendar-picker-indicator {
-  filter: invert(1);
+    filter: invert(1);
+}
+
+/* Twitter Embed Styles */
+.twitter-embed-container {
+    width: 100%;
+    max-width: 100%;
+}
+
+.twitter-embed {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.twitter-embed > * {
+    max-width: 100% !important;
+}
+
+.twitter-tweet {
+    margin: 0 !important;
+}
+
+.twitter-tweet-rendered {
+    margin: 0 auto !important;
+}
+
+/* Ensure Twitter iframes are responsive */
+.twitter-embed iframe {
+    max-width: 100% !important;
+    border-radius: 12px;
 }

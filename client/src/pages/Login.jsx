@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { UserIcon, LockIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAuthContext } from "../context/AuthContext.jsx";
+import ChangePasswordModal from "../components/ChangePasswordModal.jsx";
 
 const Login = () => {
   const { login } = useAuthContext();
@@ -12,6 +13,7 @@ const Login = () => {
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -152,14 +154,24 @@ const Login = () => {
                 />
                 <span className="group-hover:text-primary transition-colors duration-200">Remember me</span>
               </label>
-              <button
-                type="button"
-                className="text-primary hover:underline hover:underline-offset-4 transition-all duration-200 hover:scale-105 active:scale-95"
-                onClick={() => navigate("/forgot-password")}
-                title="Reset your password"
-              >
-                Forgot password?
-              </button>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  className="text-primary hover:underline hover:underline-offset-4 transition-all duration-200 hover:scale-105 active:scale-95"
+                  onClick={() => setShowChangePasswordModal(true)}
+                  title="Change your password"
+                >
+                  Change password?
+                </button>
+                <button
+                  type="button"
+                  className="text-primary hover:underline hover:underline-offset-4 transition-all duration-200 hover:scale-105 active:scale-95"
+                  onClick={() => navigate("/forgot-password")}
+                  title="Reset your password"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
             <button
@@ -183,6 +195,7 @@ const Login = () => {
           </p>
         </div>
       </div>
+      <ChangePasswordModal isOpen={showChangePasswordModal} onClose={() => setShowChangePasswordModal(false)} />
     </div>
   );
 };

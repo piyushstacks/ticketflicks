@@ -32,6 +32,41 @@ const MyBookings = () => {
   }, [user]);
 
   useEffect(() => {
+    const confirmPaymentIfNeeded = async () => {
+      if (!user) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const payment = params.get("payment");
+      const sessionId = params.get("session_id");
+      if (payment !== "success" || !sessionId) return;
+
+      try {
+        const token = await getToken();
+        await axios.post(
+          "/api/booking/confirm-stripe",
+          { sessionId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (error) {
+        console.error(error);
+        toast.error("Payment received, but booking confirmation is still processing.");
+      } finally {
+        params.delete("payment");
+        params.delete("session_id");
+        const next = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          window.location.pathname + (next ? `?${next}` : "")
+        );
+        fetchMyBookings();
+      }
+    };
+
+    confirmPaymentIfNeeded();
+  }, [user]);
+
+  useEffect(() => {
     const handleVisibility = () => {
       if (!document.hidden && user) fetchMyBookings();
     };

@@ -4,7 +4,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuthContext } from "./AuthContext.jsx";
 
-axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000";
+axios.defaults.baseURL = baseURL;
 
 export const AppContext = createContext();
 

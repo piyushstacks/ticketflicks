@@ -521,37 +521,56 @@ export const resetPasswordWithOtp = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const { email, currentPassword, newPassword, confirmPassword } = req.body;
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    console.log("[changePassword] Request received for userId:", userId, "email:", email);
+
+    if (!email || !currentPassword || !newPassword || !confirmPassword) {
+      console.log("[changePassword] Missing fields:", { email: !!email, currentPassword: !!currentPassword, newPassword: !!newPassword, confirmPassword: !!confirmPassword });
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
     if (newPassword !== confirmPassword) {
+      console.log("[changePassword] New passwords do not match");
       return res.status(400).json({ success: false, message: "New passwords do not match" });
     }
 
     // Validate new password
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.valid) {
+      console.log("[changePassword] New password validation failed:", passwordValidation.message);
       return res.status(400).json({ success: false, message: passwordValidation.message });
     }
 
     const user = await User.findById(userId);
-    if (!user) return res.status(400).json({ success: false, message: "User not found" });
+    if (!user) {
+      console.log("[changePassword] User not found for userId:", userId);
+      return res.status(400).json({ success: false, message: "User not found" });
+    }
+
+    // Verify email matches the logged-in user
+    if (user.email !== email.toLowerCase()) {
+      console.log("[changePassword] Email mismatch. User email:", user.email, "Provided email:", email);
+      return res.status(400).json({ success: false, message: "Email does not match your account" });
+    }
 
     const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-    if (!isMatch) return res.status(400).json({ success: false, message: "Current password is incorrect" });
+    if (!isMatch) {
+      console.log("[changePassword] Current password incorrect for userId:", userId);
+      return res.status(400).json({ success: false, message: "Current password is incorrect" });
+    }
 
     user.password_hash = await bcrypt.hash(newPassword, 10);
     await user.save();
 
+    console.log("[changePassword] Password updated successfully for userId:", userId);
     res.json({ success: true, message: "Password changed successfully" });
   } catch (error) {
-    console.error("[changePassword]", error);
+    console.error("[changePassword] Unexpected error:", error);
     
     // Handle specific error cases
     if (error.name === 'CastError') {
+      console.log("[changePassword] CastError:", error.message);
       return res.status(400).json({
         success: false,
         message: "Invalid user data. Please log out and log back in."
@@ -559,6 +578,7 @@ export const changePassword = async (req, res) => {
     }
     
     if (error.message && error.message.includes('timeout')) {
+      console.log("[changePassword] Timeout error:", error.message);
       return res.status(500).json({
         success: false,
         message: "Password change is taking too long. Please try again."

@@ -1,8 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Edit2, Plus, Eye, Users, Calendar, Star, Ban, X, Check, Power, PowerOff } from "lucide-react";
-
+import {
+  Edit2,
+  Plus,
+  Eye,
+  Users,
+  Calendar,
+  Star,
+  Ban,
+  X,
+  Check,
+  Power,
+  PowerOff,
+  Twitter,
+  RefreshCw,
+  Trash2,
+  Link,
+} from "lucide-react";
 
 const AdminMovies = () => {
   const { axios, getAuthHeaders } = useAppContext();
@@ -11,6 +26,7 @@ const AdminMovies = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [viewingMovie, setViewingMovie] = useState(null);
+  const [autoFillLoading, setAutoFillLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     overview: "",
@@ -23,6 +39,7 @@ const AdminMovies = () => {
     original_language: "en",
     genres: [],
     casts: [],
+    reviews: ["", "", "", "", ""], // 5 default empty review URL fields
   });
 
   const fetchMovies = async () => {
@@ -111,6 +128,64 @@ const AdminMovies = () => {
     }));
   };
 
+  // Review handling functions
+  const handleReviewChange = (index, value) => {
+    const newReviews = [...formData.reviews];
+    newReviews[index] = value;
+    setFormData((prev) => ({ ...prev, reviews: newReviews }));
+  };
+
+  const addReviewField = () => {
+    setFormData((prev) => ({
+      ...prev,
+      reviews: [...prev.reviews, ""],
+    }));
+  };
+
+  const removeReviewField = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      reviews: prev.reviews.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Validate Twitter/X URL
+  const isValidTwitterUrl = (url) => {
+    if (!url || url.trim() === "") return true; // Empty is valid (optional)
+    const twitterRegex =
+      /^https?:\/\/(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/status\/\d+/;
+    return twitterRegex.test(url);
+  };
+
+  // Auto-fill reviews from Twitter search (simulated - in production, this would call Twitter API)
+  const handleAutoFillReviews = async () => {
+    if (!formData.title) {
+      toast.error("Please enter movie title first");
+      return;
+    }
+
+    setAutoFillLoading(true);
+
+    try {
+      // Note: In a real implementation, you would call a backend API that searches Twitter
+      // For now, we'll show a message explaining how to manually add tweets
+      toast.success(
+        `To find reviews for "${formData.title}", search on Twitter/X:\n` +
+          `"${formData.title} movie review" and copy tweet URLs`,
+        { duration: 5000 },
+      );
+
+      // Example placeholder URLs (in production, these would come from Twitter API)
+      // For demo purposes, we're not auto-filling with real URLs
+      toast("Paste Twitter/X post URLs in the fields below", { icon: "ℹ️" });
+    } catch (error) {
+      console.error("Error auto-filling reviews:", error);
+      toast.error("Failed to fetch reviews. Please add manually.");
+    } finally {
+      setAutoFillLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -119,16 +194,35 @@ const AdminMovies = () => {
       return;
     }
 
+    // Validate Twitter URLs
+    const invalidUrls = formData.reviews.filter(
+      (url) => url && !isValidTwitterUrl(url),
+    );
+    if (invalidUrls.length > 0) {
+      toast.error("Please enter valid Twitter/X URLs for reviews");
+      return;
+    }
+
+    // Filter out empty review URLs
+    const validReviews = formData.reviews.filter(
+      (url) => url && url.trim() !== "",
+    );
+
     try {
       let response;
+      const submitData = {
+        ...formData,
+        reviews: validReviews,
+      };
+
       if (editingId) {
         response = await axios.put(
           `/api/admin/movies/${editingId}`,
-          formData,
-          { headers: getAuthHeaders() }
+          submitData,
+          { headers: getAuthHeaders() },
         );
       } else {
-        response = await axios.post("/api/admin/movies/create", formData, {
+        response = await axios.post("/api/admin/movies/create", submitData, {
           headers: getAuthHeaders(),
         });
       }
@@ -148,6 +242,7 @@ const AdminMovies = () => {
           original_language: "en",
           genres: [],
           casts: [],
+          reviews: ["", "", "", "", ""],
         });
         setEditingId(null);
         setShowForm(false);
@@ -166,8 +261,15 @@ const AdminMovies = () => {
     const formatDateForInput = (dateString) => {
       if (!dateString) return "";
       const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
+      return date.toISOString().split("T")[0];
     };
+
+    // Ensure we have at least 5 review fields
+    const existingReviews = movie.reviews || [];
+    const reviews = [...existingReviews];
+    while (reviews.length < 5) {
+      reviews.push("");
+    }
 
     setFormData({
       title: movie.title,
@@ -181,19 +283,25 @@ const AdminMovies = () => {
       original_language: movie.original_language || "en",
       genres: movie.genres || [],
       casts: movie.casts || [],
+      reviews: reviews,
     });
     setEditingId(movie._id || movie.id);
     setShowForm(true);
   };
 
   const handleDisable = async (movieId) => {
-    if (!window.confirm("Are you sure you want to disable this movie? This will make it unavailable for all theatres.")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to disable this movie? This will make it unavailable for all theatres.",
+      )
+    )
+      return;
 
     try {
       const { data } = await axios.put(
         `/api/admin/movies/${movieId}/deactivate`,
         {},
-        { headers: getAuthHeaders() }
+        { headers: getAuthHeaders() },
       );
 
       if (data.success) {
@@ -209,13 +317,18 @@ const AdminMovies = () => {
   };
 
   const handleEnable = async (movieId) => {
-    if (!window.confirm("Are you sure you want to enable this movie? This will make it available for all theatres.")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to enable this movie? This will make it available for all theatres.",
+      )
+    )
+      return;
 
     try {
       const { data } = await axios.put(
         `/api/admin/movies/${movieId}/activate`,
         {},
-        { headers: getAuthHeaders() }
+        { headers: getAuthHeaders() },
       );
 
       if (data.success) {
@@ -245,6 +358,7 @@ const AdminMovies = () => {
       original_language: "en",
       genres: [],
       casts: [],
+      reviews: ["", "", "", "", ""],
     });
   };
 
@@ -279,7 +393,12 @@ const AdminMovies = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="title" className="block text-sm font-medium mb-2">Movie Title *</label>
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Movie Title *
+                </label>
                 <input
                   id="title"
                   type="text"
@@ -292,7 +411,12 @@ const AdminMovies = () => {
                 />
               </div>
               <div>
-                <label htmlFor="release_date" className="block text-sm font-medium mb-2">Release Date *</label>
+                <label
+                  htmlFor="release_date"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Release Date *
+                </label>
                 <input
                   id="release_date"
                   type="date"
@@ -304,7 +428,12 @@ const AdminMovies = () => {
                 />
               </div>
               <div>
-                <label htmlFor="poster_path" className="block text-sm font-medium mb-2">Poster URL</label>
+                <label
+                  htmlFor="poster_path"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Poster URL
+                </label>
                 <input
                   id="poster_path"
                   type="url"
@@ -316,7 +445,12 @@ const AdminMovies = () => {
                 />
               </div>
               <div>
-                <label htmlFor="backdrop_path" className="block text-sm font-medium mb-2">Backdrop URL</label>
+                <label
+                  htmlFor="backdrop_path"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Backdrop URL
+                </label>
                 <input
                   id="backdrop_path"
                   type="url"
@@ -328,7 +462,12 @@ const AdminMovies = () => {
                 />
               </div>
               <div>
-                <label htmlFor="trailer_path" className="block text-sm font-medium mb-2">Trailer URL</label>
+                <label
+                  htmlFor="trailer_path"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Trailer URL
+                </label>
                 <input
                   id="trailer_path"
                   type="url"
@@ -340,7 +479,12 @@ const AdminMovies = () => {
                 />
               </div>
               <div>
-                <label htmlFor="runtime" className="block text-sm font-medium mb-2">Runtime (minutes)</label>
+                <label
+                  htmlFor="runtime"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Runtime (minutes)
+                </label>
                 <input
                   id="runtime"
                   type="number"
@@ -353,7 +497,12 @@ const AdminMovies = () => {
                 />
               </div>
               <div>
-                <label htmlFor="tagline" className="block text-sm font-medium mb-2">Tagline</label>
+                <label
+                  htmlFor="tagline"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Tagline
+                </label>
                 <input
                   id="tagline"
                   type="text"
@@ -365,7 +514,12 @@ const AdminMovies = () => {
                 />
               </div>
               <div>
-                <label htmlFor="original_language" className="block text-sm font-medium mb-2">Original Language</label>
+                <label
+                  htmlFor="original_language"
+                  className="block text-sm font-medium mb-2"
+                >
+                  Original Language
+                </label>
                 <select
                   id="original_language"
                   name="original_language"
@@ -382,7 +536,12 @@ const AdminMovies = () => {
             </div>
 
             <div>
-              <label htmlFor="overview" className="block text-sm font-medium mb-2">Movie Overview *</label>
+              <label
+                htmlFor="overview"
+                className="block text-sm font-medium mb-2"
+              >
+                Movie Overview *
+              </label>
               <textarea
                 id="overview"
                 name="overview"
@@ -399,8 +558,14 @@ const AdminMovies = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Genres</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {[28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 53, 10752, 37].map((genreId) => (
-                  <label key={genreId} className="flex items-center gap-2 text-sm">
+                {[
+                  28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648,
+                  10749, 878, 53, 10752, 37,
+                ].map((genreId) => (
+                  <label
+                    key={genreId}
+                    className="flex items-center gap-2 text-sm"
+                  >
                     <input
                       type="checkbox"
                       checked={formData.genres.some((g) => g.id === genreId)}
@@ -415,28 +580,44 @@ const AdminMovies = () => {
 
             {/* Cast */}
             <div>
-              <label className="block text-sm font-medium mb-2">Cast Members</label>
+              <label className="block text-sm font-medium mb-2">
+                Cast Members
+              </label>
               {formData.casts.map((cast, index) => (
                 <div key={index} className="flex gap-2 mb-2">
                   <div className="flex-1">
-                    <label htmlFor={`cast-name-${index}`} className="block text-xs font-medium mb-1 text-gray-400">Cast Name</label>
+                    <label
+                      htmlFor={`cast-name-${index}`}
+                      className="block text-xs font-medium mb-1 text-gray-400"
+                    >
+                      Cast Name
+                    </label>
                     <input
                       id={`cast-name-${index}`}
                       type="text"
                       placeholder="Enter cast member name"
                       value={cast.name}
-                      onChange={(e) => handleCastChange(index, "name", e.target.value)}
+                      onChange={(e) =>
+                        handleCastChange(index, "name", e.target.value)
+                      }
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                     />
                   </div>
                   <div className="flex-1">
-                    <label htmlFor={`cast-profile-${index}`} className="block text-xs font-medium mb-1 text-gray-400">Profile URL</label>
+                    <label
+                      htmlFor={`cast-profile-${index}`}
+                      className="block text-xs font-medium mb-1 text-gray-400"
+                    >
+                      Profile URL
+                    </label>
                     <input
                       id={`cast-profile-${index}`}
                       type="text"
                       placeholder="https://example.com/profile.jpg"
                       value={cast.profile_path}
-                      onChange={(e) => handleCastChange(index, "profile_path", e.target.value)}
+                      onChange={(e) =>
+                        handleCastChange(index, "profile_path", e.target.value)
+                      }
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                     />
                   </div>
@@ -456,6 +637,82 @@ const AdminMovies = () => {
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm"
               >
                 Add Cast Member
+              </button>
+            </div>
+
+            {/* Reviews Section - Twitter/X Post URLs */}
+            <div className="border-t border-gray-700 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Twitter className="w-5 h-5 text-blue-400" />
+                  <label className="block text-sm font-medium">
+                    Twitter/X Reviews
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAutoFillReviews}
+                  disabled={autoFillLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-sm font-medium disabled:opacity-50"
+                >
+                  {autoFillLoading ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  Auto-Fill from Twitter
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mb-4">
+                Add Twitter/X post URLs containing reviews about this movie.
+                These will be embedded on the movie details page.
+              </p>
+
+              {formData.reviews.map((reviewUrl, index) => (
+                <div key={index} className="flex gap-2 mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Link className="w-4 h-4 text-gray-500" />
+                      <input
+                        type="url"
+                        placeholder={`https://twitter.com/user/status/123... or https://x.com/user/status/123...`}
+                        value={reviewUrl}
+                        onChange={(e) =>
+                          handleReviewChange(index, e.target.value)
+                        }
+                        className={`w-full px-4 py-2 bg-gray-800 border rounded-lg focus:border-primary outline-none transition ${
+                          reviewUrl && !isValidTwitterUrl(reviewUrl)
+                            ? "border-red-500"
+                            : "border-gray-700"
+                        }`}
+                      />
+                    </div>
+                    {reviewUrl && !isValidTwitterUrl(reviewUrl) && (
+                      <p className="text-xs text-red-400 mt-1 ml-6">
+                        Please enter a valid Twitter/X post URL
+                      </p>
+                    )}
+                  </div>
+                  {formData.reviews.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeReviewField(index)}
+                      className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition"
+                      title="Remove review URL"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addReviewField}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Review URL
               </button>
             </div>
 
@@ -484,24 +741,36 @@ const AdminMovies = () => {
           <div
             key={movie._id || movie.id}
             className={`bg-gray-900/30 border rounded-lg p-6 hover:border-primary/50 transition ${
-              movie.disabled ? "border-red-500/30 opacity-60" : "border-gray-700"
+              movie.disabled
+                ? "border-red-500/30 opacity-60"
+                : "border-gray-700"
             }`}
           >
             <div className="space-y-3">
               <div className="flex justify-between items-start">
                 <h3 className="text-xl font-bold">{movie.title}</h3>
-                {movie.disabled && (
-                  <span className="px-2 py-1 bg-red-600/20 text-red-400 text-xs rounded-full">
-                    Disabled
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {movie.reviews && movie.reviews.length > 0 && (
+                    <span className="px-2 py-1 bg-blue-600/20 text-blue-400 text-xs rounded-full flex items-center gap-1">
+                      <Twitter className="w-3 h-3" />
+                      {movie.reviews.length}
+                    </span>
+                  )}
+                  {movie.disabled && (
+                    <span className="px-2 py-1 bg-red-600/20 text-red-400 text-xs rounded-full">
+                      Disabled
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2 text-sm text-gray-400">
                 <p>{movie.overview?.substring(0, 100)}...</p>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-primary" />
-                  <span>{new Date(movie.release_date).toLocaleDateString()}</span>
+                  <span>
+                    {new Date(movie.release_date).toLocaleDateString()}
+                  </span>
                 </div>
                 {movie.runtime && (
                   <div className="flex items-center gap-2">
@@ -545,11 +814,15 @@ const AdminMovies = () => {
                   Edit
                 </button>
                 <button
-                  onClick={() => movie.disabled ? handleEnable(movie._id || movie.id) : handleDisable(movie._id || movie.id)}
+                  onClick={() =>
+                    movie.disabled
+                      ? handleEnable(movie._id || movie.id)
+                      : handleDisable(movie._id || movie.id)
+                  }
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium ${
                     movie.disabled
-                      ? 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
-                      : 'bg-orange-600/20 hover:bg-orange-600/30 text-orange-400'
+                      ? "bg-green-600/20 hover:bg-green-600/30 text-green-400"
+                      : "bg-orange-600/20 hover:bg-orange-600/30 text-orange-400"
                   }`}
                 >
                   {movie.disabled ? (
@@ -603,12 +876,16 @@ const AdminMovies = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-semibold text-primary">Release Date</h3>
-                  <p className="text-gray-300">{new Date(viewingMovie.release_date).toLocaleDateString()}</p>
+                  <p className="text-gray-300">
+                    {new Date(viewingMovie.release_date).toLocaleDateString()}
+                  </p>
                 </div>
                 {viewingMovie.runtime && (
                   <div>
                     <h3 className="font-semibold text-primary">Runtime</h3>
-                    <p className="text-gray-300">{viewingMovie.runtime} minutes</p>
+                    <p className="text-gray-300">
+                      {viewingMovie.runtime} minutes
+                    </p>
                   </div>
                 )}
               </div>
@@ -640,6 +917,28 @@ const AdminMovies = () => {
                         />
                         <span className="text-gray-300">{cast.name}</span>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {viewingMovie.reviews && viewingMovie.reviews.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-primary flex items-center gap-2">
+                    <Twitter className="w-4 h-4" />
+                    Twitter/X Reviews ({viewingMovie.reviews.length})
+                  </h3>
+                  <div className="mt-2 space-y-2">
+                    {viewingMovie.reviews.map((url, index) => (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm truncate"
+                      >
+                        <Link className="w-3 h-3 flex-shrink-0" />
+                        {url}
+                      </a>
                     ))}
                   </div>
                 </div>

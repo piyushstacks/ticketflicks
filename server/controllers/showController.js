@@ -15,24 +15,25 @@ export const getMovieTrailer = async (req, res) => {
     const databaseTrailers = [
       {
         video_key: "WpW36ldAqnM",
-        trailer_url: "https://www.youtube.com/watch?v=WpW36ldAqnM"
+        trailer_url: "https://www.youtube.com/watch?v=WpW36ldAqnM",
       },
       {
-        video_key: "-sAOWhvheK8", 
-        trailer_url: "https://www.youtube.com/watch?v=-sAOWhvheK8"
+        video_key: "-sAOWhvheK8",
+        trailer_url: "https://www.youtube.com/watch?v=-sAOWhvheK8",
       },
       {
         video_key: "1pHDWnXmK7Y",
-        trailer_url: "https://www.youtube.com/watch?v=1pHDWnXmK7Y"
+        trailer_url: "https://www.youtube.com/watch?v=1pHDWnXmK7Y",
       },
       {
         video_key: "umiKiW4En9g",
-        trailer_url: "https://www.youtube.com/watch?v=umiKiW4En9g"
-      }
+        trailer_url: "https://www.youtube.com/watch?v=umiKiW4En9g",
+      },
     ];
 
     // Select a trailer based on movie ID (cyclic selection for demo)
-    const trailerIndex = parseInt(movieId.slice(-1), 16) % databaseTrailers.length;
+    const trailerIndex =
+      parseInt(movieId.slice(-1), 16) % databaseTrailers.length;
     const selectedTrailer = databaseTrailers[trailerIndex];
 
     res.status(200).json({
@@ -56,7 +57,7 @@ const fetchAllNowPlayingMovies = async () => {
       headers: {
         Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
       },
-    }
+    },
   );
 
   allMovies.push(...firstPage.results);
@@ -70,7 +71,7 @@ const fetchAllNowPlayingMovies = async () => {
         headers: {
           Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
         },
-      }
+      },
     );
     allMovies.push(...data.results);
   }
@@ -200,16 +201,21 @@ export const fetchShows = async (req, res) => {
       showDateTime: { $gte: new Date() },
       isActive: true,
     })
-      .populate("movie", "title overview poster_path backdrop_path release_date vote_average runtime genres isActive _id")
+      .populate(
+        "movie",
+        "title overview poster_path backdrop_path release_date vote_average runtime genres isActive reviews _id",
+      )
       .populate("theatre")
       .populate("screen")
       .sort({ showDateTime: 1 });
 
     // Only include shows where the movie exists and is active (not disabled by admin)
     const showsWithActiveMovie = shows.filter(
-      (show) => show.movie && show.movie.isActive !== false
+      (show) => show.movie && show.movie.isActive !== false,
     );
-    const uniqueMovies = [...new Set(showsWithActiveMovie.map((s) => s.movie).filter(Boolean))];
+    const uniqueMovies = [
+      ...new Set(showsWithActiveMovie.map((s) => s.movie).filter(Boolean)),
+    ];
 
     res.json({ success: true, shows: uniqueMovies });
   } catch (error) {
@@ -269,24 +275,24 @@ export const fetchUpcomingMovies = async (req, res) => {
     const today = new Date();
 
     // Fetch upcoming movies from our database (movie_tbls collection)
-    // Since all our current movies are from 2025 and today is 2026, 
+    // Since all our current movies are from 2025 and today is 2026,
     // we'll fetch the most recent movies as upcoming for demo purposes
     const upcomingMovies = await Movie.find({
-      isActive: true // Only active movies
+      isActive: true, // Only active movies
     })
-    .sort({ release_date: -1 }) // Sort by newest first
-    .limit(20) // Limit to 20 movies
-    .select(
-      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
-    );
+      .sort({ release_date: -1 }) // Sort by newest first
+      .limit(20) // Limit to 20 movies
+      .select(
+        "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id",
+      );
 
     // Format the response to match the expected structure
-    const movies = upcomingMovies.map(movie => ({
+    const movies = upcomingMovies.map((movie) => ({
       ...movie.toObject(),
       id: movie._id, // Map _id to id for consistency with frontend
-      genre_ids: movie.genres ? movie.genres.map(g => g.id) : [],
+      genre_ids: movie.genres ? movie.genres.map((g) => g.id) : [],
       adult: false, // Assume all our movies are non-adult
-      original_language: movie.original_language || "en"
+      original_language: movie.original_language || "en",
     }));
 
     res.json({ success: true, movies });
@@ -310,7 +316,10 @@ export const fetchShow = async (req, res) => {
       return res.json({ success: false, message: "Show not found" });
     }
     if (show.movie && show.movie.isActive === false) {
-      return res.json({ success: false, message: "This movie is not available for booking" });
+      return res.json({
+        success: false,
+        message: "This movie is not available for booking",
+      });
     }
 
     res.json({ success: true, show });
@@ -327,7 +336,10 @@ export const fetchShowByMovieId = async (req, res) => {
 
     const movie = await Movie.findById(movieId);
     if (!movie) {
-      return res.json({ success: false, message: "Movie not found in database" });
+      return res.json({
+        success: false,
+        message: "Movie not found in database",
+      });
     }
     if (!movie.isActive) {
       return res.json({ success: true, movie, dateTime: {} });
@@ -336,7 +348,9 @@ export const fetchShowByMovieId = async (req, res) => {
     const shows = await Show.find({
       movie: movieId,
       showDateTime: { $gte: new Date() },
-    }).populate("theatre").populate("screen");
+    })
+      .populate("theatre")
+      .populate("screen");
 
     const dateTime = {};
 
@@ -366,7 +380,7 @@ export const getAvailableMoviesForCustomers = async (req, res) => {
   try {
     // Get all active movies that have shows scheduled in the future
     const futureDate = new Date();
-    
+
     const moviesWithShows = await Show.find({
       showDateTime: { $gte: futureDate },
       isActive: true,
@@ -378,7 +392,7 @@ export const getAvailableMoviesForCustomers = async (req, res) => {
       _id: { $in: moviesWithShows },
       isActive: true,
     }).select(
-      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
+      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id",
     );
 
     res.json({ success: true, movies, count: movies.length });
@@ -394,14 +408,13 @@ export const getAllActiveMovies = async (req, res) => {
     const movieIdsWithShows = await Show.find({
       showDateTime: { $gte: new Date() },
       isActive: true,
-    })
-      .distinct("movie");
+    }).distinct("movie");
 
     const movies = await Movie.find({
       _id: { $in: movieIdsWithShows },
       isActive: true,
     }).select(
-      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
+      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id",
     );
 
     res.json({ success: true, movies, count: movies.length });

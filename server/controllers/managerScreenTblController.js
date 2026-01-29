@@ -1,7 +1,84 @@
-import ScreenTbl from '../models/ScreenTbl.js';
-import Theatre from '../models/Theatre.js';
-import User from '../models/User.js';
-import mongoose from 'mongoose';
+import ScreenTbl from "../models/ScreenTbl.js";
+import Theatre from "../models/Theatre.js";
+import User from "../models/User.js";
+import mongoose from "mongoose";
+
+// Seat tier code to name mapping
+const SEAT_CODE_TO_NAME = {
+  S: "Standard",
+  D: "Deluxe",
+  P: "Premium",
+  R: "Recliner",
+  C: "Couple",
+};
+
+// Convert pricing object to seatTiers array
+const convertPricingToSeatTiers = (pricing, seatLayout) => {
+  if (!pricing) return [];
+
+  const seatTiers = [];
+
+  // Get unique seat codes from layout
+  const tiersInLayout = new Set();
+  if (seatLayout?.layout && Array.isArray(seatLayout.layout)) {
+    seatLayout.layout.flat().forEach((seat) => {
+      if (seat && seat !== "") tiersInLayout.add(seat);
+    });
+  }
+
+  // If unified pricing, apply same price to all tiers
+  if (pricing.unified !== undefined) {
+    const price = parseFloat(pricing.unified) || 150;
+
+    tiersInLayout.forEach((code) => {
+      const tierName = SEAT_CODE_TO_NAME[code] || "Standard";
+
+      // Find which rows have this tier
+      const rows = [];
+      if (seatLayout?.layout) {
+        seatLayout.layout.forEach((row, idx) => {
+          if (row.some((seat) => seat === code)) {
+            rows.push(String.fromCharCode(65 + idx));
+          }
+        });
+      }
+
+      seatTiers.push({
+        tierName,
+        price,
+        rows,
+        seatsPerRow: seatLayout?.seatsPerRow || 10,
+      });
+    });
+  } else {
+    // Tier-based pricing
+    Object.entries(pricing).forEach(([code, config]) => {
+      if (code === "unified") return;
+
+      const tierName = SEAT_CODE_TO_NAME[code] || code;
+      const price = parseFloat(config?.price || config) || 150;
+
+      // Find which rows have this tier
+      const rows = [];
+      if (seatLayout?.layout) {
+        seatLayout.layout.forEach((row, idx) => {
+          if (row.some((seat) => seat === code)) {
+            rows.push(String.fromCharCode(65 + idx));
+          }
+        });
+      }
+
+      seatTiers.push({
+        tierName,
+        price,
+        rows,
+        seatsPerRow: seatLayout?.seatsPerRow || 10,
+      });
+    });
+  }
+
+  return seatTiers;
+};
 
 // Get all screens for manager's theatre
 export const getTheatreScreensTbl = async (req, res) => {
@@ -19,10 +96,10 @@ export const getTheatreScreensTbl = async (req, res) => {
     const screens = await ScreenTbl.find({
       theatre: theatreId,
     })
-    .populate("theatre", "name location")
-    .populate("createdBy", "name email")
-    .populate("lastModifiedBy", "name email")
-    .sort({ created_at: -1 });
+      .populate("theatre", "name location")
+      .populate("createdBy", "name email")
+      .populate("lastModifiedBy", "name email")
+      .sort({ created_at: -1 });
 
     res.json({ success: true, screens });
   } catch (error) {
@@ -43,7 +120,14 @@ export const addScreenTbl = async (req, res) => {
     }
 
     const theatreId = manager.managedTheaterId || manager.managedTheatreId;
-    const { name, screenNumber, seatLayout, seatTiers, status = 'active' } = req.body;
+    const {
+      name,
+      screenNumber,
+      seatLayout,
+      seatTiers,
+      pricing,
+      status = "active",
+    } = req.body;
 
     if (!name || !screenNumber || !seatLayout) {
       return res.json({
@@ -53,11 +137,11 @@ export const addScreenTbl = async (req, res) => {
     }
 
     // Validate theatre exists and belongs to this manager
-    const theatre = await Theatre.findOne({ 
-      _id: theatreId, 
-      manager_id: manager._id 
+    const theatre = await Theatre.findOne({
+      _id: theatreId,
+      manager_id: manager._id,
     });
-    
+
     if (!theatre) {
       return res.json({
         success: false,
@@ -78,13 +162,27 @@ export const addScreenTbl = async (req, res) => {
       });
     }
 
+    // Convert pricing to seatTiers if seatTiers not provided
+    let finalSeatTiers = seatTiers;
+    if (!seatTiers || seatTiers.length === 0) {
+      if (pricing) {
+        finalSeatTiers = convertPricingToSeatTiers(pricing, seatLayout);
+      } else {
+        // Default pricing based on layout
+        finalSeatTiers = convertPricingToSeatTiers(
+          { unified: 150 },
+          seatLayout,
+        );
+      }
+    }
+
     const newScreen = new ScreenTbl({
       name,
       screenNumber,
       theatre: theatreId,
       seatLayout,
-      seatTiers: seatTiers || [],
-      isActive: status === 'active',
+      seatTiers: finalSeatTiers,
+      isActive: status === "active",
       status,
       createdBy: manager._id,
       lastModifiedBy: manager._id,
@@ -96,10 +194,10 @@ export const addScreenTbl = async (req, res) => {
       .populate("theatre", "name location")
       .populate("createdBy", "name email");
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: "Screen added successfully",
-      screen: populatedScreen 
+      screen: populatedScreen,
     });
   } catch (error) {
     console.error("[addScreenTbl]", error);
@@ -119,7 +217,8 @@ export const editScreenTbl = async (req, res) => {
     }
 
     const { screenId } = req.params;
-    const { name, screenNumber, seatLayout, seatTiers, status } = req.body;
+    const { name, screenNumber, seatLayout, seatTiers, pricing, status } =
+      req.body;
 
     // Find the screen and verify it belongs to manager's theatre
     const screen = await ScreenTbl.findOne({
@@ -154,10 +253,18 @@ export const editScreenTbl = async (req, res) => {
     if (name) screen.name = name;
     if (screenNumber) screen.screenNumber = screenNumber;
     if (seatLayout) screen.seatLayout = seatLayout;
-    if (seatTiers) screen.seatTiers = seatTiers;
+
+    // Handle seatTiers - convert from pricing if needed
+    if (seatTiers && seatTiers.length > 0) {
+      screen.seatTiers = seatTiers;
+    } else if (pricing) {
+      const layoutToUse = seatLayout || screen.seatLayout;
+      screen.seatTiers = convertPricingToSeatTiers(pricing, layoutToUse);
+    }
+
     if (status) {
       screen.status = status;
-      screen.isActive = status === 'active';
+      screen.isActive = status === "active";
     }
     screen.lastModifiedBy = manager._id;
 
@@ -167,10 +274,10 @@ export const editScreenTbl = async (req, res) => {
       .populate("theatre", "name location")
       .populate("lastModifiedBy", "name email");
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: "Screen updated successfully",
-      screen: updatedScreen 
+      screen: updatedScreen,
     });
   } catch (error) {
     console.error("[editScreenTbl]", error);
@@ -204,9 +311,9 @@ export const toggleScreenStatusTbl = async (req, res) => {
     }
 
     // Toggle between active and inactive
-    const newStatus = screen.status === 'active' ? 'inactive' : 'active';
+    const newStatus = screen.status === "active" ? "inactive" : "active";
     screen.status = newStatus;
-    screen.isActive = newStatus === 'active';
+    screen.isActive = newStatus === "active";
     screen.lastModifiedBy = manager._id;
 
     await screen.save();
@@ -215,10 +322,10 @@ export const toggleScreenStatusTbl = async (req, res) => {
       .populate("theatre", "name location")
       .populate("lastModifiedBy", "name email");
 
-    res.json({ 
-      success: true, 
-      message: `Screen ${newStatus === 'active' ? 'enabled' : 'disabled'} successfully`,
-      screen: updatedScreen 
+    res.json({
+      success: true,
+      message: `Screen ${newStatus === "active" ? "enabled" : "disabled"} successfully`,
+      screen: updatedScreen,
     });
   } catch (error) {
     console.error("[toggleScreenStatusTbl]", error);
@@ -252,24 +359,25 @@ export const deleteScreenTbl = async (req, res) => {
     }
 
     // Check if there are any active shows for this screen
-    const Show = mongoose.model('Show');
+    const Show = mongoose.model("Show");
     const activeShows = await Show.countDocuments({
       screen: screenId,
-      isActive: true
+      isActive: true,
     });
 
     if (activeShows > 0) {
       return res.json({
         success: false,
-        message: "Cannot delete screen with active shows. Please disable shows first.",
+        message:
+          "Cannot delete screen with active shows. Please disable shows first.",
       });
     }
 
     await ScreenTbl.findByIdAndDelete(screenId);
 
-    res.json({ 
-      success: true, 
-      message: "Screen deleted successfully" 
+    res.json({
+      success: true,
+      message: "Screen deleted successfully",
     });
   } catch (error) {
     console.error("[deleteScreenTbl]", error);
@@ -294,9 +402,9 @@ export const getScreenTblById = async (req, res) => {
       _id: screenId,
       theatre: manager.managedTheaterId || manager.managedTheatreId,
     })
-    .populate("theatre", "name location")
-    .populate("createdBy", "name email")
-    .populate("lastModifiedBy", "name email");
+      .populate("theatre", "name location")
+      .populate("createdBy", "name email")
+      .populate("lastModifiedBy", "name email");
 
     if (!screen) {
       return res.json({

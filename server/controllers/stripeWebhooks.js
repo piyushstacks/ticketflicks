@@ -3,7 +3,7 @@ import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import { inngest } from "../inngest/index.js";
 
-async function markSeatsAndCompleteBooking(stripeInstance, bookingId, session) {
+export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, session) {
   const booking = await Booking.findById(bookingId);
   if (!booking || booking.isPaid) return;
 

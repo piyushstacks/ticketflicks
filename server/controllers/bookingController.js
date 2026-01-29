@@ -2,6 +2,7 @@ import { inngest } from "../inngest/index.js";
 import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import Stripe from "stripe";
+import { markSeatsAndCompleteBooking } from "./stripeWebhooks.js";
 
 const INR_TO_USD_RATE = Number(process.env.INR_TO_USD_RATE || 0.011);
 
@@ -101,6 +102,49 @@ const fetchSeatsAvailablity = async (showId, selectedSeats) => {
   } catch (error) {
     console.error("[fetchSeatsAvailablity]", error);
     return false;
+  }
+};
+
+export const confirmStripePayment = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: "Missing sessionId" });
+    }
+
+    const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const session = await stripeInstance.checkout.sessions.retrieve(sessionId);
+    const bookingId = session?.metadata?.bookingId;
+
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing bookingId in Stripe session metadata",
+      });
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    if (booking.user?.toString() !== req.user.id?.toString()) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+
+    if (booking.isPaid) {
+      return res.json({ success: true, bookingId, isPaid: true });
+    }
+
+    if (session?.payment_status !== "paid") {
+      return res.json({ success: true, bookingId, isPaid: false });
+    }
+
+    await markSeatsAndCompleteBooking(stripeInstance, bookingId, session);
+    return res.json({ success: true, bookingId, isPaid: true });
+  } catch (error) {
+    console.error("[confirmStripePayment]", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -242,7 +286,7 @@ export const createBooking = async (req, res) => {
     ];
 
     const session = await stripeInstance.checkout.sessions.create({
-      success_url: `${origin}/my-bookings?payment=success`,
+      success_url: `${origin}/my-bookings?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/seat-layout/${showId}?payment=cancelled`,
       line_items: lineItems,
       mode: "payment",

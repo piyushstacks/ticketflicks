@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
   {
-    user: { type: String, required: true, ref: "User" },
-    show: { type: String, required: true, ref: "Show" },
+    user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
+    show: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Show" },
     theatre: { type: mongoose.Schema.Types.ObjectId, ref: "Theatre" },
     screen: { type: mongoose.Schema.Types.ObjectId, ref: "ScreenTbl" },
     bookedSeats: [
@@ -21,7 +21,7 @@ const bookingSchema = new mongoose.Schema(
     receiptUrl: { type: String, default: null }, // Stripe receipt URL for customer
     cancellationReason: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Booking = mongoose.model("Booking", bookingSchema);
