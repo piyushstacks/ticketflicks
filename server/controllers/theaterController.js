@@ -25,16 +25,18 @@ export const fetchScreensByTheater = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Use the Theatre model to get embedded screens data - only for approved, non-disabled theatres
+    // Use ScreenTbl to get screens data - only for approved, non-disabled theatres
     const { default: Theatre } = await import("../models/Theatre.js");
+    const { default: ScreenTbl } = await import("../models/ScreenTbl.js");
+    
     const theatre = await Theatre.findById(id);
     
     if (!theatre || theatre.approval_status !== "approved" || theatre.disabled) {
       return res.json({ success: false, message: "Theatre not found" });
     }
     
-    // Return the embedded screens data
-    const screens = theatre.screens || [];
+    // Fetch screens from ScreenTbl
+    const screens = await ScreenTbl.find({ theatre: id });
     
     res.json({ success: true, screens });
   } catch (error) {

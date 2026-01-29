@@ -193,19 +193,25 @@ export const addShow = async (req, res) => {
   }
 };
 
-//API to get all shows from the database (with theater and screen info)
+// API to get all shows from the database – only active movies that have future shows (Now Showing)
 export const fetchShows = async (req, res) => {
   try {
-    const shows = await Show.find({ showDateTime: { $gte: new Date() } })
-      .populate("movie")
+    const shows = await Show.find({
+      showDateTime: { $gte: new Date() },
+      isActive: true,
+    })
+      .populate("movie", "title overview poster_path backdrop_path release_date vote_average runtime genres isActive _id")
       .populate("theatre")
       .populate("screen")
       .sort({ showDateTime: 1 });
 
-    //filter unique shows by movie
-    const uniqueShows = new Set(shows.map((show) => show.movie));
+    // Only include shows where the movie exists and is active (not disabled by admin)
+    const showsWithActiveMovie = shows.filter(
+      (show) => show.movie && show.movie.isActive !== false
+    );
+    const uniqueMovies = [...new Set(showsWithActiveMovie.map((s) => s.movie).filter(Boolean))];
 
-    res.json({ success: true, shows: Array.from(uniqueShows) });
+    res.json({ success: true, shows: uniqueMovies });
   } catch (error) {
     console.error("[fetchShows]", error);
     res.json({ success: false, message: error.message });
@@ -225,27 +231,29 @@ export const fetchShowsByMovie = async (req, res) => {
       .populate("screen")
       .sort({ showDateTime: 1 });
 
-    // Group by theater and screen
+    // Group by theatre and screen (Show model uses "theatre")
     const groupedShows = {};
     shows.forEach((show) => {
-      const theaterId = show.theater._id.toString();
+      const theatre = show.theatre;
+      if (!theatre) return;
+      const theatreId = theatre._id.toString();
       const screenId = show.screen._id.toString();
 
-      if (!groupedShows[theaterId]) {
-        groupedShows[theaterId] = {
-          theater: show.theater,
+      if (!groupedShows[theatreId]) {
+        groupedShows[theatreId] = {
+          theatre,
           screens: {},
         };
       }
 
-      if (!groupedShows[theaterId].screens[screenId]) {
-        groupedShows[theaterId].screens[screenId] = {
+      if (!groupedShows[theatreId].screens[screenId]) {
+        groupedShows[theatreId].screens[screenId] = {
           screen: show.screen,
           shows: [],
         };
       }
 
-      groupedShows[theaterId].screens[screenId].shows.push(show);
+      groupedShows[theatreId].screens[screenId].shows.push(show);
     });
 
     res.json({ success: true, groupedShows });
@@ -288,7 +296,7 @@ export const fetchUpcomingMovies = async (req, res) => {
   }
 };
 
-//API to get a single show with seat tier information
+// API to get a single show with seat tier information – reject if movie is disabled
 export const fetchShow = async (req, res) => {
   try {
     const { showId } = req.params;
@@ -301,6 +309,9 @@ export const fetchShow = async (req, res) => {
     if (!show) {
       return res.json({ success: false, message: "Show not found" });
     }
+    if (show.movie && show.movie.isActive === false) {
+      return res.json({ success: false, message: "This movie is not available for booking" });
+    }
 
     res.json({ success: true, show });
   } catch (error) {
@@ -309,24 +320,23 @@ export const fetchShow = async (req, res) => {
   }
 };
 
-//API to get show details by movie ID (backward compatibility) - Database only
+// API to get show details by movie ID (backward compatibility) – only if movie is active
 export const fetchShowByMovieId = async (req, res) => {
   try {
     const { movieId } = req.params;
 
-    //get all upcoming shows for the movie
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found in database" });
+    }
+    if (!movie.isActive) {
+      return res.json({ success: true, movie, dateTime: {} });
+    }
+
     const shows = await Show.find({
       movie: movieId,
       showDateTime: { $gte: new Date() },
     }).populate("theatre").populate("screen");
-
-    // Get movie details from our database only
-    const movie = await Movie.findById(movieId);
-
-    // If movie isn't found in our database, return not found
-    if (!movie) {
-      return res.json({ success: false, message: "Movie not found in database" });
-    }
 
     const dateTime = {};
 
@@ -378,11 +388,19 @@ export const getAvailableMoviesForCustomers = async (req, res) => {
   }
 };
 
-// API to get all active movies (public endpoint) - fallback when no shows exist
+// API to get movies for Now Showing – only active movies that have at least one future show (fallback when /all returns empty)
 export const getAllActiveMovies = async (req, res) => {
   try {
-    // Get all active movies regardless of shows
-    const movies = await Movie.find({ isActive: true }).select(
+    const movieIdsWithShows = await Show.find({
+      showDateTime: { $gte: new Date() },
+      isActive: true,
+    })
+      .distinct("movie");
+
+    const movies = await Movie.find({
+      _id: { $in: movieIdsWithShows },
+      isActive: true,
+    }).select(
       "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
     );
 

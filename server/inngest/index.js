@@ -73,13 +73,34 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
         const show = await Show.findById(booking.show);
 
         // This check is important in case the show was deleted for some reason
-        if (show) {
-          booking.bookedSeats.forEach((seat) => {
-            delete show.occupiedSeats[seat];
+        if (show && Array.isArray(show.seatTiers)) {
+          let releasedCount = 0;
+
+          // Release only the seats locked by this booking.
+          // Seats are stored in show.seatTiers[*].occupiedSeats[seatNumber]
+          // as either a userId (paid) or `LOCKED:<bookingId>` (pending).
+          booking.bookedSeats.forEach((seatObj) => {
+            const seatNumber = seatObj?.seatNumber;
+            if (!seatNumber) return;
+
+            show.seatTiers.forEach((tier) => {
+              if (!tier?.occupiedSeats) return;
+              const val = tier.occupiedSeats[seatNumber];
+              if (val === `LOCKED:${bookingId}`) {
+                delete tier.occupiedSeats[seatNumber];
+                releasedCount += 1;
+              }
+            });
           });
 
-          show.markModified("occupiedSeats");
-          await show.save();
+          if (releasedCount > 0) {
+            show.occupiedSeatsCount = Math.max(
+              0,
+              (show.occupiedSeatsCount || 0) - releasedCount
+            );
+            show.markModified("seatTiers");
+            await show.save();
+          }
         }
 
         await Booking.findByIdAndDelete(booking._id);
@@ -123,10 +144,11 @@ const sendBookingConfirmationEmail = inngest.createFunction(
                 ).toLocaleTimeString("en-US", { timeZone: "Asia/Kolkata" })}
               </p>
               <p>
-                <strong>Seats : </strong> ${booking.bookedSeats.join(", ")}<br/>
-                <strong>Total Tickets : </strong> ${
-                  booking.bookedSeats.length
-                }<br/>
+                <strong>Seats : </strong> ${(booking.bookedSeats || [])
+                  .map((s) => s.seatNumber)
+                  .filter(Boolean)
+                  .join(", ")}<br/>
+                <strong>Total Tickets : </strong> ${(booking.bookedSeats || []).length}<br/>
                 <strong>Total Amount : </strong> $${booking.amount}
               </p>
               <p>Enjoy the show! 🍿🥤</p>
@@ -155,9 +177,15 @@ const sendShowReminders = inngest.createFunction(
       const tasks = [];
 
       for (const show of shows) {
-        if (!show.movie || !show.occupiedSeats) continue;
+        if (!show.movie || !Array.isArray(show.seatTiers)) continue;
 
-        const userIds = [...new Set(Object.values(show.occupiedSeats))];
+        const userIds = [
+          ...new Set(
+            show.seatTiers
+              .flatMap((tier) => Object.values(tier?.occupiedSeats || {}))
+              .filter((v) => typeof v === "string" && !v.startsWith("LOCKED:"))
+          ),
+        ];
 
         if (userIds.length === 0) continue;
 

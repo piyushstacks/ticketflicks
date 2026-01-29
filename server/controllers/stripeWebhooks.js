@@ -1,14 +1,64 @@
 import Stripe from "stripe";
 import Booking from "../models/Booking.js";
+import Show from "../models/Show.js";
 import { inngest } from "../inngest/index.js";
+
+async function markSeatsAndCompleteBooking(stripeInstance, bookingId, session) {
+  const booking = await Booking.findById(bookingId);
+  if (!booking || booking.isPaid) return;
+
+  const showData = await Show.findById(booking.show);
+  if (showData && showData.seatTiers) {
+    for (const seat of booking.bookedSeats) {
+      const tierIndex = showData.seatTiers.findIndex(
+        (t) => t.tierName === seat.tierName
+      );
+      if (tierIndex !== -1) {
+        if (!showData.seatTiers[tierIndex].occupiedSeats) {
+          showData.seatTiers[tierIndex].occupiedSeats = {};
+        }
+        showData.seatTiers[tierIndex].occupiedSeats[seat.seatNumber] =
+          booking.user.toString();
+      }
+    }
+    showData.occupiedSeatsCount =
+      (showData.occupiedSeatsCount || 0) + booking.bookedSeats.length;
+    showData.markModified("seatTiers");
+    await showData.save();
+  }
+
+  let receiptUrl = null;
+  try {
+    const paymentIntentId = session.payment_intent || session.payment_intent;
+    if (paymentIntentId) {
+      const pi = await stripeInstance.paymentIntents.retrieve(paymentIntentId);
+      if (pi.latest_charge) {
+        const charge = await stripeInstance.charges.retrieve(pi.latest_charge);
+        receiptUrl = charge.receipt_url || null;
+      }
+    }
+  } catch (e) {
+    console.warn("Could not fetch Stripe receipt_url:", e.message);
+  }
+
+  await Booking.findByIdAndUpdate(bookingId, {
+    isPaid: true,
+    paymentLink: "",
+    paymentMode: "stripe",
+    receiptUrl: receiptUrl || undefined,
+  });
+
+  await inngest.send({
+    name: "app/show.booked",
+    data: { bookingId },
+  });
+}
 
 export const stripeWebhooks = async (req, res) => {
   const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
   const sig = req.headers["stripe-signature"];
   let event;
-
-  console.log("Stripe webhook received");
 
   try {
     event = stripeInstance.webhooks.constructEvent(
@@ -21,33 +71,14 @@ export const stripeWebhooks = async (req, res) => {
   }
 
   try {
-    console.log("Stripe event type:", event.type);
-
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
         const bookingId = session.metadata?.bookingId;
 
         if (bookingId && session.payment_status === "paid") {
-          await Booking.findByIdAndUpdate(bookingId, {
-            isPaid: true,
-            paymentLink: "",
-          });
-
-          await inngest.send({
-            name: "app/show.booked",
-            data: { bookingId },
-          });
-        } else {
-          console.log(
-            "checkout.session.completed missing bookingId or not paid",
-            {
-              bookingId,
-              payment_status: session.payment_status,
-            }
-          );
+          await markSeatsAndCompleteBooking(stripeInstance, bookingId, session);
         }
-
         break;
       }
 
@@ -58,29 +89,18 @@ export const stripeWebhooks = async (req, res) => {
         });
 
         const session = sessionList.data[0];
-        const { bookingId } = session.metadata;
+        const bookingId = session?.metadata?.bookingId;
 
         if (bookingId) {
-          await Booking.findByIdAndUpdate(bookingId, {
-            isPaid: true,
-            paymentLink: "",
+          await markSeatsAndCompleteBooking(stripeInstance, bookingId, {
+            ...session,
+            payment_intent: paymentIntent.id,
           });
-
-          await inngest.send({
-            name: "app/show.booked",
-            data: { bookingId },
-          });
-        } else {
-          console.log(
-            "payment_intent.succeeded session has no bookingId in metadata"
-          );
         }
-
         break;
       }
 
       default:
-        console.log("unhandled event type :", event.type);
         break;
     }
 

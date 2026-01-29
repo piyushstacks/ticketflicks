@@ -42,20 +42,37 @@ export const getShowsByTheatre = async (req, res) => {
       return res.json({ success: false, message: "Theatre not found or not available" });
     }
 
-    // Get all shows for this theatre
+    // Get all shows for this theatre – only for active (non-disabled) movies
     const shows = await Show.find({
       theatre: theatreId,
       isActive: true,
       showDateTime: { $gte: new Date() }
     })
-    .populate("movie", "title poster_path backdrop_path")
+    .populate("movie", "title poster_path backdrop_path isActive")
     .populate("theatre", "name location city")
     .populate("screen", "screenNumber name seatTiers")
     .sort({ showDateTime: 1 });
 
-    console.log("Found shows for theatre:", theatreId, shows.length);
+    console.log("Total shows found for theatre:", theatreId, shows.length);
+    
+    // Debug: Log each show and its movie status
+    shows.forEach((show, index) => {
+      console.log(`Show ${index + 1}:`, {
+        showId: show._id,
+        movieId: show.movie?._id,
+        movieTitle: show.movie?.title,
+        movieIsActive: show.movie?.isActive,
+        showDateTime: show.showDateTime
+      });
+    });
 
-    res.json({ success: true, shows });
+    const showsForActiveMovies = shows.filter(
+      (s) => s.movie && s.movie.isActive === true
+    );
+
+    console.log("Shows for active movies:", theatreId, showsForActiveMovies.length);
+
+    res.json({ success: true, shows: showsForActiveMovies });
   } catch (error) {
     console.error("[getShowsByTheatre]", error);
     res.json({ success: false, message: error.message });
@@ -67,10 +84,18 @@ export const getShowsByMovie = async (req, res) => {
   try {
     const { movieId } = req.params;
 
-    // Validate movie exists
+    // Validate movie exists and is active (not disabled by admin)
     const movie = await Movie.findById(movieId);
     if (!movie) {
       return res.json({ success: false, message: "Movie not found" });
+    }
+    if (!movie.isActive) {
+      return res.json({
+        success: true,
+        groupedShows: {},
+        movie,
+        message: "This movie is not currently available for booking.",
+      });
     }
 
     // Get all shows for this movie (only from approved theatres)

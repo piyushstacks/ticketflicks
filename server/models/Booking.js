@@ -17,6 +17,8 @@ const bookingSchema = new mongoose.Schema(
     isPaid: { type: Boolean, default: false },
     paymentLink: { type: String },
     paymentIntentId: { type: String }, // Stripe payment intent ID
+    paymentMode: { type: String, default: null }, // e.g. "stripe", "card"
+    receiptUrl: { type: String, default: null }, // Stripe receipt URL for customer
     cancellationReason: { type: String },
   },
   { timestamps: true }
