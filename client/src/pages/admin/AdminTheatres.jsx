@@ -420,11 +420,11 @@ const AdminTheatres = () => {
                     </>
                   )}
 
-                  {(theatre.screenCount !== undefined || (theatre.screens && theatre.screens.length > 0)) && (
+                  {theatre.screenCount !== undefined && (
                     <div className="text-xs flex items-center gap-1">
                       <span className="text-gray-500">Screens: </span>
                       <span className="text-primary font-bold">
-                        {theatre.screenCount !== undefined ? theatre.screenCount : theatre.screens.length}
+                        {theatre.screenCount}
                       </span>
                     </div>
                   )}

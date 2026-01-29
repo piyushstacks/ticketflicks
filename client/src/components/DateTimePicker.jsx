@@ -46,6 +46,20 @@ const DateTimePicker = ({ movieId }) => {
     }
   };
 
+  const getTheatresWithShowsForDate = (dateObj) => {
+    if (!dateObj) return theatresList;
+    const dateStr = dateObj.toISOString().split("T")[0];
+
+    return theatresList.filter((theatre) => {
+      const theatreShows = shows[theatre._id];
+      if (!theatreShows?.screens) return false;
+      return Object.keys(theatreShows.screens).some((screenId) => {
+        const matches = getShowsForDateAndTheatre(dateObj, theatre._id, screenId);
+        return matches.length > 0;
+      });
+    });
+  };
+
   useEffect(() => {
     fetchShowsByMovie();
   }, [movieId]);
@@ -138,7 +152,7 @@ const DateTimePicker = ({ movieId }) => {
       {/* Theatres & Shows */}
       {selectedDate && theatresList.length > 0 ? (
         <div className="space-y-6">
-          {theatresList.map((theatre) => (
+          {getTheatresWithShowsForDate(selectedDate).map((theatre) => (
             <div
               key={theatre._id}
               className="bg-gray-900/30 backdrop-blur-md border border-gray-700 rounded-lg p-6"
@@ -155,66 +169,46 @@ const DateTimePicker = ({ movieId }) => {
 
               {/* Screens & Shows for this theatre */}
               <div className="space-y-6">
-                {Object.entries(shows[theatre._id]?.screens || {}).map(
-                  ([screenId, screenData]) => {
-                    const showsForDate = getShowsForDateAndTheatre(
-                      selectedDate,
-                      theatre._id,
-                      screenId
-                    );
+                {Object.entries(shows[theatre._id]?.screens || {})
+                  .map(([screenId, screenData]) => {
+                    const showsForDate = getShowsForDateAndTheatre(selectedDate, theatre._id, screenId);
+                    return { screenId, screenData, showsForDate };
+                  })
+                  .filter((x) => x.showsForDate.length > 0)
+                  .map(({ screenId, screenData, showsForDate }) => (
+                    <div key={screenId}>
+                      <p className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-primary rounded-full"></span>
+                        Screen {screenData.screen.screenNumber} • {screenData.screen.seatLayout?.totalSeats || 0} seats
+                      </p>
 
-                    return (
-                      <div key={screenId}>
-                        <p className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
-                          <span className="w-2 h-2 bg-primary rounded-full"></span>
-                          Screen {screenData.screen.screenNumber} •{" "}
-                          {screenData.screen.seatLayout?.totalSeats || 0} seats
-                        </p>
-
-                        {showsForDate.length > 0 ? (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                            {showsForDate.map((show) => (
-                              <button
-                                key={show._id}
-                                onClick={() => {
-                                  navigate(`/seat-layout/${show._id}`, {
-                                    state: {
-                                      selectedDate: selectedDate.toISOString(),
-                                      theatre: theatre,
-                                    },
-                                  });
-                                }}
-                                className="p-3 bg-gradient-to-br from-primary to-primary-dull hover:shadow-lg hover:shadow-primary/50 rounded-lg transition text-center font-semibold text-white active:scale-95 transform duration-200"
-                              >
-                                <div className="flex items-center justify-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  {new Date(show.showDateTime).toLocaleTimeString(
-                                    "en-US",
-                                    {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    }
-                                  )}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-gray-500 text-sm italic">
-                            No shows available for this screen
-                          </p>
-                        )}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {showsForDate.map((show) => (
+                          <button
+                            key={show._id}
+                            onClick={() => {
+                              navigate(`/seat-layout/${show._id}`, {
+                                state: {
+                                  selectedDate: selectedDate.toISOString(),
+                                  theatre: theatre,
+                                },
+                              });
+                            }}
+                            className="p-3 bg-gradient-to-br from-primary to-primary-dull hover:shadow-lg hover:shadow-primary/50 rounded-lg transition text-center font-semibold text-white active:scale-95 transform duration-200"
+                          >
+                            <div className="flex items-center justify-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {new Date(show.showDateTime).toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </div>
+                          </button>
+                        ))}
                       </div>
-                    );
-                  }
-                )}
-
-                {Object.keys(shows[theatre._id]?.screens || {}).length === 0 && (
-                  <p className="text-gray-500 text-sm italic">
-                    No screens available for this theatre
-                  </p>
-                )}
+                    </div>
+                  ))}
               </div>
             </div>
           ))}

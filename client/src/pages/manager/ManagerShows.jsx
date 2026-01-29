@@ -104,7 +104,7 @@ const ManagerShows = () => {
 
   const fetchScreens = async () => {
     try {
-      const { data } = await axios.get("/api/manager/screens", {
+      const { data } = await axios.get("/api/manager/screens-tbl", {
         headers: getAuthHeaders(),
       });
 

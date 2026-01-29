@@ -32,6 +32,20 @@ const MovieShowSelector = () => {
     return dates;
   };
 
+  const getTheatresWithShowsForDate = (dateObj) => {
+    if (!dateObj) return theatresList;
+    const dateStr = dateObj.toDateString();
+
+    return theatresList.filter((theatre) => {
+      const theatreShows = shows[theatre._id];
+      if (!theatreShows?.screens) return false;
+      return Object.keys(theatreShows.screens).some((screenId) => {
+        const matches = getShowsForDateAndTheatre(dateObj, theatre._id, screenId);
+        return matches.length > 0;
+      });
+    });
+  };
+
   // Fetch movie details
   const fetchMovie = async () => {
     try {
@@ -206,16 +220,13 @@ const MovieShowSelector = () => {
       <div className="px-6 md:px-16 lg:px-40 py-8">
         {selectedDate && theatresList.length > 0 ? (
           <div className="space-y-8">
-            <h2 className="text-2xl font-bold text-white mb-6">
-              Select Show Time
-            </h2>
-            
-            {theatresList.map((theatre) => (
+            <h2 className="text-2xl font-bold text-white mb-6">Select Show Time</h2>
+
+            {getTheatresWithShowsForDate(selectedDate).map((theatre) => (
               <div
                 key={theatre._id}
                 className="bg-gray-900/50 backdrop-blur-md border border-gray-700 rounded-xl overflow-hidden"
               >
-                {/* Theatre Header */}
                 <div className="bg-gradient-to-r from-primary/10 to-purple-600/10 p-6 border-b border-gray-700">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -237,90 +248,40 @@ const MovieShowSelector = () => {
                   </div>
                 </div>
 
-                {/* Screens & Shows */}
-                <div className="p-6 space-y-6">
-                  {Object.entries(shows[theatre._id]?.screens || {}).map(
-                    ([screenId, screenData]) => {
-                      const showsForDate = getShowsForDateAndTheatre(
-                        selectedDate,
-                        theatre._id,
-                        screenId
-                      );
+                <div className="space-y-6 p-6">
+                  {Object.entries(shows[theatre._id]?.screens || {})
+                    .map(([screenId, screenData]) => {
+                      const showsForDate = getShowsForDateAndTheatre(selectedDate, theatre._id, screenId);
+                      return { screenId, screenData, showsForDate };
+                    })
+                    .filter((x) => x.showsForDate.length > 0)
+                    .map(({ screenId, screenData, showsForDate }) => (
+                      <div key={screenId}>
+                        <p className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-primary rounded-full"></span>
+                          Screen {screenData.screen?.screenNumber} • {screenData.screen?.seatLayout?.totalSeats || 0} seats
+                        </p>
 
-                      return (
-                        <div key={screenId}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className="px-3 py-1 bg-gray-800 rounded-lg">
-                                <span className="text-sm font-semibold text-primary">
-                                  SCREEN {screenData.screen.screenNumber}
-                                </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                          {showsForDate.map((s) => (
+                            <button
+                              key={s._id}
+                              onClick={() => navigate(`/seat-layout/${s._id}`)}
+                              className="p-3 bg-gradient-to-br from-primary to-primary-dull hover:shadow-lg hover:shadow-primary/50 rounded-lg transition text-center font-semibold text-white active:scale-95 transform duration-200"
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                {new Date(s.showDateTime).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
                               </div>
-                              <span className="text-gray-400 text-sm">
-                                {screenData.screen.seatLayout?.totalSeats || 0} seats
-                              </span>
-                            </div>
-                            {screenData.screen.seatTiers && (
-                              <div className="flex gap-2">
-                                {screenData.screen.seatTiers.slice(0, 2).map((tier, idx) => (
-                                  <span key={idx} className="text-xs px-2 py-1 bg-gray-800 rounded text-gray-300">
-                                    {tier.tierName}: ₹{tier.price}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {showsForDate.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                              {showsForDate.map((show) => (
-                                <button
-                                  key={show._id}
-                                  onClick={() => {
-                                    navigate(`/seat-layout/${show._id}`, {
-                                      state: {
-                                        selectedDate: selectedDate.toISOString(),
-                                        theatre: theatre,
-                                        movie: movie,
-                                      },
-                                    });
-                                  }}
-                                  className="group relative p-4 bg-gradient-to-br from-gray-800 to-gray-900 hover:from-primary hover:to-primary-dull rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-primary/50 border border-gray-700 hover:border-primary"
-                                >
-                                  <div className="text-center">
-                                    <Clock className="w-5 h-5 mx-auto mb-2 text-primary group-hover:text-white" />
-                                    <div className="font-bold text-white">
-                                      {new Date(show.showDateTime || show.startDate + ' ' + show.showTime).toLocaleTimeString(
-                                        "en-US",
-                                        {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                          hour12: true,
-                                        }
-                                      )}
-                                    </div>
-                                    <div className="text-xs text-gray-400 mt-1">
-                                      {show.language || "English"}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Available seats indicator */}
-                                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                                    {Math.floor((screenData.screen.seatLayout?.totalSeats || 0) * 0.7)}
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8 bg-gray-800/30 rounded-lg border border-gray-700">
-                              <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-                              <p className="text-gray-400">No shows available on this date</p>
-                            </div>
-                          )}
+                            </button>
+                          ))}
                         </div>
-                      );
-                    }
-                  )}
+                      </div>
+                    ))}
                 </div>
               </div>
             ))}
@@ -331,10 +292,9 @@ const MovieShowSelector = () => {
               <Calendar className="w-16 h-16 text-gray-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">No Shows Available</h3>
               <p className="text-gray-400">
-                {selectedDate 
+                {selectedDate
                   ? "No shows are scheduled for this movie on the selected date."
-                  : "Select a date to view available shows."
-                }
+                  : "Select a date to view available shows."}
               </p>
             </div>
           </div>

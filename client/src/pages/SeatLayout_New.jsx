@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAppContext } from "../context/AppContext";
 import BlurCircle from "../components/BlurCircle";
+import { SEAT_TIERS } from "../components/SeatLayoutTemplates.js";
 
 const SeatLayout = () => {
   const navigate = useNavigate();
@@ -53,20 +54,27 @@ const SeatLayout = () => {
     }
   };
 
-  // Get tier info for a seat
-  const getSeatTierInfo = (seatNumber) => {
-    if (!show) return null;
+  const getSeatCodeFromLayout = (seatNumber) => {
+    const layout = show?.screen?.seatLayout?.layout;
+    if (!Array.isArray(layout)) return null;
 
-    const row = seatNumber.charAt(0);
-    for (const tier of show.seatTiers) {
-      if (tier.rows.includes(row)) {
-        return {
-          tierName: tier.tierName,
-          price: tier.price,
-        };
-      }
-    }
-    return null;
+    const rowLetter = String(seatNumber || "").charAt(0);
+    const colRaw = String(seatNumber || "").slice(1);
+    const rowIndex = rowLetter.toUpperCase().charCodeAt(0) - 65;
+    const colIndex = Number.parseInt(colRaw, 10) - 1;
+    if (!Number.isFinite(rowIndex) || !Number.isFinite(colIndex)) return null;
+    if (rowIndex < 0 || colIndex < 0) return null;
+    const row = layout[rowIndex];
+    if (!Array.isArray(row)) return null;
+    return row[colIndex] || null;
+  };
+
+  const getSeatTierInfo = (seatNumber) => {
+    const code = getSeatCodeFromLayout(seatNumber);
+    if (!code) return null;
+    const tier = SEAT_TIERS[code];
+    if (!tier) return null;
+    return { tierName: tier.name, price: tier.basePrice, color: tier.color };
   };
 
   // Handle seat click
@@ -77,7 +85,7 @@ const SeatLayout = () => {
 
     const tierInfo = getSeatTierInfo(seatId);
     if (!tierInfo) {
-      return toast.error("Invalid seat");
+      return; // aisle/empty seat cell
     }
 
     const seatWithTier = { seatNumber: seatId, tierName: tierInfo.tierName };
@@ -109,9 +117,11 @@ const SeatLayout = () => {
   // Get tier color for UI
   const getTierColor = (tierName) => {
     const colors = {
-      Standard: "bg-blue-500",
-      Premium: "bg-yellow-500",
-      VIP: "bg-red-500",
+      Standard: "bg-slate-500",
+      Deluxe: "bg-blue-500",
+      Premium: "bg-violet-500",
+      Recliner: "bg-red-500",
+      Couple: "bg-pink-500",
     };
     return colors[tierName] || "bg-gray-500";
   };
@@ -120,67 +130,63 @@ const SeatLayout = () => {
   const getTierTextColor = (tierName) => {
     const colors = {
       Standard: "text-white",
-      Premium: "text-black",
-      VIP: "text-white",
+      Deluxe: "text-white",
+      Premium: "text-white",
+      Recliner: "text-white",
+      Couple: "text-white",
     };
     return colors[tierName] || "text-white";
   };
 
-  // Render seats grid
+  // Render seats grid from 2D seatLayout (supports aisles)
   const renderSeats = () => {
     if (!show) return null;
 
-    const rows = Array.from({ length: show.screen.seatLayout.rows }, (_, i) =>
-      String.fromCharCode(65 + i)
-    );
+    const matrix = show.screen?.seatLayout?.layout;
+    if (!Array.isArray(matrix) || matrix.length === 0) return null;
 
     return (
       <div className="space-y-3">
-        {rows.map((row) => (
-          <div key={row} className="flex justify-center gap-1.5">
-            <div className="w-6 text-center text-xs font-bold text-gray-400">
-              {row}
-            </div>
-            <div className="flex gap-1.5">
-              {Array.from(
-                { length: show.screen.seatLayout.seatsPerRow },
-                (_, i) => {
-                  const seatId = `${row}${i + 1}`;
+        {matrix.map((rowArr, rowIndex) => {
+          const rowLetter = String.fromCharCode(65 + rowIndex);
+          return (
+            <div key={rowLetter} className="flex justify-center gap-1.5">
+              <div className="w-6 text-center text-xs font-bold text-gray-400">{rowLetter}</div>
+              <div className="flex gap-1.5">
+                {rowArr.map((code, colIndex) => {
+                  if (!code) {
+                    return <div key={`gap-${rowLetter}-${colIndex}`} className="h-8 w-8" />;
+                  }
+                  const seatId = `${rowLetter}${colIndex + 1}`;
                   const tierInfo = getSeatTierInfo(seatId);
-                  const isSelected = selectedSeats.some(
-                    (s) => s.seatNumber === seatId
-                  );
+                  const isSelected = selectedSeats.some((s) => s.seatNumber === seatId);
                   const isOccupied = occupiedSeats.includes(seatId);
 
                   return (
                     <button
                       key={seatId}
                       onClick={() => handleSeatClick(seatId)}
-                      className={`
-                        h-8 w-8 text-xs rounded font-semibold transition-all duration-200 cursor-pointer
-                        flex items-center justify-center
-                        ${
-                          isOccupied
-                            ? "bg-gray-500 cursor-not-allowed opacity-40"
-                            : isSelected
-                            ? `${getTierColor(tierInfo?.tierName)} border-2 border-white scale-110 ${getTierTextColor(tierInfo?.tierName)}`
-                            : `${getTierColor(tierInfo?.tierName)} ${getTierTextColor(tierInfo?.tierName)} hover:scale-105 active:scale-95`
-                        }
-                      `}
                       disabled={isOccupied}
+                      className={
+                        `h-8 w-8 text-xs rounded font-semibold transition-all duration-200 cursor-pointer ` +
+                        `flex items-center justify-center ` +
+                        (isOccupied
+                          ? "bg-gray-500 cursor-not-allowed opacity-40"
+                          : isSelected
+                          ? `${getTierColor(tierInfo?.tierName)} border-2 border-white scale-110 ${getTierTextColor(tierInfo?.tierName)}`
+                          : `${getTierColor(tierInfo?.tierName)} ${getTierTextColor(tierInfo?.tierName)} hover:scale-105 active:scale-95`)
+                      }
                       title={`${seatId} - ${tierInfo?.tierName} (₹${tierInfo?.price})`}
                     >
                       {seatId}
                     </button>
                   );
-                }
-              )}
+                })}
+              </div>
+              <div className="w-6 text-center text-xs font-bold text-gray-400">{rowLetter}</div>
             </div>
-            <div className="w-6 text-center text-xs font-bold text-gray-400">
-              {row}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -243,6 +249,27 @@ const SeatLayout = () => {
 
   const totalPrice = calculateTotalPrice();
 
+  const seatMatrix = show.screen?.seatLayout?.layout || [];
+  const availableSeatCodes = Array.from(
+    new Set((Array.isArray(seatMatrix) ? seatMatrix : []).flat().filter(Boolean))
+  );
+  const availableCategories = availableSeatCodes
+    .map((code) => ({ code, ...(SEAT_TIERS[code] || {}) }))
+    .filter((x) => x.name)
+    .sort((a, b) => (a.basePrice || 0) - (b.basePrice || 0));
+
+  const screenTypeLabel = (() => {
+    const flat = (Array.isArray(seatMatrix) ? seatMatrix : []).flat().filter(Boolean);
+    const hasRecliner = flat.includes("R");
+    const hasCouple = flat.includes("C");
+    const hasPremium = flat.includes("P") || flat.includes("D");
+    if (hasCouple) return "Couple Screen";
+    if (hasRecliner && hasPremium) return "Premium Screen";
+    if (hasRecliner) return "Recliner Screen";
+    if (hasPremium) return "Classic Screen";
+    return "Classic Screen";
+  })();
+
   return (
     <div className="relative px-6 md:px-16 lg:px-40 pt-20 pb-20 overflow-hidden min-h-screen">
       <BlurCircle top="50px" left="0" />
@@ -264,8 +291,8 @@ const SeatLayout = () => {
             {show.movie.title}
           </h1>
           <div className="flex flex-col md:flex-row justify-center gap-4 text-gray-400">
-            <p className="font-semibold">{show.theater.name}</p>
-            <p className="font-semibold">{show.screen.screenNumber}</p>
+            <p className="font-semibold">{(show.theatre || show.theater)?.name}</p>
+            <p className="font-semibold">{show.screen?.screenNumber}</p>
             <p>
               {new Date(show.showDateTime).toLocaleString("en-IN", {
                 dateStyle: "medium",
@@ -279,17 +306,17 @@ const SeatLayout = () => {
         <div className="bg-gray-900/30 backdrop-blur-md rounded-lg p-6 mb-8 border border-gray-700">
           <p className="text-sm text-gray-400 mb-4">Seat Categories:</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {show.seatTiers.map((tier) => (
+            {availableCategories.map((tier) => (
               <div
-                key={tier.tierName}
+                key={tier.code}
                 className={`flex items-center gap-3 p-3 rounded-lg bg-gray-800/50`}
               >
                 <div
-                  className={`w-4 h-4 rounded ${getTierColor(tier.tierName)}`}
+                  className="w-4 h-4 rounded"
+                  style={{ backgroundColor: tier.color || "#94a3b8" }}
                 ></div>
                 <span className="text-sm">
-                  <span className="font-semibold">{tier.tierName}</span> - ₹
-                  {tier.price}
+                  <span className="font-semibold">{tier.name}</span> - ₹{tier.basePrice}
                 </span>
               </div>
             ))}

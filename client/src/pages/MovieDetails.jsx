@@ -41,15 +41,52 @@ const MovieDetails = () => {
     imageBaseURL,
   } = useAppContext();
 
-  // Fetch all theaters
+  // Fetch all theatres (API returns theatres)
   const fetchTheaters = async () => {
     try {
       const { data } = await axios.get("/api/theatre/");
       if (data.success) {
-        setTheaters(data.theaters);
+        setTheaters(data.theatres || data.theaters || []);
       }
     } catch (error) {
-      console.error("Error fetching theaters:", error);
+      console.error("Error fetching theatres:", error);
+    }
+  };
+
+  // Fetch theatres that have shows for this movie
+  const fetchTheatersWithShows = async () => {
+    try {
+      setLoading(true);
+      const { data } = await axios.get(`/api/show/by-movie/${id}`);
+      if (data.success && data.groupedShows) {
+        // Extract unique theatres from grouped shows
+        const theaterIds = Object.keys(data.groupedShows);
+        const theaterDetails = await Promise.all(
+          theaterIds.map(async (theaterId) => {
+            try {
+              const { data: theaterData } = await axios.get(`/api/theatre/${theaterId}`);
+              return theaterData.success ? theaterData.theatre : null;
+            } catch (error) {
+              console.error(`Error fetching theatre ${theaterId}:`, error);
+              return null;
+            }
+          })
+        );
+        
+        // Filter out null responses and set theaters
+        const validTheaters = theaterDetails.filter(theater => theater !== null);
+        setTheaters(validTheaters);
+        setShows(data.groupedShows);
+      } else {
+        setTheaters([]);
+        setShows({});
+      }
+    } catch (error) {
+      console.error("Error fetching theatres with shows:", error);
+      setTheaters([]);
+      setShows({});
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,13 +98,10 @@ const MovieDetails = () => {
     }
 
     try {
-      // The theatre API returns the theatre document with embedded screens
-      const { data } = await axios.get(`/api/theatre/${theaterId}`);
-      if (data && data.success && data.theatre) {
-        // Some theatre documents use `screens` array directly
-        const screensList = Array.isArray(data.theatre.screens)
-          ? data.theatre.screens
-          : [];
+      // Use the public screen endpoint to get screens from ScreenTbl
+      const { data } = await axios.get(`/api/theatre/${theaterId}/screens`);
+      if (data && data.success && data.screens) {
+        const screensList = Array.isArray(data.screens) ? data.screens : [];
         setScreens(screensList);
         setSelectedScreen(null);
       } else {
@@ -145,14 +179,14 @@ const MovieDetails = () => {
     fetchScreens(theaterId);
   };
 
-  // Get shows for selected theater and screen
+  // Get shows for selected theatre and screen (groupedShows keyed by theatre id)
   const getShowsForSelection = () => {
     if (!selectedTheater || !selectedScreen || !shows[selectedTheater]) {
       return [];
     }
-
-    const theaterShows = shows[selectedTheater].screens[selectedScreen];
-    return theaterShows?.shows || [];
+    const theatreGroup = shows[selectedTheater];
+    const screenGroup = theatreGroup?.screens?.[selectedScreen];
+    return screenGroup?.shows || [];
   };
 
   const isFavorite = favoriteMovies.some((movie) => movie._id === id);
@@ -172,7 +206,7 @@ const MovieDetails = () => {
 
   useEffect(() => {
     getShow();
-    fetchTheaters();
+    fetchTheatersWithShows();
     fetchShowsForMovie();
   }, [id]);
 
@@ -245,18 +279,28 @@ const MovieDetails = () => {
         {/* Theater Selection */}
         <div className="mb-8">
           <label className="block text-sm font-semibold mb-3">Select Theater</label>
-          <select
-            value={selectedTheater || ""}
-            onChange={(e) => handleTheaterChange(e.target.value)}
-            className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-primary outline-none transition hover:bg-gray-750 cursor-pointer"
-          >
-            <option value="">-- Choose a theater --</option>
-            {(Array.isArray(theaters) ? theaters : []).map((theater) => (
-              <option key={theater._id} value={theater._id}>
-                {theater.name} - {theater.city}
-              </option>
-            ))}
-          </select>
+          {loading ? (
+            <div className="w-full p-3 bg-gray-800 text-gray-400 rounded-lg border border-gray-700 text-center">
+              Loading available theaters...
+            </div>
+          ) : theaters.length === 0 ? (
+            <div className="w-full p-3 bg-red-900/20 text-red-400 rounded-lg border border-red-600/30 text-center">
+              No theaters showing this movie currently
+            </div>
+          ) : (
+            <select
+              value={selectedTheater || ""}
+              onChange={(e) => handleTheaterChange(e.target.value)}
+              className="w-full p-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-primary outline-none transition hover:bg-gray-750 cursor-pointer"
+            >
+              <option value="">-- Choose a theater --</option>
+              {(Array.isArray(theaters) ? theaters : []).map((theater) => (
+                <option key={theater._id} value={theater._id}>
+                  {theater.name} - {theater.city}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Screen Selection */}
@@ -292,30 +336,42 @@ const MovieDetails = () => {
                         navigate("/login");
                         return;
                       }
-                      navigate(`/seat-layout/${showItem._id}`);
+                      setSelectedShowId(showItem._id);
+                      navigate(`/seat-layout/${showItem._id}/${new Date(showItem.showDateTime).toISOString().split('T')[0]}`);
                     }}
-                    className="p-3 bg-primary hover:bg-primary-dull rounded-lg transition text-center font-semibold text-white active:scale-95 transform duration-200"
+                    className={`p-3 rounded-lg border transition-all cursor-pointer font-medium text-sm
+                      ${selectedShowId === showItem._id 
+                        ? "bg-primary text-white border-primary ring-2 ring-primary/50" 
+                        : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:border-primary/50 hover:text-white"}
+                    `}
                   >
-                    {new Date(showItem.showDateTime).toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
+                    <div className="flex flex-col items-center gap-1">
+                      <ClockIcon className="w-4 h-4" />
+                      <span>{new Date(showItem.showDateTime).toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}</span>
+                      <span className="text-xs opacity-75">
+                        {showItem.screen?.screenNumber || `Screen ${showItem.screen}`}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 text-center py-6">
-                No shows available for this selection
-              </p>
+              <div className="text-center py-8 bg-gray-800/50 rounded-lg border border-gray-700">
+                <ClockIcon className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                <p className="text-gray-400">No shows available for this screen</p>
+                <p className="text-gray-500 text-sm mt-1">Please try a different screen or date</p>
+              </div>
             )}
           </div>
         )}
-
+        
         {!selectedTheater && (
-          <p className="text-gray-400 text-center py-6">
-            👆 Please select a theater to view available shows
-          </p>
+          <div className="text-center py-8 bg-gray-800/50 rounded-lg border border-gray-700">
+            <p className="text-gray-400">👆 Please select a theater to view available shows</p>
+          </div>
         )}
       </div>
 

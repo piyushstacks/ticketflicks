@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Movies from "./pages/Movies";
 import MovieDetails from "./pages/MovieDetails";
 import SeatLayout from "./pages/SeatLayout";
+import SeatLayoutNew from "./pages/SeatLayout_New";
 import BuyTicketsFlow from "./pages/BuyTicketsFlow";
 import MovieShowSelector from "./components/MovieShowSelector";
 import MyBooking from "./pages/MyBookings";
@@ -65,7 +66,7 @@ const App = () => {
         <Route path="/buy-tickets/:id" element={<BuyTicketsFlow />} />
         <Route path="/select-show/:id" element={<MovieShowSelector />} />
         <Route path="/movies/:id/:date" element={<SeatLayout />} />
-        <Route path="/seat-layout/:id" element={<SeatLayout />} />
+        <Route path="/seat-layout/:showId" element={<SeatLayoutNew />} />
         <Route path="/upcoming-movies" element={<Upcoming />} />
         <Route path="/upcoming-movies/:id" element={<UpcomingMovieDetails />} />
         <Route path="/my-bookings" element={<MyBooking />} />
