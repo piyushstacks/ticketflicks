@@ -50,7 +50,7 @@ const FeedbackForm = () => {
       toast.success(data.message);
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      toast.error("Something went wrong. Try again.");
+      toast.error(error.response?.data?.message || "Unable to submit feedback. Please try again.");
     } finally {
       setLoading(false);
     }

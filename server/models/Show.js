@@ -15,7 +15,7 @@ const showSchema = mongoose.Schema(
     screen: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: "Screen",
+      ref: "ScreenTbl",
     },
     showDateTime: { type: Date, required: true },
     showTime: { type: String }, // HH:MM format

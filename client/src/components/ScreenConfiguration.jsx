@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Plus, X } from 'lucide-react';
 import { SEAT_LAYOUTS, SEAT_TIERS, getLayoutByKey, calculateTotalSeats, getSeatCountByTier, validatePricing } from './SeatLayoutTemplates.js';
 
 const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
@@ -47,6 +48,45 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
       setTierPricing(pricing);
     }
   };
+
+  // Sync states when switching between screens
+  useEffect(() => {
+    const screen = screens[currentScreenIndex] || {
+      name: '',
+      layout: null,
+      pricing: {}
+    };
+
+    // Find the layout key for the current screen's layout
+    if (screen.layout) {
+      const layoutKey = Object.keys(SEAT_LAYOUTS).find(key => 
+        SEAT_LAYOUTS[key].key === screen.layout.key
+      );
+      setSelectedLayout(layoutKey || '');
+      setCustomLayout(null);
+      
+      // Initialize pricing for the current screen
+      initializeTierPricing(screen.layout);
+      
+      // Set pricing mode based on current screen's pricing
+      if (screen.pricing.unified) {
+        setPricingMode('unified');
+        setUnifiedPrice(String(screen.pricing.unified));
+      } else {
+        setPricingMode('tier');
+        setTierPricing(screen.pricing || {});
+      }
+    } else {
+      // Reset states when screen has no layout
+      setSelectedLayout('');
+      setCustomLayout(null);
+      setPricingMode('tier');
+      setTierPricing({});
+      setUnifiedPrice('');
+    }
+    
+    setErrors({});
+  }, [currentScreenIndex, screens]);
 
   const handleLayoutSelect = (layoutKey) => {
     const layout = getLayoutByKey(layoutKey);
@@ -225,6 +265,23 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
     }
   };
 
+  const handleAddScreen = () => {
+    const newScreen = {
+      name: '',
+      layout: null,
+      pricing: { unified: 150 } // Default unified pricing
+    };
+    
+    setScreens([...screens, newScreen]);
+    setCurrentScreenIndex(screens.length);
+    setSelectedLayout('');
+    setCustomLayout(null);
+    setPricingMode('tier');
+    setTierPricing({});
+    setUnifiedPrice('150');
+    setErrors({});
+  };
+
   const renderSeatPreview = (layout) => {
     if (!layout || !layout.layout) return null;
     
@@ -287,12 +344,14 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
                     onClick={() => handleLayoutSelect(key)}
                     className={`p-3 border rounded-lg text-left transition ${
                       selectedLayout === key
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-blue-600 bg-blue-600 text-white shadow-md'
+                        : 'border-gray-300 bg-white text-gray-900 hover:border-gray-400 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="font-medium text-sm">{layout.name}</div>
-                    <div className="text-xs text-gray-500">
+                    <div className={`font-medium text-sm ${selectedLayout === key ? 'text-white' : 'text-gray-900'}`}>
+                      {layout.name}
+                    </div>
+                    <div className={`text-xs ${selectedLayout === key ? 'text-blue-100' : 'text-gray-600'}`}>
                       {layout.rows}×{layout.seatsPerRow} • {layout.totalSeats} seats
                     </div>
                   </button>
@@ -366,10 +425,10 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
                 setUnifiedPrice(price);
               }}
               placeholder="Price"
-              className="px-3 py-2 border rounded w-32 text-sm"
+              className="px-3 py-2 border rounded w-32 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white placeholder-gray-400 border-gray-600"
               min="0"
             />
-            <span className="text-sm text-gray-500">per seat</span>
+            <span className="text-sm text-gray-400">per seat</span>
           </div>
         ) : pricingMode === 'tier' ? (
           <div className="space-y-3">
@@ -379,16 +438,16 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
                   className="w-4 h-4 rounded"
                   style={{ backgroundColor: SEAT_TIERS[tier]?.color }}
                 />
-                <span className="text-sm w-24">{SEAT_TIERS[tier]?.name}</span>
+                <span className="text-sm w-24 text-gray-200">{SEAT_TIERS[tier]?.name}</span>
                 <input
                   type="number"
                   value={tierPricing[tier]?.price || ''}
                   onChange={(e) => handleTierPriceChange(tier, e.target.value)}
                   placeholder="Price"
-                  className="px-3 py-1 border rounded w-24 text-sm"
+                  className="px-3 py-1 border rounded w-24 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white placeholder-gray-400 border-gray-600"
                   min="0"
                 />
-                <span className="text-sm text-gray-500">per seat</span>
+                <span className="text-sm text-gray-400">per seat</span>
               </div>
             ))}
           </div>
@@ -399,10 +458,10 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
               value={unifiedPrice}
               onChange={(e) => handleUnifiedPriceChange(e.target.value)}
               placeholder="Price"
-              className="px-3 py-2 border rounded w-32"
+              className="px-3 py-2 border rounded w-32 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white placeholder-gray-400 border-gray-600"
               min="0"
             />
-            <span className="text-sm text-gray-500">per seat (all tiers)</span>
+            <span className="text-sm text-gray-400">per seat (all tiers)</span>
           </div>
         )}
       </div>
@@ -413,47 +472,51 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Screen & Seat Layout Configuration</h2>
-        <p className="text-gray-600">Configure screens and seat layouts for your theatre</p>
+        <p className="text-gray-400">Configure screens and seat layouts for your theatre</p>
       </div>
 
       {/* Screen Navigation */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-2">
-            {screens.map((screen, index) => (
+          <h3 className="text-lg font-semibold">Screens</h3>
+          <button
+            onClick={handleAddScreen}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Add Screen
+          </button>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {screens.map((screen, index) => (
+            <div key={index} className="flex items-center gap-1">
               <button
-                key={index}
                 onClick={() => setCurrentScreenIndex(index)}
                 className={`px-4 py-2 rounded-lg transition ${
                   currentScreenIndex === index
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 hover:bg-gray-200'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
                 {screen.name || `Screen ${index + 1}`}
               </button>
-            ))}
-            <button
-              onClick={addNewScreen}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-            >
-              + Add Screen
-            </button>
-          </div>
-          {screens.length > 1 && (
-            <button
-              onClick={() => removeScreen(currentScreenIndex)}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-            >
-              Remove Screen
-            </button>
-          )}
+              {screens.length > 1 && (
+                <button
+                  onClick={() => removeScreen(index)}
+                  className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition text-sm"
+                  title="Remove Screen"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
       {/* General Error */}
       {errors.general && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+        <div className="mb-4 p-3 bg-red-900/20 border border-red-600 rounded-lg text-red-400 text-sm">
           {errors.general}
         </div>
       )}
@@ -463,32 +526,33 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
         <div className="space-y-6">
           {/* Screen Name */}
           <div>
-            <label className="block text-sm font-medium mb-2">Screen Name</label>
+            <label htmlFor="screenName" className="block text-sm font-medium mb-2 text-gray-200">Screen Name</label>
             <input
+              id="screenName"
               type="text"
               value={currentScreen.name || ''}
               onChange={(e) => handleScreenNameChange(e.target.value)}
               placeholder="e.g., Screen 1, Auditorium A"
-              className={`w-full px-3 py-2 border rounded-lg ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-800 text-white placeholder-gray-400 ${
+                errors.name ? 'border-red-500 bg-red-900/20' : 'border-gray-600'
               }`}
             />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+            {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
           </div>
 
           {/* Layout Selection */}
           <div>
-            <label className="block text-sm font-medium mb-2">Select Layout Template</label>
+            <label className="block text-sm font-medium mb-2 text-gray-200">Select Layout Template</label>
             {renderLayoutOptions()}
-            {errors.layout && <p className="text-red-500 text-xs mt-1">{errors.layout}</p>}
+            {errors.layout && <p className="text-red-400 text-xs mt-1">{errors.layout}</p>}
           </div>
 
           {/* Pricing Configuration */}
           {currentScreen.layout && (
             <div>
-              <label className="block text-sm font-medium mb-2">Pricing Configuration</label>
+              <label className="block text-sm font-medium mb-2 text-gray-200">Pricing Configuration</label>
               {renderPricingConfiguration()}
-              {errors.pricing && <p className="text-red-500 text-xs mt-1">{errors.pricing}</p>}
+              {errors.pricing && <p className="text-red-400 text-xs mt-1">{errors.pricing}</p>}
             </div>
           )}
 

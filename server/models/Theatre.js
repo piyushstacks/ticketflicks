@@ -61,37 +61,6 @@ const theatreSchema = new mongoose.Schema(
     disabled_date: {
       type: Date,
     },
-    screens: [
-      {
-        name: {
-          type: String,
-          required: true,
-        },
-        layout: {
-          type: {
-            name: String,
-            rows: Number,
-            seatsPerRow: Number,
-            totalSeats: Number,
-            layout: [[String]]
-          },
-          required: true,
-        },
-        pricing: {
-          type: mongoose.Schema.Types.Mixed, // Can be tier-based or unified
-          required: true,
-        },
-        totalSeats: {
-          type: Number,
-          required: true,
-        },
-        status: {
-          type: String,
-          enum: ['active', 'inactive', 'maintenance'],
-          default: 'active'
-        }
-      },
-    ],
   },
   { timestamps: true }
 );

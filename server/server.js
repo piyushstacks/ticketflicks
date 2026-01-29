@@ -12,7 +12,7 @@ import managerRouter from "./routes/managerRoutes.js";
 import managerScreenTblRouter from "./routes/managerScreenTblRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import theatreRouter from "./routes/theatreRoutes.js";
-import debugRouter from "./routes/debugRoutes.js";
+import debugRouter, { requestLogger } from "./routes/debugRoutes.js";
 import publicRouter from "./routes/publicRoutes.js";
 import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
 
@@ -29,12 +29,16 @@ app.post(
 );
 
 //Middleware
+app.use(requestLogger); // Add request logging
 app.use(express.json());
 app.use(cors());
-app.use(clerkMiddleware());
+// app.use(clerkMiddleware()); // Temporarily disabled for debugging
 
 //API Routes
-app.get("/", (req, res) => res.send("Server is Live!"));
+app.get("/", (req, res) => {
+  console.log('Root endpoint called');
+  res.send("Server is Live!");
+});
 app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/public", publicRouter);
 app.use("/api/show", showRouter);

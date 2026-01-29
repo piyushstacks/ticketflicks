@@ -1,17 +1,45 @@
 import Show from "../models/Show.js";
 import Movie from "../models/Movie.js";
 import Theatre from "../models/Theatre.js";
-import Screen from "../models/Screen.js";
+import ScreenTbl from "../models/ScreenTbl.js";
+import youtubeService from "../services/youtubeService.js";
+
+// Fetch and update movie trailer from YouTube
+const fetchAndUpdateTrailer = async (movie) => {
+  try {
+    // Only fetch if trailer_path is not set or is invalid
+    if (!movie.trailer_path || !youtubeService.isValidYouTubeUrl(movie.trailer_path)) {
+      const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
+      const trailerUrl = await youtubeService.searchMovieTrailer(movie.title, year);
+      
+      if (trailerUrl) {
+        await Movie.findByIdAndUpdate(movie._id, { 
+          trailer_path: trailerUrl 
+        });
+        console.log(`Updated trailer for movie: ${movie.title}`);
+        return trailerUrl;
+      }
+    }
+    return movie.trailer_path;
+  } catch (error) {
+    console.error(`Error fetching trailer for ${movie.title}:`, error);
+    return movie.trailer_path;
+  }
+};
 
 // Get shows for a specific theatre (public endpoint)
 export const getShowsByTheatre = async (req, res) => {
   try {
     const { theatreId } = req.params;
 
-    // Validate theatre exists
-    const theatre = await Theatre.findById(theatreId);
+    // Validate theatre exists and is approved
+    const theatre = await Theatre.findOne({ 
+      _id: theatreId, 
+      approval_status: 'approved',
+      disabled: { $ne: true }
+    });
     if (!theatre) {
-      return res.json({ success: false, message: "Theatre not found" });
+      return res.json({ success: false, message: "Theatre not found or not available" });
     }
 
     // Get all shows for this theatre
@@ -45,23 +73,31 @@ export const getShowsByMovie = async (req, res) => {
       return res.json({ success: false, message: "Movie not found" });
     }
 
-    // Get all shows for this movie
+    // Get all shows for this movie (only from approved theatres)
     const shows = await Show.find({
       movie: movieId,
       isActive: true,
       showDateTime: { $gte: new Date() }
     })
-    .populate("theatre", "name location city")
+    .populate({
+      path: "theatre",
+      match: { approval_status: 'approved', disabled: { $ne: true } },
+      select: "name location city"
+    })
     .populate("screen", "screenNumber name seatLayout seatTiers")
     .populate("movie", "title poster_path backdrop_path")
     .sort({ showDateTime: 1 });
 
     console.log("Found shows for movie:", movieId, shows.length);
 
+    // Filter out shows with null theatres (due to populate match)
+    const validShows = shows.filter(show => show.theatre != null);
+    console.log("Valid shows after filtering:", validShows.length);
+
     // Group shows by theatre -> screen -> shows
     const groupedShows = {};
     
-    shows.forEach(show => {
+    validShows.forEach(show => {
       const theatreId = show.theatre._id.toString();
       
       if (!groupedShows[theatreId]) {
@@ -105,7 +141,13 @@ export const getMovieDetails = async (req, res) => {
       return res.json({ success: false, message: "Movie not found" });
     }
 
-    res.json({ success: true, movie });
+    // Fetch trailer if not available
+    const trailerUrl = await fetchAndUpdateTrailer(movie);
+
+    // Return updated movie data
+    const updatedMovie = await Movie.findById(movieId);
+    
+    res.json({ success: true, movie: updatedMovie });
   } catch (error) {
     console.error("[getMovieDetails]", error);
     res.json({ success: false, message: error.message });

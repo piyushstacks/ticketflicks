@@ -81,9 +81,9 @@ const ChangePassword = () => {
       } else {
         toast.error(data.message || "Unable to change password");
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Unable to change password. Please try again.");
     } finally {
       setLoading(false);
     }

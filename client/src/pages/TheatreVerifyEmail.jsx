@@ -57,8 +57,8 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
       } else {
         toast.error(data.message || "Registration failed");
       }
-    } catch (err) {
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to complete registration. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -75,8 +75,8 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
       } else {
         toast.error(data.message || "Failed to resend OTP");
       }
-    } catch (err) {
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to resend OTP. Please try again.");
     } finally {
       setResending(false);
     }

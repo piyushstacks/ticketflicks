@@ -1,38 +1,40 @@
 import mongoose from 'mongoose';
-import Theatre from '../models/Theatre.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
-async function checkDatabase() {
+const checkCollections = async () => {
   try {
-    await mongoose.connect('mongodb://localhost:27017/movieticketbooking');
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/movieticketbooking';
+    await mongoose.connect(mongoURI);
     console.log('Connected to MongoDB');
-    
-    const totalTheatres = await Theatre.countDocuments();
-    console.log('Total theatres:', totalTheatres);
-    
-    const theatresWithScreens = await Theatre.find({ screens: { $exists: true, $ne: [] } });
-    console.log('Theatres with screens:', theatresWithScreens.length);
-    
-    if (theatresWithScreens.length > 0) {
-      console.log('\nFirst theatre with screens:');
-      console.log('ID:', theatresWithScreens[0]._id.toString());
-      console.log('Name:', theatresWithScreens[0].name);
-      console.log('Number of screens:', theatresWithScreens[0].screens.length);
-      console.log('First screen:', theatresWithScreens[0].screens[0]);
+
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    const collectionNames = collections.map(c => c.name);
+    console.log('Collections:', collectionNames);
+
+    if (collectionNames.includes('screens')) {
+      const screensCount = await mongoose.connection.db.collection('screens').countDocuments();
+      console.log('Screens count:', screensCount);
+    } else {
+      console.log('Screens collection not found');
     }
-    
-    // Check if there are any approved theatres
-    const approvedTheatres = await Theatre.find({ approval_status: 'approved' });
-    console.log('\nApproved theatres:', approvedTheatres.length);
-    
-    if (approvedTheatres.length > 0) {
-      console.log('First approved theatre:', approvedTheatres[0]._id.toString(), approvedTheatres[0].name);
+
+    if (collectionNames.includes('screen_tbl')) {
+      const screenTblCount = await mongoose.connection.db.collection('screen_tbl').countDocuments();
+      console.log('ScreenTbl count:', screenTblCount);
+    } else {
+      console.log('ScreenTbl collection not found');
     }
-    
+
+    const theatres = await mongoose.connection.db.collection('theatres').find({}).toArray();
+    const embeddedScreens = theatres.reduce((acc, t) => acc + (t.screens ? t.screens.length : 0), 0);
+    console.log('Embedded screens count:', embeddedScreens);
+
   } catch (error) {
     console.error('Error:', error);
   } finally {
     await mongoose.disconnect();
   }
-}
+};
 
-checkDatabase();
+checkCollections();

@@ -1,7 +1,7 @@
 import axios from "axios";
 import Movie from "../models/Movie.js";
 import Show from "../models/Show.js";
-import Screen from "../models/Screen.js";
+import ScreenTbl from "../models/ScreenTbl.js";
 import Theatre from "../models/Theatre.js";
 import { inngest } from "../inngest/index.js";
 
@@ -102,7 +102,7 @@ export const addShow = async (req, res) => {
 
     let movie = await Movie.findById(movieId);
     const theatre = await Theatre.findById(theatreId);
-    const screen = await Screen.findById(screenId);
+    const screen = await ScreenTbl.findById(screenId);
 
     if (!theatre) {
       return res.json({ success: false, message: "Theatre not found" });

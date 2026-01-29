@@ -211,7 +211,7 @@ const MovieDetails = () => {
           <p>
             {(show.movie.runtime ? timeFormat(show.movie.runtime) : "N/A")} ●{" "}
             {(Array.isArray(show.movie.genres) ? show.movie.genres.map((genre) => genre.name).join(" | ") : "N/A")} ●{" "}
-            {(show.movie.release_date ? show.movie.release_date.split("-").join("/") : "N/A")}
+            {(show.movie.release_date ? new Date(show.movie.release_date).toLocaleDateString() : "N/A")}
           </p>
 
           <div className="flex items-center flex-wrap gap-4 mt-4 lg:gap-3 xl:gap-4">

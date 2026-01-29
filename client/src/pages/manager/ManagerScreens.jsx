@@ -236,28 +236,31 @@ const ManagerScreens = () => {
               <div className="flex gap-2 pt-4 border-t border-gray-700/50">
                 <button
                   onClick={() => setViewingScreen(screen)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm font-medium"
                   title="View Details"
                 >
                   <Eye className="w-4 h-4" />
+                  <span>View</span>
                 </button>
                 <button
                   onClick={() => handleEditScreen(screen)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-sm"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-sm font-medium"
                   title="Edit Configuration"
                 >
                   <Edit2 className="w-4 h-4" />
+                  <span>Edit</span>
                 </button>
                 <button
                   onClick={() => handleToggleStatus(screen)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium ${
                     screen.isActive 
                       ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400' 
                       : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
                   }`}
-                  title={screen.isActive ? 'Disable' : 'Enable'}
+                  title={screen.isActive ? 'Disable Screen' : 'Enable Screen'}
                 >
                   <Power className="w-4 h-4" />
+                  <span>{screen.isActive ? 'Disable' : 'Enable'}</span>
                 </button>
               </div>
             </div>

@@ -148,7 +148,7 @@ const AddShows = () => {
                 <p className="font-medium truncate" style={{ maxWidth: 160 }}>
                   {movie.title}
                 </p>
-                <p className="text-gray-400 text-sm">{movie.release_date}</p>
+                <p className="text-gray-400 text-sm">{movie.release_date ? new Date(movie.release_date).toLocaleDateString() : "N/A"}</p>
               </div>
             );
           })}

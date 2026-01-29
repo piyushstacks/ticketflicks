@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import BlurCircle from "./BlurCircle";
 import ReactPlayer from "react-player";
-import { dummyTrailers } from "../assets/assets";
+import axios from 'axios';
 
 const TrailerSection = ({ id }) => {
   const [trailerUrl, setTrailerUrl] = useState("");
@@ -9,16 +9,29 @@ const TrailerSection = ({ id }) => {
 
   const fetchMovieTrailer = async () => {
     try {
-      // Use dummy trailer list, pick by id modulo length
-      const index = Math.abs(parseInt(id, 10)) % dummyTrailers.length || 0;
-      setTrailerUrl(dummyTrailers[index]?.videoUrl || "");
+      setLoading(true);
+      
+      // Fetch movie details from API
+      const response = await axios.get(`/api/public/movies/${id}`);
+      
+      if (response.data.success && response.data.movie.trailer_path) {
+        setTrailerUrl(response.data.movie.trailer_path);
+      } else {
+        console.log('No trailer available for this movie');
+        setTrailerUrl('');
+      }
+    } catch (error) {
+      console.error('Error fetching movie trailer:', error);
+      setTrailerUrl('');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMovieTrailer();
+    if (id) {
+      fetchMovieTrailer();
+    }
   }, [id]);
 
   return (

@@ -64,7 +64,7 @@ const UpcomingMovieDetails = () => {
           </p>
           <p>
             <span className="text-primary">Releasing Date</span> :{" "}
-            {upcomingMovie.release_date}
+            {upcomingMovie.release_date ? new Date(upcomingMovie.release_date).toLocaleDateString() : "N/A"}
           </p>
           <p>
             <span className="text-primary">Genres</span> :{" "}

@@ -5,6 +5,7 @@ import Theatre from '../models/Theatre.js';
 // Get all active screens for a theatre (public endpoint)
 export const getTheatreScreensPublic = async (req, res) => {
   try {
+    console.log('=== PUBLIC CONTROLLER CALLED ===');
     const { theatreId } = req.params;
 
     console.log('[getTheatreScreensPublic] Called with theatreId:', theatreId);
@@ -17,8 +18,22 @@ export const getTheatreScreensPublic = async (req, res) => {
     }
 
     // Check if theatre exists and is approved
+    console.log('Creating ObjectId from:', theatreId);
+    let objectId;
+    try {
+      objectId = new mongoose.Types.ObjectId(theatreId);
+      console.log('ObjectId created successfully:', objectId);
+    } catch (error) {
+      console.log('ObjectId creation failed:', error.message);
+      return res.json({
+        success: false,
+        message: "Invalid theatre ID format",
+      });
+    }
+
+    console.log('Querying with ObjectId:', objectId);
     const theatre = await Theatre.findOne({ 
-      _id: new mongoose.Types.ObjectId(theatreId),
+      _id: objectId,
       approval_status: 'approved'
     });
 

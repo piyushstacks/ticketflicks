@@ -27,7 +27,7 @@ userRouter.post("/signup", signup); // Direct signup (kept for compatibility)
 userRouter.post("/login", login); // Direct password-based login (no OTP)
 
 // New OTP-based signup flow
-userRouter.post("/signup/request-otp", requestSignupOtp); // Request OTP for signup
+userRouter.post("/signup/request-otp", forgotPasswordRateLimiter, requestSignupOtp); // Request OTP for signup
 userRouter.post("/signup/complete", completeSignupWithOtp); // Complete signup with OTP
 
 // Forgot password OTP flow (2-min expiry, resend deletes old OTP)

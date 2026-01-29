@@ -48,8 +48,8 @@ const VerifyEmail = () => {
       } else {
         toast.error(data.message || "Failed to resend OTP");
       }
-    } catch (err) {
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to resend OTP. Please try again.");
     } finally {
       setResending(false);
     }

@@ -1,5 +1,5 @@
 import Show from "../models/Show.js";
-import Screen from "../models/Screen.js";
+import ScreenTbl from "../models/ScreenTbl.js";
 import Movie from "../models/Movie.js";
 import Theatre from "../models/Theatre.js";
 import Booking from "../models/Booking.js";
@@ -42,7 +42,7 @@ export const dashboardManagerData = async (req, res) => {
 
     const monthRevenue = monthBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
 
-    const screens = await Screen.countDocuments({ theatre: theatreId });
+    const screens = await ScreenTbl.countDocuments({ theatre: theatreId });
     const theatre = await Theatre.findById(theatreId);
 
     res.json({
@@ -81,7 +81,7 @@ export const addShow = async (req, res) => {
     }
 
     // Verify screen belongs to manager's theatre
-    const screen = await Screen.findById(screenId);
+    const screen = await ScreenTbl.findById(screenId);
     if (!screen || screen.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Invalid screen" });
     }
@@ -172,7 +172,11 @@ export const addScreen = async (req, res) => {
 
     let theatreId = manager.managedTheaterId || manager.managedTheatreId;
     if (!theatreId) {
-      const theatreDoc = await Theatre.findOne({ manager_id: manager._id, disabled: { $ne: true } });
+      const theatreDoc = await Theatre.findOne({ 
+        manager_id: manager._id, 
+        disabled: { $ne: true },
+        approval_status: 'approved' 
+      });
       if (!theatreDoc) {
         return res.json({ success: false, message: "Manager has no theatre assigned" });
       }
@@ -250,33 +254,32 @@ export const addScreen = async (req, res) => {
       }
     }
 
-    const screen = await Screen.create({
+    const screen = await ScreenTbl.create({
       theatre: theatreId,
-      name: screenNumber,
+      name: `Screen ${screenNumber}`,
       screenNumber,
       seatLayout,
       seatTiers
     });
 
-    // Add screen to theatre (using $push for ref array if configured, or just ignoring if embedded)
-    // To support the embedded schema requirement for Registration/Admin view:
-    // We should ideally push the full object to Theatre.screens
+    // We no longer push to Theatre.screens as we use ScreenTbl exclusively now.
+    // This maintains backward compatibility for any code that might still check Theatre.screens
+    // although we should migrate those too.
     try {
       await Theatre.findByIdAndUpdate(theatreId, {
         $push: { 
           screens: {
-            _id: screen._id, // If schema allows
-            name: screenNumber,
+            _id: screen._id,
+            name: `Screen ${screenNumber}`,
             layout: seatLayout,
-            pricing: pricing || { unified: 150 }, // Store original pricing config
+            pricing: pricing || { unified: 150 },
             totalSeats: seatLayout.totalSeats,
             status: 'active'
           } 
         }
       });
     } catch (err) {
-      console.warn("Failed to update Theatre embedded screens (likely schema mismatch or strict mode):", err.message);
-      // We continue since Screen doc is created
+      console.warn("Failed to update Theatre embedded screens:", err.message);
     }
 
     res.json({ success: true, message: "Screen added successfully", screen });
@@ -298,7 +301,7 @@ export const editScreen = async (req, res) => {
     const { screenId } = req.params;
     const { screenNumber, seatLayout, pricing } = req.body;
 
-    const screen = await Screen.findById(screenId);
+    const screen = await ScreenTbl.findById(screenId);
     if (!screen || screen.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Invalid screen or not authorized" });
     }
@@ -306,7 +309,7 @@ export const editScreen = async (req, res) => {
     const updateData = {};
     if (screenNumber) {
       updateData.screenNumber = screenNumber;
-      updateData.name = screenNumber;
+      updateData.name = `Screen ${screenNumber}`;
     }
     if (seatLayout) updateData.seatLayout = seatLayout;
     
@@ -360,11 +363,24 @@ export const editScreen = async (req, res) => {
        updateData.seatTiers = seatTiers;
     }
 
-    const updatedScreen = await Screen.findByIdAndUpdate(screenId, updateData, { new: true });
+    const updatedScreen = await ScreenTbl.findByIdAndUpdate(screenId, updateData, { new: true });
 
-    // Try to update Theatre embedded screen if possible (complex with array filters, maybe skip for now or just do best effort)
-    // Since we don't have a stable ID for embedded array items (unless we generated one), this is hard.
-    // We'll skip updating Theatre embedded screens on Edit for now, assuming Screen doc is source of truth for Manager.
+    // Update embedded screen in Theatre if needed
+    try {
+      await Theatre.updateOne(
+        { _id: theatreId, "screens._id": screenId },
+        { 
+          $set: { 
+            "screens.$.name": updateData.name || screen.name,
+            "screens.$.layout": seatLayout || screen.seatLayout,
+            "screens.$.totalSeats": (seatLayout || screen.seatLayout).totalSeats,
+            "screens.$.pricing": pricing || screen.pricing
+          } 
+        }
+      );
+    } catch (err) {
+      console.warn("Failed to update embedded screen:", err.message);
+    }
 
     res.json({ success: true, message: "Screen updated successfully", screen: updatedScreen });
   } catch (error) {
@@ -384,16 +400,16 @@ export const deleteScreen = async (req, res) => {
     const theatreId = manager.managedTheaterId || manager.managedTheatreId;
     const { screenId } = req.params;
 
-    const screen = await Screen.findById(screenId);
+    const screen = await ScreenTbl.findById(screenId);
     if (!screen || screen.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Invalid screen or not authorized" });
     }
 
-    await Screen.findByIdAndDelete(screenId);
+    await ScreenTbl.findByIdAndDelete(screenId);
 
     // Remove screen from theatre
     await Theatre.findByIdAndUpdate(theatreId, {
-      $pull: { screens: screenId },
+      $pull: { screens: { _id: screenId } },
     });
 
     res.json({ success: true, message: "Screen deleted successfully" });
@@ -498,13 +514,45 @@ export const toggleMovieStatus = async (req, res) => {
 
     const { movieId } = req.params;
     const { isActive } = req.body;
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
 
-    // In a real implementation, you would update the movie status in the junction table
-    // For now, we'll just return success
-    
+    if (!theatreId) {
+      return res.json({ success: false, message: "Manager has no theatre assigned" });
+    }
+
+    // Find the movie
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found" });
+    }
+
+    if (isActive) {
+      // Enable movie for this theatre - remove from excludedTheatres if present
+      await Movie.findByIdAndUpdate(movieId, {
+        $pull: { excludedTheatres: theatreId },
+        $addToSet: { theatres: theatreId }
+      });
+    } else {
+      // Disable movie for this theatre - add to excludedTheatres
+      await Movie.findByIdAndUpdate(movieId, {
+        $pull: { theatres: theatreId },
+        $addToSet: { excludedTheatres: theatreId }
+      });
+
+      // Also disable all future shows for this movie at this theatre
+      await Show.updateMany(
+        {
+          movie: movieId,
+          theatre: theatreId,
+          showDateTime: { $gte: new Date() }
+        },
+        { isActive: false }
+      );
+    }
+
     res.json({ 
       success: true, 
-      message: `Movie ${isActive ? 'enabled' : 'disabled'} successfully`
+      message: `Movie ${isActive ? 'enabled' : 'disabled'} successfully for your theatre`
     });
   } catch (error) {
     console.error("[toggleMovieStatus]", error);
@@ -544,7 +592,7 @@ export const toggleScreenStatus = async (req, res) => {
     const { screenId } = req.params;
     const { status } = req.body;
 
-    const screen = await Screen.findById(screenId);
+    const screen = await ScreenTbl.findById(screenId);
     if (!screen) {
       return res.json({ success: false, message: "Screen not found" });
     }

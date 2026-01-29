@@ -5,11 +5,7 @@ import {
   fetchTheater,
   updateTheater,
   deleteTheater,
-  createScreen,
   fetchScreensByTheater,
-  fetchScreen,
-  updateScreen,
-  deleteScreen,
 } from "../controllers/theaterController.js";
 import { protectAdmin } from "../middleware/auth.js";
 
@@ -22,11 +18,7 @@ theaterRouter.get("/:theaterId", fetchTheater);
 theaterRouter.put("/:theaterId", protectAdmin, updateTheater);
 theaterRouter.delete("/:theaterId", protectAdmin, deleteTheater);
 
-// Screen Routes
-theaterRouter.post("/:theaterId/screens", protectAdmin, createScreen);
+// Screen Routes (only the ones that exist)
 theaterRouter.get("/:theaterId/screens", fetchScreensByTheater);
-theaterRouter.get("/screens/:screenId", fetchScreen);
-theaterRouter.put("/screens/:screenId", protectAdmin, updateScreen);
-theaterRouter.delete("/screens/:screenId", protectAdmin, deleteScreen);
 
 export default theaterRouter;

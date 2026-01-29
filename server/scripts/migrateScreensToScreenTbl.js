@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config();
 import Theatre from '../models/Theatre.js';
 import ScreenTbl from '../models/ScreenTbl.js';
 import User from '../models/User.js';
@@ -8,9 +10,11 @@ const migrateScreensToScreenTbl = async () => {
     console.log('🔄 Starting screen migration to SCREEN_TBL...');
     
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/movieticketbooking', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+    const mongoURI = process.env.MONGODB_URI;
+    const dbName = process.env.DB_NAME || 'ticketflicks';
+    
+    await mongoose.connect(mongoURI, {
+      dbName: dbName,
     });
     
     console.log('✅ Connected to MongoDB');
@@ -99,9 +103,7 @@ const migrateScreensToScreenTbl = async () => {
   }
 };
 
-// Run migration if this script is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  migrateScreensToScreenTbl();
-}
+// Run migration
+migrateScreensToScreenTbl();
 
 export default migrateScreensToScreenTbl;

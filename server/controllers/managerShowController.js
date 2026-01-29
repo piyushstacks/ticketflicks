@@ -15,16 +15,41 @@ export const getAvailableMovies = async (req, res) => {
       });
     }
 
-    // Get all active movies (simplified approach)
+    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    
+    if (!theatreId) {
+      return res.json({
+        success: false,
+        message: "Manager has no theatre assigned"
+      });
+    }
+
+    // Get all active movies and check theatre-specific status
     const movies = await Movie.find({
       isActive: true
     })
       .select(
-        "title overview poster_path backdrop_path release_date vote_average runtime genres original_language isActive _id"
+        "title overview poster_path backdrop_path release_date vote_average runtime genres original_language isActive theatres excludedTheatres _id"
       )
       .sort({ createdAt: -1 });
 
-    res.json({ success: true, movies });
+    // Add theatre-specific status to each movie
+    const moviesWithStatus = movies.map(movie => {
+      const isTheatreExcluded = movie.excludedTheatres && movie.excludedTheatres.includes(theatreId);
+      const isTheatreIncluded = movie.theatres && movie.theatres.includes(theatreId);
+      
+      // Movie is active for this theatre if:
+      // 1. It's not in excludedTheatres AND
+      // 2. Either it's in theatres array OR it's not explicitly managed (global availability)
+      const isActiveForTheatre = !isTheatreExcluded && (isTheatreIncluded || movie.excludedTheatres.length === 0);
+      
+      return {
+        ...movie.toObject(),
+        isActive: isActiveForTheatre
+      };
+    });
+
+    res.json({ success: true, movies: moviesWithStatus });
   } catch (error) {
     console.error("[getAvailableMovies]", error);
     res.json({ success: false, message: error.message });
@@ -136,36 +161,26 @@ export const addShow = async (req, res) => {
       isActive
     });
 
-    // Create the show with correct structure
+    // Create the show with correct structure from ScreenTbl
     const show = await Show.create({
       movie,
       theatre: theatreId,
-      screen,
+      screen: screen,
       showDateTime: new Date(`${showStartDate} ${showTime}`),
       showTime,
       startDate: new Date(showStartDate),
       endDate: new Date(showEndDate),
       language,
       basePrice: 150,
-      seatTiers: [
-        {
-          tierName: "Standard",
-          price: 150,
-          seatsPerRow: screenDoc.seatLayout?.seatsPerRow || 20,
-          rowCount: screenDoc.seatLayout?.rows || 10,
-          totalSeats: (screenDoc.seatLayout?.seatsPerRow || 20) * (screenDoc.seatLayout?.rows || 10),
-          occupiedSeats: {},
-        },
-        {
-          tierName: "Premium",
-          price: Math.round(150 * 1.5),
-          seatsPerRow: 5,
-          rowCount: 2,
-          totalSeats: 10,
-          occupiedSeats: {},
-        },
-      ],
-      totalCapacity: ((screenDoc.seatLayout?.seatsPerRow || 20) * (screenDoc.seatLayout?.rows || 10)) + 10,
+      seatTiers: screenDoc.seatTiers.map(tier => ({
+        tierName: tier.tierName,
+        price: tier.price,
+        seatsPerRow: tier.seatsPerRow || screenDoc.seatLayout.seatsPerRow,
+        rowCount: tier.rows.length,
+        totalSeats: (tier.seatsPerRow || screenDoc.seatLayout.seatsPerRow) * tier.rows.length,
+        occupiedSeats: {},
+      })),
+      totalCapacity: screenDoc.seatLayout.totalSeats,
       isActive,
     });
 

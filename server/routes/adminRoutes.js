@@ -12,13 +12,15 @@ import {
   createTheatre,
   updateTheatre,
   deleteTheatre,
-  enableTheatre,
   disableTheatre,
+  enableTheatre,
   approveTheatre,
   getTheatrePayments,
   getPendingTheatres,
   getAllShows,
   getTheatreScreens,
+  deleteShow,
+  toggleShowStatus,
 } from "../controllers/adminController.js";
 import {
   syncMoviesFromTMDB,
@@ -26,6 +28,7 @@ import {
   getAllMovies,
   getMovieById,
   deactivateMovie,
+  activateMovie,
   updateMovie,
   assignMoviesToTheatre,
   removeMoviesFromTheatre,
@@ -46,6 +49,10 @@ adminRouter.get("/all-screens", protectAdminOnly, fetchAllScreens);
 adminRouter.get("/all-shows", protectAdminOnly, getAllShows);
 adminRouter.get("/theatres/pending", protectAdminOnly, getPendingTheatres);
 adminRouter.get("/all-feedbacks", protectAdminOnly, fetchAllFeedbacks);
+
+// Show Management Routes
+adminRouter.delete("/shows/:id", protectAdminOnly, deleteShow);
+adminRouter.put("/shows/:id/toggle-status", protectAdminOnly, toggleShowStatus);
 
 // Theatre Management Routes
 adminRouter.get("/theatres", protectAdminOnly, getAllTheatres);
@@ -69,6 +76,7 @@ adminRouter.get("/movies", protectAdminOnly, getAllMovies);
 adminRouter.get("/movies/available", protectAdminOnly, getAllAvailableMovies);
 adminRouter.get("/movies/:movieId", protectAdminOnly, getMovieById);
 adminRouter.put("/movies/:movieId/deactivate", protectAdminOnly, deactivateMovie);
+adminRouter.put("/movies/:movieId/activate", protectAdminOnly, activateMovie);
 adminRouter.put("/movies/:movieId", protectAdminOnly, updateMovie);
 
 // Movie Exclusion Routes

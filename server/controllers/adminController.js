@@ -3,7 +3,7 @@ import Show from "../models/Show.js";
 import User from "../models/User.js";
 import Theatre from "../models/Theatre.js";
 import Movie from "../models/Movie.js";
-import Screen from "../models/Screen.js";
+import ScreenTbl from "../models/ScreenTbl.js";
 import bcryptjs from "bcryptjs";
 import sendEmail from "../configs/nodeMailer.js";
 
@@ -191,15 +191,16 @@ export const fetchAllBookings = async (req, res) => {
   }
 };
 
-//API to get all screens from all theatres
+//API to get all screens from approved theatres only
 export const fetchAllScreens = async (req, res) => {
   try {
-    const screens = await Screen.find({ isActive: true })
-      .populate("theatre", "name location city manager_id")
+    const screens = await ScreenTbl.find({ isActive: true })
+      .populate({ path: "theatre", match: { approval_status: "approved", disabled: { $ne: true } }, select: "name location city manager_id" })
       .populate("theatre.manager_id", "name email phone")
       .sort({ "theatre.name": 1, screenNumber: 1 });
 
-    const screensData = screens.map(screen => ({
+    // Exclude screens from pending/declined/disabled theatres (populate returns null for those)
+    const screensData = screens.filter(screen => screen.theatre).map(screen => ({
       _id: screen._id,
       theatre: {
         _id: screen.theatre._id,
@@ -253,17 +254,42 @@ export const dashboardAdminData = async (req, res) => {
   }
 };
 
-// Get All Theatres - New
+// Get All Theatres - Only approved theatres (strict: must have approval_status exactly 'approved')
 export const getAllTheatres = async (req, res) => {
   try {
-    const theatres = await Theatre.find({ disabled: { $ne: true } })
+    const approvedOnly = { approval_status: { $eq: "approved" } };
+    
+    // Fetch active theatres
+    const activeTheatresRaw = await Theatre.find({
+      ...approvedOnly,
+      disabled: { $ne: true },
+    })
       .populate("manager_id", "name email phone")
       .sort({ name: 1 });
-    
-    const disabledTheatres = await Theatre.find({ disabled: true })
+
+    // Fetch disabled theatres
+    const disabledTheatresRaw = await Theatre.find({
+      ...approvedOnly,
+      disabled: true,
+    })
       .populate("manager_id", "name email phone")
       .sort({ name: 1 });
-    
+
+    // Helper to add screen counts to theatres
+    const addScreenCounts = async (theatresList) => {
+      return Promise.all(theatresList.map(async (theatre) => {
+        const screenCount = await ScreenTbl.countDocuments({ theatre: theatre._id });
+        const theatreObj = theatre.toObject();
+        return {
+          ...theatreObj,
+          screenCount // Add actual count from ScreenTbl
+        };
+      }));
+    };
+
+    const theatres = await addScreenCounts(activeTheatresRaw);
+    const disabledTheatres = await addScreenCounts(disabledTheatresRaw);
+
     res.json({ success: true, theatres, disabledTheatres });
   } catch (error) {
     console.error("[getAllTheatres]", error);
@@ -314,7 +340,7 @@ export const createTheatre = async (req, res) => {
       location,
       contact_no,
       manager_id: managerId,
-      screens: [],
+      // screens: [], // Deprecated: Now using ScreenTbl
     });
 
     const populatedTheatre = await theatre.populate("manager_id", "name email phone");
@@ -501,7 +527,7 @@ export const getTheatreScreens = async (req, res) => {
 
     const { theatreId } = req.params;
 
-    const screens = await Screen.find({ theatre: theatreId })
+    const screens = await ScreenTbl.find({ theatre: theatreId })
       .populate("theatre", "name location city")
       .sort({ screenNumber: 1 });
 
@@ -511,5 +537,72 @@ export const getTheatreScreens = async (req, res) => {
   } catch (error) {
     console.error("[getTheatreScreens]", error);
     res.json({ success: false, message: error.message });
+  }
+};
+
+// Delete a show - Admin only
+export const deleteShow = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if show has bookings
+    const bookings = await Booking.findOne({ show: id });
+    if (bookings) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete show that has existing bookings",
+      });
+    }
+
+    const show = await Show.findByIdAndDelete(id);
+    if (!show) {
+      return res.status(404).json({
+        success: false,
+        message: "Show not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Show deleted successfully",
+    });
+  } catch (error) {
+    console.error("[deleteShow]", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting show",
+      error: error.message,
+    });
+  }
+};
+
+// Toggle show active status - Admin only
+export const toggleShowStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const show = await Show.findById(id);
+    
+    if (!show) {
+      return res.status(404).json({
+        success: false,
+        message: "Show not found",
+      });
+    }
+
+    show.isActive = !show.isActive;
+    await show.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Show ${show.isActive ? 'activated' : 'deactivated'} successfully`,
+      show,
+    });
+  } catch (error) {
+    console.error("[toggleShowStatus]", error);
+    res.status(500).json({
+      success: false,
+      message: "Error toggling show status",
+      error: error.message,
+    });
   }
 };

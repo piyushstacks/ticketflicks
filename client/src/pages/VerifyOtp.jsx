@@ -26,8 +26,8 @@ const VerifyOtp = () => {
         const next = state?.next || "/";
         navigate(next);
       }
-    } catch (err) {
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to verify OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -52,8 +52,8 @@ const VerifyOtp = () => {
       } else {
         toast.error(data.message || "Unable to resend OTP");
       }
-    } catch (err) {
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to resend OTP. Please try again.");
     }
   };
 

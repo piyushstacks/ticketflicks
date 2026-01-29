@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Edit2, Plus, Eye, Users, Calendar, Star, Ban, X, Check } from "lucide-react";
+import { Edit2, Plus, Eye, Users, Calendar, Star, Ban, X, Check, Power, PowerOff } from "lucide-react";
 
 
 const AdminMovies = () => {
@@ -162,13 +162,20 @@ const AdminMovies = () => {
   };
 
   const handleEdit = (movie) => {
+    // Format release_date for HTML date input (YYYY-MM-DD)
+    const formatDateForInput = (dateString) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    };
+
     setFormData({
       title: movie.title,
       overview: movie.overview,
       poster_path: movie.poster_path || "",
       backdrop_path: movie.backdrop_path || "",
       trailer_path: movie.trailer_path || "",
-      release_date: movie.release_date,
+      release_date: formatDateForInput(movie.release_date),
       runtime: movie.runtime,
       tagline: movie.tagline || "",
       original_language: movie.original_language || "en",
@@ -180,7 +187,7 @@ const AdminMovies = () => {
   };
 
   const handleDisable = async (movieId) => {
-    if (!window.confirm("Are you sure you want to disable this movie?")) return;
+    if (!window.confirm("Are you sure you want to disable this movie? This will make it unavailable for all theatres.")) return;
 
     try {
       const { data } = await axios.put(
@@ -198,6 +205,28 @@ const AdminMovies = () => {
     } catch (error) {
       console.error("Error:", error);
       toast.error("Failed to disable movie");
+    }
+  };
+
+  const handleEnable = async (movieId) => {
+    if (!window.confirm("Are you sure you want to enable this movie? This will make it available for all theatres.")) return;
+
+    try {
+      const { data } = await axios.put(
+        `/api/admin/movies/${movieId}/activate`,
+        {},
+        { headers: getAuthHeaders() }
+      );
+
+      if (data.success) {
+        toast.success("Movie enabled successfully");
+        fetchMovies();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to enable movie");
     }
   };
 
@@ -247,88 +276,124 @@ const AdminMovies = () => {
             {editingId ? "Edit Movie" : "Add New Movie"}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                name="title"
-                placeholder="Movie Title *"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="date"
-                name="release_date"
-                placeholder="Release Date *"
-                value={formData.release_date}
-                onChange={handleInputChange}
-                required
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="url"
-                name="poster_path"
-                placeholder="Poster URL"
-                value={formData.poster_path}
-                onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="url"
-                name="backdrop_path"
-                placeholder="Backdrop URL"
-                value={formData.backdrop_path}
-                onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="url"
-                name="trailer_path"
-                placeholder="Trailer URL (YouTube/Vimeo)"
-                value={formData.trailer_path}
-                onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="number"
-                name="runtime"
-                placeholder="Runtime (minutes)"
-                value={formData.runtime}
-                onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="text"
-                name="tagline"
-                placeholder="Tagline"
-                value={formData.tagline}
-                onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <select
-                name="original_language"
-                value={formData.original_language}
-                onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              >
-                <option value="en">English</option>
-                <option value="hi">Hindi</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-              </select>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium mb-2">Movie Title *</label>
+                <input
+                  id="title"
+                  type="text"
+                  name="title"
+                  placeholder="Enter movie title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="release_date" className="block text-sm font-medium mb-2">Release Date *</label>
+                <input
+                  id="release_date"
+                  type="date"
+                  name="release_date"
+                  value={formData.release_date}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="poster_path" className="block text-sm font-medium mb-2">Poster URL</label>
+                <input
+                  id="poster_path"
+                  type="url"
+                  name="poster_path"
+                  placeholder="https://example.com/poster.jpg"
+                  value={formData.poster_path}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="backdrop_path" className="block text-sm font-medium mb-2">Backdrop URL</label>
+                <input
+                  id="backdrop_path"
+                  type="url"
+                  name="backdrop_path"
+                  placeholder="https://example.com/backdrop.jpg"
+                  value={formData.backdrop_path}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="trailer_path" className="block text-sm font-medium mb-2">Trailer URL</label>
+                <input
+                  id="trailer_path"
+                  type="url"
+                  name="trailer_path"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={formData.trailer_path}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="runtime" className="block text-sm font-medium mb-2">Runtime (minutes)</label>
+                <input
+                  id="runtime"
+                  type="number"
+                  name="runtime"
+                  placeholder="120"
+                  value={formData.runtime}
+                  onChange={handleInputChange}
+                  min="1"
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="tagline" className="block text-sm font-medium mb-2">Tagline</label>
+                <input
+                  id="tagline"
+                  type="text"
+                  name="tagline"
+                  placeholder="Enter movie tagline"
+                  value={formData.tagline}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+              </div>
+              <div>
+                <label htmlFor="original_language" className="block text-sm font-medium mb-2">Original Language</label>
+                <select
+                  id="original_language"
+                  name="original_language"
+                  value={formData.original_language}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                >
+                  <option value="en">English</option>
+                  <option value="hi">Hindi</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                </select>
+              </div>
             </div>
 
-            <textarea
-              name="overview"
-              placeholder="Movie Overview *"
-              value={formData.overview}
-              onChange={handleInputChange}
-              required
-              rows={4}
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-            />
+            <div>
+              <label htmlFor="overview" className="block text-sm font-medium mb-2">Movie Overview *</label>
+              <textarea
+                id="overview"
+                name="overview"
+                placeholder="Enter movie overview/synopsis"
+                value={formData.overview}
+                onChange={handleInputChange}
+                required
+                rows={4}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+              />
+            </div>
 
             {/* Genres */}
             <div>
@@ -350,27 +415,36 @@ const AdminMovies = () => {
 
             {/* Cast */}
             <div>
-              <label className="block text-sm font-medium mb-2">Cast</label>
+              <label className="block text-sm font-medium mb-2">Cast Members</label>
               {formData.casts.map((cast, index) => (
                 <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    placeholder="Cast Name"
-                    value={cast.name}
-                    onChange={(e) => handleCastChange(index, "name", e.target.value)}
-                    className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Profile Path URL"
-                    value={cast.profile_path}
-                    onChange={(e) => handleCastChange(index, "profile_path", e.target.value)}
-                    className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                  />
+                  <div className="flex-1">
+                    <label htmlFor={`cast-name-${index}`} className="block text-xs font-medium mb-1 text-gray-400">Cast Name</label>
+                    <input
+                      id={`cast-name-${index}`}
+                      type="text"
+                      placeholder="Enter cast member name"
+                      value={cast.name}
+                      onChange={(e) => handleCastChange(index, "name", e.target.value)}
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label htmlFor={`cast-profile-${index}`} className="block text-xs font-medium mb-1 text-gray-400">Profile URL</label>
+                    <input
+                      id={`cast-profile-${index}`}
+                      type="text"
+                      placeholder="https://example.com/profile.jpg"
+                      value={cast.profile_path}
+                      onChange={(e) => handleCastChange(index, "profile_path", e.target.value)}
+                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeCastField(index)}
-                    className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition"
+                    className="mt-6 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition"
+                    title="Remove cast member"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -471,11 +545,24 @@ const AdminMovies = () => {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDisable(movie._id || movie.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 rounded-lg transition text-sm font-medium"
+                  onClick={() => movie.disabled ? handleEnable(movie._id || movie.id) : handleDisable(movie._id || movie.id)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium ${
+                    movie.disabled
+                      ? 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
+                      : 'bg-orange-600/20 hover:bg-orange-600/30 text-orange-400'
+                  }`}
                 >
-                  <Ban className="w-4 h-4" />
-                  Disable
+                  {movie.disabled ? (
+                    <>
+                      <Power className="w-4 h-4" />
+                      Enable
+                    </>
+                  ) : (
+                    <>
+                      <PowerOff className="w-4 h-4" />
+                      Disable
+                    </>
+                  )}
                 </button>
               </div>
             </div>

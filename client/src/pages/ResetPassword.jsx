@@ -85,8 +85,8 @@ const ResetPassword = () => {
         }
         toast.error(data.message || "Unable to reset password");
       }
-    } catch (err) {
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to reset password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -100,8 +100,8 @@ const ResetPassword = () => {
       } else {
         toast.error(data.message || "Unable to resend OTP");
       }
-    } catch (err) {
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to resend OTP. Please try again.");
     }
   };
 

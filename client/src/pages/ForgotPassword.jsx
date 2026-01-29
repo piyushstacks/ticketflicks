@@ -46,8 +46,8 @@ const ForgotPassword = () => {
       } else {
         toast.error(data.message || "Unable to process request");
       }
-    } catch (err) {
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to send reset instructions. Please try again.");
     } finally {
       setSubmitting(false);
     }

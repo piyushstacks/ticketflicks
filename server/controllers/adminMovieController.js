@@ -169,7 +169,10 @@ export const createMovie = async (req, res) => {
     }
 
     // Get all active theatres
-    const activeTheatres = await Theatre.find({ disabled: false });
+    const activeTheatres = await Theatre.find({ 
+      disabled: false,
+      approval_status: 'approved' 
+    });
     const theatreIds = activeTheatres.map(theatre => theatre._id);
 
     // Create movie with auto-assignment
@@ -356,7 +359,13 @@ export const getAllMovies = async (req, res) => {
       .populate("addedByAdmin", "name email")
       .populate("theatres", "name location");
 
-    res.json({ success: true, movies });
+    // Add disabled status for frontend compatibility
+    const moviesWithStatus = movies.map(movie => ({
+      ...movie.toObject(),
+      disabled: !movie.isActive // Frontend expects 'disabled' property
+    }));
+
+    res.json({ success: true, movies: moviesWithStatus });
   } catch (error) {
     console.error("[getAllMovies]", error);
     res.json({ success: false, message: error.message });
@@ -416,6 +425,40 @@ export const deactivateMovie = async (req, res) => {
   }
 };
 
+// Activate movie
+export const activateMovie = async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id);
+    if (admin.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Only admin can activate movies",
+      });
+    }
+
+    const { movieId } = req.params;
+
+    const movie = await Movie.findByIdAndUpdate(
+      movieId,
+      { isActive: true },
+      { new: true }
+    );
+
+    if (!movie) {
+      return res.json({ success: false, message: "Movie not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Movie activated successfully",
+      movie,
+    });
+  } catch (error) {
+    console.error("[activateMovie]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 // Update movie
 export const updateMovie = async (req, res) => {
   try {
@@ -469,10 +512,13 @@ export const assignMoviesToTheatre = async (req, res) => {
       });
     }
 
-    // Verify theatre exists
+    // Verify theatre exists and is approved (do not assign movies to pending/declined theatres)
     const theatre = await Theatre.findById(theatreId);
     if (!theatre) {
       return res.json({ success: false, message: "Theatre not found" });
+    }
+    if (theatre.approval_status !== "approved") {
+      return res.json({ success: false, message: "Movies can only be assigned to approved theatres" });
     }
 
     // Verify all movies exist
@@ -535,10 +581,13 @@ export const removeMoviesFromTheatre = async (req, res) => {
       });
     }
 
-    // Verify theatre exists
+    // Verify theatre exists and is approved
     const theatre = await Theatre.findById(theatreId);
     if (!theatre) {
       return res.json({ success: false, message: "Theatre not found" });
+    }
+    if (theatre.approval_status !== "approved") {
+      return res.json({ success: false, message: "Only approved theatres can have movie assignments modified" });
     }
 
     // Remove movies from theatre

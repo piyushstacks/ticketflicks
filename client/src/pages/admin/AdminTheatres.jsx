@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Edit2, Ban, Plus, MapPin, Users, Phone, CheckCircle, XCircle, Clock, Monitor, Eye } from "lucide-react";
+import { Edit2, Ban, MapPin, Users, Phone, CheckCircle, XCircle, Clock, Monitor } from "lucide-react";
 
 const AdminTheatres = () => {
   const { axios, getAuthHeaders } = useAppContext();
@@ -22,7 +22,7 @@ const AdminTheatres = () => {
     city: "",
     state: "",
     zipCode: "",
-    phone: "",
+    contact_no: "",
     email: "",
   });
 
@@ -128,7 +128,7 @@ const AdminTheatres = () => {
           city: "",
           state: "",
           zipCode: "",
-          phone: "",
+          contact_no: "",
           email: "",
         });
         setEditingId(null);
@@ -151,7 +151,7 @@ const AdminTheatres = () => {
       city: theatre.city,
       state: theatre.state,
       zipCode: theatre.zipCode || "",
-      phone: theatre.phone || "",
+      contact_no: theatre.contact_no || "",
       email: theatre.email || "",
     });
     setEditingId(theatre._id);
@@ -232,7 +232,7 @@ const AdminTheatres = () => {
       city: "",
       state: "",
       zipCode: "",
-      phone: "",
+      contact_no: "",
       email: "",
     });
   };
@@ -246,38 +246,38 @@ const AdminTheatres = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Theatres Management</h1>
+    <div className="space-y-6 w-full max-w-[100vw] overflow-x-hidden px-2 sm:px-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl font-bold truncate">Theatres Management</h1>
       </div>
 
       {/* Approval Status Tabs */}
-      <div className="flex gap-4 border-b border-gray-700">
+      <div className="flex flex-wrap gap-2 sm:gap-4 border-b border-gray-700 pb-px -mx-1 px-1">
         <button
           onClick={() => setActiveTab("pending")}
-          className={`px-4 py-2 font-medium transition ${
+          className={`px-3 py-2 sm:px-4 font-medium transition rounded-t-lg whitespace-nowrap ${
             activeTab === "pending"
-              ? "text-primary border-b-2 border-primary"
-              : "text-gray-400 hover:text-white"
+              ? "text-primary border-b-2 border-primary bg-gray-800/50"
+              : "text-gray-400 hover:text-white hover:bg-gray-800/30"
           }`}
         >
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Pending Approvals ({pendingTheatres.length})
-          </div>
+          <span className="flex items-center gap-2">
+            <Clock className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Pending </span>({pendingTheatres.length})
+          </span>
         </button>
         <button
           onClick={() => setActiveTab("approved")}
-          className={`px-4 py-2 font-medium transition ${
+          className={`px-3 py-2 sm:px-4 font-medium transition rounded-t-lg whitespace-nowrap ${
             activeTab === "approved"
-              ? "text-primary border-b-2 border-primary"
-              : "text-gray-400 hover:text-white"
+              ? "text-primary border-b-2 border-primary bg-gray-800/50"
+              : "text-gray-400 hover:text-white hover:bg-gray-800/30"
           }`}
         >
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
-            Approved Theatres ({theatres.filter(theatre => !theatre.disabled).length})
-          </div>
+          <span className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Approved </span>({theatres.filter(t => t.approval_status === "approved" && !t.disabled).length})
+          </span>
         </button>
       </div>
 
@@ -285,11 +285,11 @@ const AdminTheatres = () => {
 
       {/* Edit Form - Only for existing theatres */}
       {showForm && editingId && (
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">Edit Theatre</h2>
+        <div className="bg-gray-900/30 border border-gray-700 rounded-xl p-4 sm:p-6 w-full overflow-hidden">
+          <h2 className="text-lg sm:text-xl font-bold mb-4">Edit Theatre</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <input
                 type="text"
                 name="name"
@@ -297,7 +297,7 @@ const AdminTheatres = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
               <input
                 type="text"
@@ -305,7 +305,7 @@ const AdminTheatres = () => {
                 placeholder="Location"
                 value={formData.location}
                 onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
               <input
                 type="text"
@@ -313,7 +313,7 @@ const AdminTheatres = () => {
                 placeholder="Address"
                 value={formData.address}
                 onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
               <input
                 type="text"
@@ -322,7 +322,7 @@ const AdminTheatres = () => {
                 value={formData.city}
                 onChange={handleInputChange}
                 required
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
               <input
                 type="text"
@@ -331,7 +331,7 @@ const AdminTheatres = () => {
                 value={formData.state}
                 onChange={handleInputChange}
                 required
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
               <input
                 type="text"
@@ -339,15 +339,15 @@ const AdminTheatres = () => {
                 placeholder="Zip Code"
                 value={formData.zipCode}
                 onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
               <input
                 type="tel"
-                name="phone"
-                placeholder="Phone"
-                value={formData.phone}
+                name="contact_no"
+                placeholder="Contact / Phone"
+                value={formData.contact_no}
                 onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
               <input
                 type="email"
@@ -355,21 +355,21 @@ const AdminTheatres = () => {
                 placeholder="Email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
             </div>
 
-            <div className="flex gap-3 justify-end">
+            <div className="flex flex-wrap gap-2 sm:gap-3 justify-end pt-2">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-medium"
+                className="px-4 sm:px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-medium text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 bg-primary hover:bg-primary-dull rounded-lg transition font-medium"
+                className="px-4 sm:px-6 py-2 bg-primary hover:bg-primary-dull rounded-lg transition font-medium text-sm sm:text-base"
               >
                 Update Theatre
               </button>
@@ -380,34 +380,34 @@ const AdminTheatres = () => {
 
       {/* Pending Theatres Grid */}
       {activeTab === "pending" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
           {pendingTheatres.map((theatre) => (
             <div
               key={theatre._id}
-              className="bg-gray-900/30 border border-yellow-500/30 rounded-lg p-6 hover:border-yellow-500/50 transition"
+              className="bg-gray-900/30 border border-yellow-500/30 rounded-xl p-4 sm:p-5 hover:border-yellow-500/50 transition min-w-0 overflow-hidden flex flex-col"
             >
-              <div className="space-y-3">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-bold">{theatre.name}</h3>
-                  <span className="px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-full">
-                    <Clock className="w-3 h-3 inline mr-1" />
+              <div className="space-y-3 flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2">
+                  <h3 className="text-lg sm:text-xl font-bold truncate">{theatre.name}</h3>
+                  <span className="shrink-0 px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-full flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
                     Pending
                   </span>
                 </div>
 
-                <div className="space-y-2 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <span>{theatre.location || "N/A"}</span>
+                <div className="space-y-2 text-sm text-gray-400 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="w-4 h-4 shrink-0 text-primary" />
+                    <span className="truncate">{theatre.location || "N/A"}</span>
                   </div>
 
                   {theatre.manager_id && (
                     <>
-                      <div className="text-xs">
+                      <div className="text-xs truncate">
                         <span className="text-gray-500">Manager: </span>
                         <span>{theatre.manager_id.name}</span>
                       </div>
-                      <div className="text-xs">
+                      <div className="text-xs truncate">
                         <span className="text-gray-500">Email: </span>
                         <span>{theatre.manager_id.email}</span>
                       </div>
@@ -420,10 +420,12 @@ const AdminTheatres = () => {
                     </>
                   )}
 
-                  {theatre.screens && (
-                    <div className="text-xs">
+                  {(theatre.screenCount !== undefined || (theatre.screens && theatre.screens.length > 0)) && (
+                    <div className="text-xs flex items-center gap-1">
                       <span className="text-gray-500">Screens: </span>
-                      <span>{theatre.screens.length}</span>
+                      <span className="text-primary font-bold">
+                        {theatre.screenCount !== undefined ? theatre.screenCount : theatre.screens.length}
+                      </span>
                     </div>
                   )}
 
@@ -433,19 +435,19 @@ const AdminTheatres = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-4">
+                <div className="flex flex-wrap gap-2 pt-3 sm:pt-4 mt-auto">
                   <button
                     onClick={() => handleApproveTheatre(theatre._id, "approve")}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition text-sm font-medium"
+                    className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition text-xs sm:text-sm font-medium"
                   >
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="w-4 h-4 shrink-0" />
                     Approve
                   </button>
                   <button
                     onClick={() => handleApproveTheatre(theatre._id, "decline")}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition text-sm font-medium"
+                    className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition text-xs sm:text-sm font-medium"
                   >
-                    <XCircle className="w-4 h-4" />
+                    <XCircle className="w-4 h-4 shrink-0" />
                     Decline
                   </button>
                 </div>
@@ -454,7 +456,7 @@ const AdminTheatres = () => {
           ))}
 
           {pendingTheatres.length === 0 && (
-            <div className="col-span-full text-center py-12">
+            <div className="col-span-full text-center py-12 px-4">
               <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-400 text-lg">No pending theatre approvals</p>
             </div>
@@ -464,158 +466,159 @@ const AdminTheatres = () => {
 
       {/* Approved Theatres Grid */}
       {activeTab === "approved" && (
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8 min-w-0">
           {/* Active Theatres Subsection */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-400" />
-              Active Theatres ({theatres.filter(theatre => !theatre.disabled).length})
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+              Active Theatres ({theatres.filter(t => t.approval_status === "approved" && !t.disabled).length})
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {theatres.filter(theatre => !theatre.disabled).map((theatre) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
+              {theatres.filter(t => t.approval_status === "approved" && !t.disabled).map((theatre) => (
                 <div
                   key={theatre._id}
-                  className="bg-gray-900/30 border border-gray-700 rounded-lg p-6 hover:border-primary/50 transition"
+                  className="bg-gray-900/30 border border-gray-700 rounded-xl p-4 sm:p-5 hover:border-primary/50 transition min-w-0 overflow-hidden flex flex-col"
                 >
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-xl font-bold">{theatre.name}</h3>
-                  </div>
+                  <div className="space-y-3 flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="text-lg sm:text-xl font-bold truncate">{theatre.name}</h3>
+                    </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{theatre.location}</span>
+                    <div className="space-y-2 min-w-0">
+                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
+                        <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="truncate">{theatre.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
+                        <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="truncate">{theatre.address || "—"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
+                        <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="truncate">{theatre.contact_no || "No phone"}</span>
+                      </div>
+                      <div className="text-gray-300 text-sm truncate">
+                        {theatre.city}, {theatre.state}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Users className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{theatre.address}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{theatre.contact_no || "No phone"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <span className="text-sm">{theatre.city}, {theatre.state}</span>
-                    </div>
-                  </div>
 
-                  <div className="flex gap-2 pt-4">
-                    <button
-                      onClick={() => handleViewScreens(theatre)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg transition text-sm font-medium"
-                    >
-                      <Monitor className="w-4 h-4" />
-                      View Screens
-                    </button>
-                    <button
-                      onClick={() => handleEdit(theatre)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-sm font-medium"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDisable(theatre._id)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 rounded-lg transition text-sm font-medium"
-                    >
-                      <Ban className="w-4 h-4" />
-                      Disable
-                    </button>
+                    <div className="flex flex-wrap gap-2 pt-3 sm:pt-4 mt-auto">
+                      <button
+                        onClick={() => handleViewScreens(theatre)}
+                        className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg transition text-xs sm:text-sm font-medium"
+                      >
+                        <Monitor className="w-4 h-4 shrink-0" />
+                        Screens
+                      </button>
+                      <button
+                        onClick={() => handleEdit(theatre)}
+                        className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-xs sm:text-sm font-medium"
+                      >
+                        <Edit2 className="w-4 h-4 shrink-0" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDisable(theatre._id)}
+                        className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 rounded-lg transition text-xs sm:text-sm font-medium"
+                      >
+                        <Ban className="w-4 h-4 shrink-0" />
+                        Disable
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
               ))}
 
-            {theatres.filter(theatre => !theatre.disabled).length === 0 && (
-              <div className="col-span-full text-center py-12">
-                <p className="text-gray-400 text-lg">No active theatres found</p>
-              </div>
-            )}
-          </div>
+              {theatres.filter(t => t.approval_status === "approved" && !t.disabled).length === 0 && (
+                <div className="col-span-full text-center py-12 px-4">
+                  <p className="text-gray-400 text-lg">No active theatres found</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Disabled Theatres Subsection */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-red-400" />
-              Disabled Theatres ({disabledTheatres.length})
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-red-400 shrink-0" />
+              Disabled Theatres ({disabledTheatres.filter(t => t.approval_status === "approved").length})
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {disabledTheatres.map((theatre) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
+              {disabledTheatres.filter(t => t.approval_status === "approved").map((theatre) => (
                 <div
                   key={theatre._id}
-                  className="bg-gray-900/30 border border-red-500/30 rounded-lg p-6 hover:border-red-500/50 transition opacity-60"
+                  className="bg-gray-900/30 border border-red-500/30 rounded-xl p-4 sm:p-5 hover:border-red-500/50 transition opacity-90 min-w-0 overflow-hidden flex flex-col"
                 >
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-xl font-bold">{theatre.name}</h3>
-                    <span className="px-2 py-1 bg-red-600/20 text-red-400 text-xs rounded-full">
-                      Disabled
-                    </span>
-                  </div>
+                  <div className="space-y-3 flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="text-lg sm:text-xl font-bold truncate">{theatre.name}</h3>
+                      <span className="shrink-0 px-2 py-1 bg-red-600/20 text-red-400 text-xs rounded-full">
+                        Disabled
+                      </span>
+                    </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{theatre.location}</span>
+                    <div className="space-y-2 min-w-0">
+                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
+                        <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="truncate">{theatre.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
+                        <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="truncate">{theatre.address || "—"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
+                        <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="truncate">{theatre.contact_no || "No phone"}</span>
+                      </div>
+                      <div className="text-gray-300 text-sm truncate">
+                        {theatre.city}, {theatre.state}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Users className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{theatre.address}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm">{theatre.contact_no || "No phone"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <span className="text-sm">{theatre.city}, {theatre.state}</span>
-                    </div>
-                  </div>
 
-                  <div className="flex gap-2 pt-4">
-                    <button
-                      onClick={() => handleEdit(theatre)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-sm font-medium"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleEnable(theatre._id)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition text-sm font-medium"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Enable
-                    </button>
+                    <div className="flex flex-wrap gap-2 pt-3 sm:pt-4 mt-auto">
+                      <button
+                        onClick={() => handleEdit(theatre)}
+                        className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-xs sm:text-sm font-medium"
+                      >
+                        <Edit2 className="w-4 h-4 shrink-0" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleEnable(theatre._id)}
+                        className="flex-1 min-w-[80px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition text-xs sm:text-sm font-medium"
+                      >
+                        <CheckCircle className="w-4 h-4 shrink-0" />
+                        Enable
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
               ))}
 
-            {disabledTheatres.length === 0 && (
-              <div className="col-span-full text-center py-12">
-                <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No disabled theatres found</p>
-              </div>
-            )}
-          </div>
+              {disabledTheatres.filter(t => t.approval_status === "approved").length === 0 && (
+                <div className="col-span-full text-center py-12 px-4">
+                  <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400 text-lg">No disabled theatres found</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Screens Modal */}
       {viewingScreens && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">Screens - {viewingScreens.name}</h2>
-                <p className="text-gray-400 mt-1">{viewingScreens.location}, {viewingScreens.city}</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto my-4 shadow-xl">
+            <div className="flex justify-between items-start gap-3 mb-4 sm:mb-6 sticky top-0 bg-gray-900 pb-2 z-10">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-2xl font-bold truncate">Screens — {viewingScreens.name}</h2>
+                <p className="text-gray-400 mt-1 text-sm truncate">{viewingScreens.location}, {viewingScreens.city}</p>
               </div>
               <button
                 onClick={() => setViewingScreens(null)}
-                className="text-gray-400 hover:text-white"
+                className="shrink-0 p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition"
+                aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -628,9 +631,9 @@ const AdminTheatres = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
               </div>
             ) : screens.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 min-w-0">
                 {screens.map((screen) => (
-                  <div key={screen._id} className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
+                  <div key={screen._id} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-5 min-w-0 overflow-hidden">
                     <div className="space-y-4">
                       <div className="flex justify-between items-start">
                         <h3 className="text-xl font-bold">{screen.name || `Screen ${screen.screenNumber}`}</h3>

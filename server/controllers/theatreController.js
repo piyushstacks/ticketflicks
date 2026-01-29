@@ -1,7 +1,7 @@
 import Theatre from "../models/Theatre.js";
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
-import Screen from "../models/Screen.js";
+import ScreenTbl from "../models/ScreenTbl.js";
 import bcryptjs from "bcryptjs";
 import sendEmail from "../configs/nodeMailer.js";
 
@@ -214,28 +214,6 @@ export const registerTheatre = async (req, res) => {
 
     const savedManager = await newManager.save();
 
-    // Create screen documents and prepare theatre screens array
-    const theatreScreens = screens.map((screen, index) => {
-      console.log(`Processing screen ${index + 1}:`, {
-        name: screen.name,
-        hasLayout: !!screen.layout,
-        hasPricing: !!screen.pricing,
-        layoutKeys: screen.layout ? Object.keys(screen.layout) : null
-      });
-
-      if (!screen.name || !screen.layout || !screen.pricing) {
-        throw new Error(`Screen ${index + 1} is missing required fields (name, layout, or pricing)`);
-      }
-
-      return {
-        name: screen.name,
-        layout: screen.layout,
-        pricing: screen.pricing,
-        totalSeats: screen.layout?.totalSeats || 0,
-        status: 'active'
-      };
-    });
-
     // Create theatre with pending approval status
     const newTheatre = new Theatre({
       name: theatreName,
@@ -247,7 +225,6 @@ export const registerTheatre = async (req, res) => {
       state: state || '',
       zipCode: zipCode || '',
       manager_id: savedManager._id,
-      screens: theatreScreens,
       approval_status: 'pending', // Set to pending until admin approval
     });
 
@@ -367,7 +344,7 @@ export const registerTheatre = async (req, res) => {
           tierCount: doc.seatTiers.length
         })));
         
-        const insertedScreens = await Screen.insertMany(screenDocs);
+        const insertedScreens = await ScreenTbl.insertMany(screenDocs);
         console.log("Successfully inserted screens:", insertedScreens.length);
       } catch (screenError) {
         console.error("Error inserting screens:", screenError);
@@ -474,7 +451,10 @@ export const registerTheatre = async (req, res) => {
 // Fetch all theatres
 export const fetchAllTheatres = async (req, res) => {
   try {
-    const theatres = await Theatre.find({ disabled: { $ne: true } }).populate("manager_id", "name email phone");
+    const theatres = await Theatre.find({ 
+      disabled: { $ne: true },
+      approval_status: 'approved' 
+    }).populate("manager_id", "name email phone");
     res.status(200).json({
       success: true,
       theatres,
@@ -489,13 +469,13 @@ export const fetchAllTheatres = async (req, res) => {
   }
 };
 
-// Fetch theatre by ID
+// Fetch theatre by ID (public: only approved, non-disabled theatres)
 export const fetchTheatre = async (req, res) => {
   try {
     const { id } = req.params;
     const theatre = await Theatre.findById(id).populate("manager_id", "name email phone");
 
-    if (!theatre) {
+    if (!theatre || theatre.approval_status !== "approved" || theatre.disabled) {
       return res.status(404).json({
         success: false,
         message: "Theatre not found",
@@ -520,21 +500,17 @@ export const fetchTheatre = async (req, res) => {
 export const updateTheatre = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, location, contact_no, screens } = req.body;
-
-    // Validate that at least one screen exists
-    if (screens && screens.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Theatre must have at least one screen",
-      });
-    }
+    const { name, location, contact_no, address, city, state, zipCode, email } = req.body;
 
     const updateData = {};
     if (name) updateData.name = name;
     if (location) updateData.location = location;
     if (contact_no) updateData.contact_no = contact_no;
-    if (screens) updateData.screens = screens;
+    if (address) updateData.address = address;
+    if (city) updateData.city = city;
+    if (state) updateData.state = state;
+    if (zipCode) updateData.zipCode = zipCode;
+    if (email) updateData.email = email;
 
     const theatre = await Theatre.findByIdAndUpdate(id, updateData, { new: true }).populate(
       "manager_id",
@@ -563,195 +539,13 @@ export const updateTheatre = async (req, res) => {
   }
 };
 
-// Add screen to theatre
-export const addScreen = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, capacity, seat_layout } = req.body;
-
-    if (!name || !capacity || !seat_layout) {
-      return res.status(400).json({
-        success: false,
-        message: "Screen name, capacity, and seat layout are required",
-      });
-    }
-
-    const theatre = await Theatre.findById(id);
-    if (!theatre) {
-      return res.status(404).json({
-        success: false,
-        message: "Theatre not found",
-      });
-    }
-
-    theatre.screens.push({
-      name,
-      capacity,
-      seat_layout,
-    });
-
-    await theatre.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Screen added successfully",
-      theatre,
-    });
-  } catch (error) {
-    console.error("Error adding screen:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error adding screen",
-      error: error.message,
-    });
-  }
-};
-
-// Update screen in theatre
-export const updateScreen = async (req, res) => {
-  try {
-    const { id, screenIndex } = req.params;
-    const { name, capacity, seat_layout } = req.body;
-
-    const theatre = await Theatre.findById(id);
-    if (!theatre) {
-      return res.status(404).json({
-        success: false,
-        message: "Theatre not found",
-      });
-    }
-
-    if (screenIndex >= theatre.screens.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Screen not found",
-      });
-    }
-
-    if (name) theatre.screens[screenIndex].name = name;
-    if (capacity) theatre.screens[screenIndex].capacity = capacity;
-    if (seat_layout) theatre.screens[screenIndex].seat_layout = seat_layout;
-
-    await theatre.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Screen updated successfully",
-      theatre,
-    });
-  } catch (error) {
-    console.error("Error updating screen:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating screen",
-      error: error.message,
-    });
-  }
-};
-
-// Delete screen from theatre
-export const deleteScreen = async (req, res) => {
-  try {
-    const { id, screenIndex } = req.params;
-
-    const theatre = await Theatre.findById(id);
-    if (!theatre) {
-      return res.status(404).json({
-        success: false,
-        message: "Theatre not found",
-      });
-    }
-
-    if (theatre.screens.length === 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Cannot delete the only screen. Theatre must have at least one screen.",
-      });
-    }
-
-    if (screenIndex >= theatre.screens.length) {
-      return res.status(404).json({
-        success: false,
-        message: "Screen not found",
-      });
-    }
-
-    theatre.screens.splice(screenIndex, 1);
-    await theatre.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Screen deleted successfully",
-      theatre,
-    });
-  } catch (error) {
-    console.error("Error deleting screen:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error deleting screen",
-      error: error.message,
-    });
-  }
-};
-
-// Get theatres by manager
-export const getTheatresByManager = async (req, res) => {
-  try {
-    const { managerId } = req.params;
-    console.log("Fetching theatres for manager ID:", managerId);
-    
-    // First check if manager exists
-    const User = (await import("../models/User.js")).default;
-    const manager = await User.findById(managerId);
-    console.log("Manager found:", manager ? manager.name : "No manager found");
-    
-    if (!manager) {
-      return res.status(404).json({
-        success: false,
-        message: "Manager not found",
-      });
-    }
-    
-    if (manager.role !== "manager") {
-      return res.status(403).json({
-        success: false,
-        message: "User is not a manager",
-      });
-    }
-
-    const theatres = await Theatre.find({ manager_id: managerId }).populate(
-      "manager_id",
-      "name email phone"
-    );
-
-    console.log("Found theatres:", theatres.length);
-    if (theatres.length > 0) {
-      theatres.forEach(t => {
-        console.log("- Theatre:", t.name, "ID:", t._id.toString());
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      theatres,
-    });
-  } catch (error) {
-    console.error("Error fetching manager theatres:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching theatres",
-      error: error.message,
-    });
-  }
-};
-
 // Delete theatre
 export const deleteTheatre = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const theatre = await Theatre.findByIdAndDelete(id);
-
+    
+    // First find the theatre to get its manager_id
+    const theatre = await Theatre.findById(id);
     if (!theatre) {
       return res.status(404).json({
         success: false,
@@ -759,15 +553,50 @@ export const deleteTheatre = async (req, res) => {
       });
     }
 
+    // Delete associated screens from ScreenTbl
+    await ScreenTbl.deleteMany({ theatre: id });
+
+    // Update manager to remove managedTheatreId
+    if (theatre.manager_id) {
+      await User.findByIdAndUpdate(theatre.manager_id, {
+        managedTheaterId: null,
+        managedTheatreId: null,
+        role: "customer" // Or some other appropriate role
+      });
+    }
+
+    // Finally delete the theatre
+    await Theatre.findByIdAndDelete(id);
+
     res.status(200).json({
       success: true,
-      message: "Theatre deleted successfully",
+      message: "Theatre and associated screens deleted successfully",
     });
   } catch (error) {
     console.error("Error deleting theatre:", error);
     res.status(500).json({
       success: false,
       message: "Error deleting theatre",
+      error: error.message,
+    });
+  }
+};
+
+// Fetch theatres by manager
+export const getTheatresByManager = async (req, res) => {
+  try {
+    const { managerId } = req.params;
+    const theatres = await Theatre.find({ manager_id: managerId });
+    
+    res.status(200).json({
+      success: true,
+      theatres,
+    });
+  } catch (error) {
+    console.error("Error fetching theatres by manager:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching theatres",
       error: error.message,
     });
   }

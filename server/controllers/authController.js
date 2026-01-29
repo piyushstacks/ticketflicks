@@ -135,12 +135,12 @@ export const login = async (req, res) => {
     // Query with lowercase email (model will apply lowercase automatically)
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
-      return res.status(400).json({ success: false, message: "wrong credentials entered please try again" });
+      return res.status(400).json({ success: false, message: "Invalid login credentials. Please check your email and password." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "wrong credentials entered please try again" });
+      return res.status(400).json({ success: false, message: "Invalid login credentials. Please check your email and password." });
     }
 
     user.last_login = new Date();
@@ -189,30 +189,18 @@ export const login = async (req, res) => {
 // Request OTP for signup
 export const requestSignupOtp = async (req, res) => {
   try {
-    console.log("=== REQUEST SIGNUP OTP ===");
-    console.log("Request body:", req.body);
-    
     const { email } = req.body;
     if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
-    console.log("Email received:", email);
-
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    console.log("Email regex test result:", emailRegex.test(email));
-    
     if (!emailRegex.test(email)) {
-      console.log("Email validation failed");
       return res.status(400).json({ success: false, message: "Invalid email format. Please enter a valid email address." });
     }
-
-    console.log("Email validation passed");
 
     // Query with lowercase email (model will apply lowercase automatically)
     const user = await User.findOne({ email: email.toLowerCase() });
     if (user) return res.status(400).json({ success: false, message: "Email already registered" });
-
-    console.log("Email not found in database, proceeding with OTP generation");
 
     // Delete any existing OTPs for this email (old OTP expires immediately when new one is sent)
     await Otp.deleteMany({ email: email.toLowerCase(), purpose: "signup" });
@@ -234,13 +222,9 @@ export const requestSignupOtp = async (req, res) => {
       console.error("[requestSignupOtp][sendEmail]", err);
     }
 
-    console.log("OTP sent successfully");
     res.json({ success: true, message: "OTP sent to your email for signup verification" });
   } catch (error) {
-    console.error("=== REQUEST SIGNUP OTP ERROR ===");
-    console.error("Error:", error);
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
+    console.error("[requestSignupOtp]", error);
     
     // Handle specific error cases
     if (error.code === 11000) {

@@ -3,7 +3,7 @@ import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { 
   Plus, Edit2, Trash2, Power, PowerOff, Eye, Calendar, Clock, Film, 
-  Monitor, Copy, Filter, ChevronDown, X, Repeat
+  Monitor, Copy, Filter, ChevronDown, X, Repeat, Globe
 } from "lucide-react";
 import Loading from "../../components/Loading";
 
@@ -368,195 +368,123 @@ const ManagerShows = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Manage Shows</h1>
-          <p className="text-gray-400 mt-1">Create and manage movie show schedules</p>
+          <h1 className="text-4xl font-black text-white tracking-tight flex items-center gap-4">
+            <Calendar className="w-10 h-10 text-primary" />
+            Show Schedule
+          </h1>
+          <p className="text-gray-400 mt-2 font-medium flex items-center gap-2">
+            <Film className="w-4 h-4 text-primary" />
+            Manage and schedule movie shows for your theatre screens
+          </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dull rounded-lg transition font-medium"
-          >
-            <Plus className="w-5 h-5" />
-            Add Show
-          </button>
-        </div>
+        
+        <button
+          onClick={() => setShowForm(true)}
+          className="w-full lg:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dull text-white rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 group"
+        >
+          <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+          <span>Schedule New Show</span>
+        </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Week</label>
-            <select
-              value={filterWeek}
-              onChange={(e) => setFilterWeek(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:border-primary outline-none transition"
-            >
-              <option value="current">Current Week</option>
-              <option value="next">Next Week</option>
-              <option value="all">All Shows</option>
-            </select>
+      {/* Filters Section */}
+      <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 mb-10 backdrop-blur-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <Calendar className="w-3 h-3 text-primary" />
+              Time Period
+            </label>
+            <div className="relative group">
+              <select
+                value={filterWeek}
+                onChange={(e) => setFilterWeek(e.target.value)}
+                className="w-full pl-4 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+              >
+                <option value="current">Current Week</option>
+                <option value="next">Next Week</option>
+                <option value="all">All Shows</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Movie</label>
-            <select
-              value={filterMovie}
-              onChange={(e) => setFilterMovie(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:border-primary outline-none transition"
-            >
-              <option value="">All Movies</option>
-              {movies.map((movie) => (
-                <option key={movie._id} value={movie._id}>
-                  {movie.title}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <Film className="w-3 h-3 text-primary" />
+              Filter Movie
+            </label>
+            <div className="relative group">
+              <select
+                value={filterMovie}
+                onChange={(e) => setFilterMovie(e.target.value)}
+                className="w-full pl-4 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+              >
+                <option value="">All Movies</option>
+                {movies.map((movie) => (
+                  <option key={movie._id} value={movie._id}>
+                    {movie.title}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+            </div>
           </div>
           
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Screen</label>
-            <select
-              value={filterScreen}
-              onChange={(e) => setFilterScreen(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg focus:border-primary outline-none transition"
-            >
-              <option value="">All Screens</option>
-              {screens.map((screen) => (
-                <option key={screen._id} value={screen._id}>
-                  {screen.name || `Screen ${screen.screenNumber}`}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <Monitor className="w-3 h-3 text-primary" />
+              Filter Screen
+            </label>
+            <div className="relative group">
+              <select
+                value={filterScreen}
+                onChange={(e) => setFilterScreen(e.target.value)}
+                className="w-full pl-4 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+              >
+                <option value="">All Screens</option>
+                {screens.map((screen) => (
+                  <option key={screen._id} value={screen._id}>
+                    {screen.name || `Screen ${screen.screenNumber}`}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+            </div>
           </div>
           
-          <div className="flex items-end">
-            <div className="text-sm text-gray-400">
-              <span className="font-semibold">{filteredShows.length}</span> shows found
+          <div className="flex items-end pb-1">
+            <div className="flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/10 rounded-xl w-full">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-sm font-bold text-gray-300">
+                {filteredShows.length} {filteredShows.length === 1 ? 'Show' : 'Shows'} Found
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Add/Edit Show Form */}
+      {/* Form Modal */}
       {showForm && (
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">
-            {editingId ? "Edit Show" : "Add New Show"}
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Movie *</label>
-                <select
-                  name="movie"
-                  value={formData.movie}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                >
-                  <option value="">Select a movie...</option>
-                  {movies && movies.filter(movie => movie.isActive).map((movie) => (
-                    <option key={movie._id} value={movie._id}>
-                      {movie.title}
-                    </option>
-                  ))}
-                </select>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl shadow-primary/20 ring-1 ring-white/10">
+            <div className="p-8 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                  <Calendar className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-white tracking-tight">
+                    {editingId ? "Update Schedule" : "Schedule New Show"}
+                  </h2>
+                  <p className="text-gray-400 text-sm font-medium mt-1">
+                    Configure show timings and duration for your screen
+                  </p>
+                </div>
               </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Screen *</label>
-                <select
-                  name="screen"
-                  value={formData.screen}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                >
-                  <option value="">Select a screen...</option>
-                  {screens && screens.filter(screen => screen.status !== 'disabled').map((screen) => (
-                    <option key={screen._id} value={screen._id}>
-                      {screen.name || `Screen ${screen.screenNumber}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Show Time *</label>
-                <input
-                  type="time"
-                  name="showTime"
-                  value={formData.showTime}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Language *</label>
-                <select
-                  name="language"
-                  value={formData.language}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                >
-                  {languages.map((lang) => (
-                    <option key={lang} value={lang}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Start Date</label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={formData.startDate}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">End Date</label>
-                <input
-                  type="date"
-                  name="endDate"
-                  value={formData.endDate}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                className="w-4 h-4 text-primary bg-gray-800 border-gray-600 rounded focus:ring-primary"
-              />
-              <label htmlFor="isActive" className="text-sm text-gray-300">
-                Active (available for booking)
-              </label>
-            </div>
-
-            <div className="flex gap-3 justify-end">
               <button
-                type="button"
                 onClick={() => {
                   setShowForm(false);
                   setEditingId(null);
@@ -570,155 +498,296 @@ const ManagerShows = () => {
                     isActive: true
                   });
                 }}
-                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-medium"
+                className="p-3 hover:bg-gray-800 rounded-2xl transition-all border border-transparent hover:border-gray-700 group"
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-primary hover:bg-primary-dull rounded-lg transition font-medium"
-              >
-                {editingId ? "Update Show" : "Add Show"}
+                <X className="w-6 h-6 text-gray-500 group-hover:text-white group-hover:rotate-90 transition-all duration-300" />
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleSubmit} className="p-10 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Movie Selection */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <Film className="w-4 h-4 text-primary" />
+                    Target Movie <span className="text-primary">*</span>
+                  </label>
+                  <div className="relative group">
+                    <select
+                      name="movie"
+                      value={formData.movie}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                    >
+                      <option value="">Select a movie...</option>
+                      {movies.map((movie) => (
+                        <option key={movie._id} value={movie._id}>
+                          {movie.title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+                  </div>
+                </div>
+
+                {/* Screen Selection */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-primary" />
+                    Select Screen <span className="text-primary">*</span>
+                  </label>
+                  <div className="relative group">
+                    <select
+                      name="screen"
+                      value={formData.screen}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                    >
+                      <option value="">Select a screen...</option>
+                      {screens.map((screen) => (
+                        <option key={screen._id} value={screen._id}>
+                          {screen.name || `Screen ${screen.screenNumber}`}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+                  </div>
+                </div>
+
+                {/* Show Time */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" />
+                    Daily Time <span className="text-primary">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    name="showTime"
+                    value={formData.showTime}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+
+                {/* Language Selection */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-primary" />
+                    Language <span className="text-primary">*</span>
+                  </label>
+                  <div className="relative group">
+                    <select
+                      name="language"
+                      value={formData.language}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                    >
+                      {languages.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {lang}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+                  </div>
+                </div>
+
+                {/* Start Date */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    Start Date <span className="text-primary">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+
+                {/* End Date */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    End Date <span className="text-primary">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 px-8 py-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-2xl font-bold transition-all border border-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-8 py-4 bg-primary hover:bg-primary-dull text-white rounded-2xl font-bold shadow-xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Plus className="w-5 h-5" />
+                  )}
+                  {editingId ? "Update Show Schedule" : "Confirm Show Schedule"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Shows List */}
-      <div className="bg-gray-900/20 border border-gray-700 rounded-lg p-6">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold">Show Schedule</h2>
-          <p className="text-gray-400 text-sm mt-1">
-            {filterWeek === 'current' ? 'Current week shows' : filterWeek === 'next' ? 'Next week shows' : 'All shows'}
-          </p>
-        </div>
-
+      {/* Shows Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredShows.length > 0 ? (
-          <div className="space-y-4">
-            {filteredShows.map((show) => (
-              <div
-                key={show._id}
-                className={`bg-gray-800/50 border rounded-lg p-4 hover:border-primary/50 transition ${
-                  !show.isActive ? 'border-gray-700 opacity-60' : 'border-gray-600'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {/* Movie Poster */}
-                    <div className="w-16 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                      {show.movie.poster_path ? (
-                        <img
-                          src={
-                            show.movie.poster_path.startsWith("http")
-                              ? show.movie.poster_path
-                              : `${imageBaseURL}${show.movie.poster_path}`
-                          }
-                          alt={show.movie.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Film className="w-6 h-6 text-gray-500" />
-                        </div>
-                      )}
-                    </div>
+          filteredShows.map((show) => (
+            <div
+              key={show._id}
+              className={`bg-gray-900/40 border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 ${
+                show.isActive ? 'border-gray-800 hover:border-primary/40' : 'border-red-900/30 opacity-80'
+              }`}
+            >
+              {/* Show Card Header - Movie Poster & Basic Info */}
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src={show.movie?.poster_path ? (show.movie.poster_path.startsWith('http') ? show.movie.poster_path : `${imageBaseURL}${show.movie.poster_path}`) : '/placeholder-movie.jpg'}
+                  alt={show.movie?.title}
+                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <h3 className="text-xl font-bold text-white line-clamp-1">{show.movie?.title}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-sm text-gray-300">
+                    <span className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs font-semibold">
+                      {show.language || "English"}
+                    </span>
+                    <span>•</span>
+                    <span>{show.screen?.name || `Screen ${show.screen?.screenNumber}`}</span>
+                  </div>
+                </div>
+                <div className="absolute top-4 right-4">
+                  <span className={`px-2 py-1 text-xs font-bold rounded-full shadow-lg ${
+                    show.isActive ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'
+                  }`}>
+                    {show.isActive ? 'ACTIVE' : 'DISABLED'}
+                  </span>
+                </div>
+              </div>
 
-                    {/* Show Details */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-lg">{show.movie.title}</h3>
-                        {!show.isActive && (
-                          <span className="px-2 py-1 bg-red-600/20 text-red-400 text-xs rounded">
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <Monitor className="w-4 h-4" />
-                          <span>{show.screen.name || `Screen ${show.screen.screenNumber}`}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{formatShowTime(show.showTime)}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(show.startDate).toLocaleDateString()} - {new Date(show.endDate).toLocaleDateString()}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <span className="px-2 py-1 bg-primary/20 text-primary text-xs rounded">
-                            {show.language || "English"}
-                          </span>
-                        </div>
-                      </div>
+              {/* Show Card Content */}
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 text-gray-300 bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
+                    <Clock className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Show Time</p>
+                      <p className="text-sm font-semibold">{formatShowTime(show.showTime)}</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 text-gray-300 bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Start Date</p>
+                      <p className="text-sm font-semibold">
+                        {new Date(show.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <button
+                <div className="flex items-center justify-between text-sm py-2 px-1">
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Date Range</span>
+                    <span className="text-gray-300">
+                      {new Date(show.startDate).toLocaleDateString()} - {new Date(show.endDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Actions</span>
+                    <button 
                       onClick={() => setViewingShow(show)}
-                      className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition"
-                      title="View Details"
+                      className="text-primary hover:underline text-xs font-bold uppercase"
                     >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    
-                    <button
-                      onClick={() => handleEdit(show)}
-                      className="p-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition"
-                      title="Edit Show"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    
-                    <button
-                      onClick={() => handleToggleStatus(show._id, show.isActive)}
-                      className={`p-2 rounded-lg transition ${
-                        show.isActive
-                          ? 'bg-orange-600/20 hover:bg-orange-600/30 text-orange-400'
-                          : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
-                      }`}
-                      title={show.isActive ? "Disable Show" : "Enable Show"}
-                    >
-                      {show.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
-                    </button>
-                    
-                    <button
-                      onClick={() => handleExtendShow(show._id)}
-                      className="p-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg transition"
-                      title="Extend by 7 Days"
-                    >
-                      <Repeat className="w-4 h-4" />
-                    </button>
-                    
-                    <button
-                      onClick={() => handleDelete(show._id)}
-                      className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition"
-                      title="Delete Show"
-                    >
-                      <Trash2 className="w-4 h-4" />
+                      View Details
                     </button>
                   </div>
                 </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2 border-t border-gray-800">
+                  <button
+                    onClick={() => handleEdit(show)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg transition-all text-sm font-bold border border-blue-500/20"
+                    title="Edit Show"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleToggleStatus(show._id, show.isActive)}
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-sm font-bold border ${
+                      show.isActive 
+                        ? 'bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 border-orange-500/20' 
+                        : 'bg-green-600/10 hover:bg-green-600/20 text-green-400 border-green-500/20'
+                    }`}
+                    title={show.isActive ? 'Disable Show' : 'Enable Show'}
+                  >
+                    {show.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                    <span>{show.isActive ? 'Disable' : 'Enable'}</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(show._id)}
+                    className="flex items-center justify-center p-2.5 bg-red-600/10 hover:bg-red-600/20 text-red-400 rounded-lg transition-all border border-red-500/20"
+                    title="Delete Show"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <button
+                  onClick={() => handleExtendShow(show._id)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all text-xs font-bold border border-primary/20"
+                >
+                  <Repeat className="w-3.5 h-3.5" />
+                  Extend by 7 Days
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         ) : (
-          <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-300 mb-2">No Shows Found</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
+          <div className="col-span-full text-center py-20 bg-gray-900/20 rounded-2xl border-2 border-gray-800 border-dashed">
+            <Film className="w-16 h-16 text-gray-700 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-400">No shows found</h3>
+            <p className="text-gray-500 mt-2">
               {filterWeek === 'current' 
                 ? "No shows scheduled for this week. Create your first show to get started."
                 : "No shows found for the selected filters."}
             </p>
+            <button
+              onClick={() => setShowForm(true)}
+              className="mt-6 px-6 py-2 bg-primary hover:bg-primary-dull text-white rounded-lg transition font-bold"
+            >
+              Schedule First Show
+            </button>
           </div>
         )}
       </div>

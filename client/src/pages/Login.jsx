@@ -62,8 +62,8 @@ const Login = () => {
         toast.success("Login successful!");
         navigate(next);
       }
-    } catch {
-      toast.error("Something went wrong");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Unable to log in. Please try again.");
     } finally {
       setLoading(false);
     }

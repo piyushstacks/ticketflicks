@@ -21,16 +21,15 @@ export const deleteTheater = async (req, res) => {
 };
 
 // Screen-related forwards
-export const createScreen = theatreController.addScreen;
 export const fetchScreensByTheater = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Use the Theatre model to get embedded screens data
+    // Use the Theatre model to get embedded screens data - only for approved, non-disabled theatres
     const { default: Theatre } = await import("../models/Theatre.js");
     const theatre = await Theatre.findById(id);
     
-    if (!theatre) {
+    if (!theatre || theatre.approval_status !== "approved" || theatre.disabled) {
       return res.json({ success: false, message: "Theatre not found" });
     }
     
@@ -44,5 +43,3 @@ export const fetchScreensByTheater = async (req, res) => {
   }
 };
 export const fetchScreen = theatreController.fetchTheatre; // Not a direct mapping; kept for compatibility
-export const updateScreen = theatreController.updateScreen;
-export const deleteScreen = theatreController.deleteScreen;
