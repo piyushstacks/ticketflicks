@@ -19,6 +19,7 @@ const ManagerShows = () => {
   const [filterWeek, setFilterWeek] = useState('current');
   const [filterMovie, setFilterMovie] = useState('');
   const [filterScreen, setFilterScreen] = useState('');
+  const [showPricingCustomization, setShowPricingCustomization] = useState(false);
   
   const [formData, setFormData] = useState({
     movie: "",
@@ -27,6 +28,7 @@ const ManagerShows = () => {
     language: "English",
     startDate: "",
     endDate: "",
+    tierPrices: {},  // Will store individual tier prices: { "Standard": "150", "Deluxe": "200", ... }
     isActive: true
   });
 
@@ -104,11 +106,13 @@ const ManagerShows = () => {
 
   const fetchScreens = async () => {
     try {
-      const { data } = await axios.get("/api/manager/screens-tbl", {
+      const { data } = await axios.get("/api/manager/screens", {
         headers: getAuthHeaders(),
       });
 
       if (data.success) {
+        console.log("Screens fetched:", data.screens);
+        console.log("First screen seatTiers:", data.screens?.[0]?.seatTiers);
         setScreens(data.screens || []);
       } else {
         console.error("Screens API error:", data.message);
@@ -127,56 +131,201 @@ const ManagerShows = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    console.log(`Input changed: ${name} = "${value}"`);
+    
+    // Handle tier price inputs separately
+    if (name.startsWith('tierPrice_')) {
+      const tierName = name.replace('tierPrice_', '');
+      setFormData(prev => ({
+        ...prev,
+        tierPrices: {
+          ...prev.tierPrices,
+          [tierName]: value
+        }
+      }));
+      console.log(`Updated ${tierName} tier price to: ${value}`);
+      return;
+    }
+    
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        [name]: value,
+      };
+      console.log("Updated formData:", newData);
+      return newData;
+    });
+
+    // If screen is selected, find its details and set default tier prices
+    if (name === 'screen' && value) {
+      console.log("Screen selected, finding details for:", value);
+      console.log("Available screens:", screens);
+      const selectedScreen = screens.find(screen => screen._id === value);
+      console.log("Selected screen:", selectedScreen);
+      console.log("Screen seatTiers:", selectedScreen?.seatTiers);
+      
+      if (selectedScreen && selectedScreen.seatTiers && selectedScreen.seatTiers.length > 0) {
+        // Set default prices for each tier
+        const defaultTierPrices = {};
+        selectedScreen.seatTiers.forEach(tier => {
+          defaultTierPrices[tier.tierName] = tier.price.toString();
+        });
+        
+        console.log("Screen seat tiers:", selectedScreen.seatTiers);
+        console.log("Setting default tier prices:", defaultTierPrices);
+        
+        setFormData(prev => ({
+          ...prev,
+          tierPrices: defaultTierPrices
+        }));
+        
+        const tierCount = selectedScreen.seatTiers.length;
+        toast.success(`Pricing set for ${tierCount} tiers based on screen configuration`);
+      } else {
+        // Fallback to empty prices if no tiers found
+        console.log("No seat tiers found, using empty tier prices");
+        setFormData(prev => ({
+          ...prev,
+          tierPrices: {}
+        }));
+      }
+    }
+  };
+
+  const getTodayString = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.toISOString().split('T')[0];
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Debug: Log formData to see what values are actually present
+    console.log("=== FORM SUBMISSION DEBUG ===");
+    console.log("Form Data on Submit:", formData);
+    console.log("Validation checks:", {
+      movie: !!formData.movie,
+      screen: !!formData.screen,
+      showTime: !!formData.showTime,
+      startDate: !!formData.startDate,
+      endDate: !!formData.endDate,
+      movieValue: formData.movie,
+      screenValue: formData.screen,
+      showTimeValue: formData.showTime,
+      startDateValue: formData.startDate,
+      endDateValue: formData.endDate
+    });
+
+    // Temporarily relax validation to see what happens
     if (!formData.movie || !formData.screen || !formData.showTime) {
-      toast.error("Please fill all required fields");
+      const missingFields = [];
+      if (!formData.movie) missingFields.push("Movie");
+      if (!formData.screen) missingFields.push("Screen");
+      if (!formData.showTime) missingFields.push("Show Time");
+      
+      toast.error(`Please fill all required fields. Missing: ${missingFields.join(", ")}`);
       return;
     }
 
+    // Check if tier prices are set
+    if (formData.screen && Object.keys(formData.tierPrices).length === 0) {
+      toast.error("Please set prices for all seat tiers");
+      return;
+    }
+
+    console.log("Basic validation passed, proceeding with date validation...");
+
     // Validate dates
+    console.log("Starting date validation...");
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      console.log("Date validation:", {
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        start: start,
+        end: end,
+        today: today,
+        startBeforeToday: start < today,
+        endBeforeToday: end < today,
+        endBeforeStart: end < start
+      });
+      
+      if (start < today || end < today) {
+        console.log("Past date validation failed");
+        toast.error("Cannot create shows for past dates. Please select today or a future date.");
+        return;
+      }
+      
       if (end < start) {
+        console.log("End date before start date validation failed");
         toast.error("End date cannot be before start date");
         return;
       }
     }
+    console.log("Date validation passed");
 
     try {
+      console.log("Starting API call...");
       let response;
       if (editingId) {
+        console.log("Editing existing show:", editingId);
         response = await axios.put(
           `/api/manager/shows/${editingId}`,
           formData,
           { headers: getAuthHeaders() }
         );
       } else {
+        console.log("Creating new show...");
         // Set default dates for new shows (current week)
         const weekDates = getCurrentWeekDates();
+        // Use customized tier prices if available, otherwise use screen defaults
+        const selectedScreen = screens.find(screen => screen._id === formData.screen);
+        const seatTiers = Object.keys(formData.tierPrices).length > 0 
+          ? Object.entries(formData.tierPrices).map(([tierName, price]) => ({
+              tierName,
+              price: parseFloat(price)
+            }))
+          : (selectedScreen?.seatTiers || []).map(tier => ({
+              tierName: tier.tierName,
+              price: tier.price
+            }));
+
         const showData = {
-          ...formData,
+          movieId: formData.movie,
+          screenId: formData.screen,
+          showDateTime: `${formData.startDate}T${formData.showTime}:00`, // Combine date and time
           startDate: formData.startDate || weekDates.start,
-          endDate: formData.endDate || weekDates.end
+          endDate: formData.endDate || weekDates.end,
+          language: formData.language,
+          seatTiers: seatTiers
         };
+        
+        console.log("Sending showData to API:", showData);
+        console.log("API endpoint:", "/api/manager/shows/add");
         
         response = await axios.post(
           "/api/manager/shows/add",
           showData,
           { headers: getAuthHeaders() }
         );
+        
+        console.log("API response received:", response);
       }
 
       const { data } = response;
+      console.log("=== RESPONSE DATA DEBUG ===");
+      console.log("Response data:", data);
+      console.log("Data.success:", data.success);
+      console.log("Data.message:", data.message);
+      console.log("============================");
+      
       if (data.success) {
+        console.log("Success case - processing successful response");
         toast.success(data.message);
         setFormData({
           movie: "",
@@ -185,21 +334,47 @@ const ManagerShows = () => {
           language: "English",
           startDate: "",
           endDate: "",
+          tierPrices: {},
           isActive: true
         });
         setEditingId(null);
         setShowForm(false);
+        setShowPricingCustomization(false);
         fetchShows();
       } else {
+        console.log("Error case - server returned success: false");
         toast.error(data.message);
       }
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Failed to save show");
+      console.error("=== API ERROR DEBUG ===");
+      console.error("Full error object:", error);
+      console.error("Error message:", error.message);
+      console.error("Error response:", error.response);
+      console.error("Error response data:", error.response?.data);
+      console.error("Error response status:", error.response?.status);
+      console.error("Error response status text:", error.response?.statusText);
+      
+      if (error.response?.data?.message) {
+        toast.error(`Server error: ${error.response.data.message}`);
+      } else if (error.response?.status) {
+        toast.error(`Server error: ${error.response.status} ${error.response.statusText}`);
+      } else if (error.message) {
+        toast.error(`Network error: ${error.message}`);
+      } else {
+        toast.error("Failed to save show - unknown error");
+      }
     }
   };
 
   const handleEdit = (show) => {
+    // Convert seatTiers to tierPrices object for form
+    const tierPrices = {};
+    if (show.seatTiers && Array.isArray(show.seatTiers)) {
+      show.seatTiers.forEach(tier => {
+        tierPrices[tier.tierName] = tier.price.toString();
+      });
+    }
+
     setFormData({
       movie: show.movie._id,
       screen: show.screen._id,
@@ -207,9 +382,11 @@ const ManagerShows = () => {
       language: show.language || "English",
       startDate: show.startDate,
       endDate: show.endDate,
+      tierPrices: tierPrices,
       isActive: show.isActive
     });
     setEditingId(show._id);
+    setShowPricingCustomization(false);
     setShowForm(true);
   };
 
@@ -328,24 +505,30 @@ const ManagerShows = () => {
     
     if (filterWeek === 'current') {
       filtered = filtered.filter(show => {
-        const showDate = new Date(show.startDate);
-        return showDate >= new Date(currentWeek.start) && showDate <= new Date(currentWeek.end);
+        const showDate = new Date(show.showDateTime);
+        const start = new Date(currentWeek.start);
+        const end = new Date(currentWeek.end);
+        end.setHours(23, 59, 59, 999);
+        return showDate >= start && showDate <= end;
       });
     } else if (filterWeek === 'next') {
       filtered = filtered.filter(show => {
-        const showDate = new Date(show.startDate);
-        return showDate >= new Date(nextWeek.start) && showDate <= new Date(nextWeek.end);
+        const showDate = new Date(show.showDateTime);
+        const start = new Date(nextWeek.start);
+        const end = new Date(nextWeek.end);
+        end.setHours(23, 59, 59, 999);
+        return showDate >= start && showDate <= end;
       });
     }
     
     // Filter by movie
     if (filterMovie) {
-      filtered = filtered.filter(show => show.movie._id === filterMovie);
+      filtered = filtered.filter(show => show.movie?._id === filterMovie);
     }
     
     // Filter by screen
     if (filterScreen) {
-      filtered = filtered.filter(show => show.screen._id === filterScreen);
+      filtered = filtered.filter(show => show.screen?._id === filterScreen);
     }
     
     return filtered;
@@ -381,7 +564,23 @@ const ManagerShows = () => {
         </div>
         
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            const today = getTodayString();
+            const initialFormData = {
+              movie: "",
+              screen: "",
+              showTime: "",
+              language: "English",
+              startDate: today,
+              endDate: today,
+              tierPrices: {},
+              isActive: true
+            };
+            console.log("Opening new show form with initial data:", initialFormData);
+            setFormData(initialFormData);
+            setShowPricingCustomization(false);
+            setShowForm(true);
+          }}
           className="w-full lg:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dull text-white rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 group"
         >
           <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
@@ -405,7 +604,7 @@ const ManagerShows = () => {
               >
                 <option value="current">Current Week</option>
                 <option value="next">Next Week</option>
-                <option value="all">All Shows</option>
+                <option value="all">All Shows (Historical)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
             </div>
@@ -488,13 +687,14 @@ const ManagerShows = () => {
                 onClick={() => {
                   setShowForm(false);
                   setEditingId(null);
+                  const today = getTodayString();
                   setFormData({
                     movie: "",
                     screen: "",
                     showTime: "",
                     language: "English",
-                    startDate: "",
-                    endDate: "",
+                    startDate: today,
+                    endDate: today,
                     isActive: true
                   });
                 }}
@@ -607,6 +807,7 @@ const ManagerShows = () => {
                     name="startDate"
                     value={formData.startDate}
                     onChange={handleInputChange}
+                    min={getTodayString()}
                     required
                     className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                   />
@@ -623,9 +824,90 @@ const ManagerShows = () => {
                     name="endDate"
                     value={formData.endDate}
                     onChange={handleInputChange}
+                    min={getTodayString()}
                     required
                     className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                   />
+                </div>
+
+                {/* Tier Pricing */}
+                <div className="space-y-3 md:col-span-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                    <span className="text-primary">₹</span>
+                    Tier Pricing
+                  </label>
+                  
+                  {formData.screen && (() => {
+                    const selectedScreen = screens.find(screen => screen._id === formData.screen);
+                    if (selectedScreen && selectedScreen.seatTiers && selectedScreen.seatTiers.length > 0) {
+                      return (
+                        <div className="space-y-4">
+                          {/* Default Pricing Display */}
+                          <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm font-semibold text-gray-300">Default Screen Pricing</span>
+                              <button
+                                type="button"
+                                onClick={() => setShowPricingCustomization(!showPricingCustomization)}
+                                className="text-xs px-3 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg font-medium transition-all border border-primary/30"
+                              >
+                                {showPricingCustomization ? 'Use Defaults' : 'Customize Pricing'}
+                              </button>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                              {selectedScreen.seatTiers.map((tier, index) => (
+                                <div key={index} className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2">
+                                  <span className="text-xs text-gray-400">{tier.tierName}</span>
+                                  <span className="text-sm font-bold text-primary">₹{formData.tierPrices[tier.tierName] || tier.price}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Customization Inputs - Only shown when toggled */}
+                          {showPricingCustomization && (
+                            <div className="space-y-3 animate-fadeIn">
+                              <div className="text-xs text-gray-400 text-center border-t border-gray-700/50 pt-3">
+                                Set custom prices for this show
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {selectedScreen.seatTiers.map((tier, index) => (
+                                  <div key={index} className="space-y-2">
+                                    <label className="text-xs font-semibold text-gray-300 flex items-center gap-2">
+                                      <span className="w-2 h-2 bg-primary rounded-full"></span>
+                                      {tier.tierName}
+                                    </label>
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-bold text-sm">₹</span>
+                                      <input
+                                        type="number"
+                                        name={`tierPrice_${tier.tierName}`}
+                                        value={formData.tierPrices[tier.tierName] || ''}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        step="10"
+                                        placeholder={tier.price.toString()}
+                                        className="w-full pl-8 pr-3 py-3 bg-gray-800/40 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="text-center py-8 bg-gray-800/30 rounded-xl border border-gray-700/50">
+                          <div className="text-gray-400 text-sm">
+                            Please select a screen to configure tier pricing
+                          </div>
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
 
@@ -633,7 +915,10 @@ const ManagerShows = () => {
               <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-800">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setShowPricingCustomization(false);
+                  }}
                   className="flex-1 px-8 py-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-2xl font-bold transition-all border border-gray-700"
                 >
                   Cancel
@@ -783,7 +1068,21 @@ const ManagerShows = () => {
                 : "No shows found for the selected filters."}
             </p>
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                const today = getTodayString();
+                setFormData({
+                  movie: "",
+                  screen: "",
+                  showTime: "",
+                  language: "English",
+                  startDate: today,
+                  endDate: today,
+                  tierPrices: {},
+                  isActive: true
+                });
+                setShowPricingCustomization(false);
+                setShowForm(true);
+              }}
               className="mt-6 px-6 py-2 bg-primary hover:bg-primary-dull text-white rounded-lg transition font-bold"
             >
               Schedule First Show

@@ -38,6 +38,8 @@ import VerifyOtp from "./pages/VerifyOtp";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePassword from "./pages/ChangePassword";
 import VerifyEmail from "./pages/VerifyEmail";
+import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
 import TheatreVerifyWrapper from "./pages/TheatreVerifyWrapper";
 import RegistrationPending from "./pages/RegistrationPending";
 import ManagerLayout from "./pages/manager/ManagerLayout";
@@ -80,6 +82,8 @@ const App = () => {
         <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/edit-profile" element={<EditProfile />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/theatre-verify" element={<TheatreVerifyWrapper />} />
         <Route path="/registration-pending" element={<RegistrationPending />} />

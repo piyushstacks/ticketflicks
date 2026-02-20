@@ -8,9 +8,20 @@ const DateSelect = ({ dateTime, id }) => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
 
+  const isDateInPast = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    return date < today;
+  };
+
   const onBookHandler = () => {
     if (!selected) {
       return toast("Please select a date first");
+    }
+
+    // Validate that selected date is not in the past
+    if (isDateInPast(new Date(selected))) {
+      return toast.error("Cannot book shows for past dates");
     }
 
     navigate(`/movies/${id}/${selected}`);
@@ -30,25 +41,34 @@ const DateSelect = ({ dateTime, id }) => {
           <div className="flex items-center gap-6 text-sm mt-5">
             <ChevronLeftIcon width={28} />
             <span className="grid grid-cols-3 md:flex flex-wrap md:max-w-lg gap-4">
-              {dateTime && Object.keys(dateTime).map((date) => (
-                <button
-                  onClick={() => setSelected(date)}
-                  key={date}
-                  className={`flex flex-col items-center justify-center h-14 w-14 aspect-square rounded cursor-pointer 
+              {dateTime && Object.keys(dateTime).map((date) => {
+                const isPast = isDateInPast(new Date(date));
+                const isSelected = selected === date;
+                
+                return (
+                  <button
+                    onClick={() => !isPast && setSelected(date)}
+                    key={date}
+                    disabled={isPast}
+                    title={isPast ? "Past date - not available" : ""}
+                    className={`flex flex-col items-center justify-center h-14 w-14 aspect-square rounded cursor-pointer 
                     ${
-                      selected === date
+                      isSelected
                         ? "bg-primary"
+                        : isPast
+                        ? "border border-gray-600 bg-gray-800/50 cursor-not-allowed opacity-50"
                         : "border border-primary/70"
                     }`}
-                >
+                  >
                   <span>{new Date(date).getDate()}</span>
                   <span>
                     {new Date(date).toLocaleDateString("en-US", {
                       month: "short",
                     })}
                   </span>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </span>
             <ChevronRightIcon width={28} />
           </div>

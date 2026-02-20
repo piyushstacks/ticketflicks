@@ -50,6 +50,10 @@ const UpcomingMovieDetails = () => {
           src={imageBaseURL + upcomingMovie.poster_path}
           alt={upcomingMovie.title}
           className="max-md:mx-auto rounded-xl h-104 max-w-70 object-cover"
+          onError={(e) => {
+            e.target.style.display = 'none';
+            console.error('Failed to load poster image:', upcomingMovie.poster_path);
+          }}
         />
 
         <div className="relative flex flex-col gap-3">

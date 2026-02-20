@@ -41,14 +41,16 @@ const MyBookings = () => {
       if (payment !== "success" || !sessionId) return;
 
       try {
+        console.log("Confirming payment with session ID:", sessionId);
         const token = await getToken();
-        await axios.post(
+        const response = await axios.post(
           "/api/booking/confirm-stripe",
           { sessionId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        console.log("Payment confirmation response:", response.data);
       } catch (error) {
-        console.error(error);
+        console.error("Payment confirmation error:", error);
         toast.error("Payment received, but booking confirmation is still processing.");
       } finally {
         params.delete("payment");
@@ -92,7 +94,7 @@ const MyBookings = () => {
       ) : (
         <div className="space-y-6 max-w-4xl">
           {bookings.map((item) => {
-            const theatre = item.theatre || item.theater;
+            const theatre = item.theatre;
             const posterPath = item.show?.movie?.poster_path;
             const posterUrl = posterPath?.startsWith("http")
               ? posterPath

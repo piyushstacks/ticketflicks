@@ -117,7 +117,7 @@ const testAutoAssignment = async () => {
         phone: "9876543210",
         password_hash: bcryptjs.hashSync("manager123", 10),
         role: "manager",
-        managedTheaterId: updatedActiveTheatres[1]._id // Assign to second theatre
+        managedTheatreId: updatedActiveTheatres[1]._id // Assign to second theatre
       });
       await managerUser.save();
       console.log(`✅ Created manager user: ${managerUser.name} (${managerUser.email})`);

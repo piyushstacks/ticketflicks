@@ -186,11 +186,27 @@ const AdminMovies = () => {
     }
   };
 
+  const getTodayString = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.toISOString().split('T')[0];
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.title || !formData.overview || !formData.release_date) {
       toast.error("Please fill required fields");
+      return;
+    }
+
+    // Validate release date is not in the past
+    const releaseDate = new Date(formData.release_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (releaseDate < today) {
+      toast.error("Release date cannot be in the past. Please select today or a future date.");
       return;
     }
 
@@ -383,14 +399,31 @@ const AdminMovies = () => {
         </button>
       </div>
 
-      {/* Form */}
+      {/* Form Modal */}
       {showForm && (
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">
-            {editingId ? "Edit Movie" : "Add New Movie"}
-          </h2>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCancel();
+          }}
+        >
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex items-center justify-between z-10">
+              <h2 className="text-xl font-bold">
+                {editingId ? "Edit Movie" : "Add New Movie"}
+              </h2>
+              <button
+                onClick={handleCancel}
+                className="p-2 hover:bg-gray-800 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Modal Body */}
+            <div className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
@@ -423,6 +456,7 @@ const AdminMovies = () => {
                   name="release_date"
                   value={formData.release_date}
                   onChange={handleInputChange}
+                  min={getTodayString()}
                   required
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                 />
@@ -434,15 +468,31 @@ const AdminMovies = () => {
                 >
                   Poster URL
                 </label>
-                <input
-                  id="poster_path"
-                  type="url"
-                  name="poster_path"
-                  placeholder="https://example.com/poster.jpg"
-                  value={formData.poster_path}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                />
+                <div className="space-y-2">
+                  <input
+                    id="poster_path"
+                    type="url"
+                    name="poster_path"
+                    placeholder="https://example.com/poster.jpg"
+                    value={formData.poster_path}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  />
+                  {formData.poster_path && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-400 mb-1">Preview:</p>
+                      <img
+                        src={formData.poster_path}
+                        alt="Poster preview"
+                        className="w-32 h-48 object-cover rounded-lg border border-gray-600"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          console.error('Failed to load poster image:', formData.poster_path);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label
@@ -451,15 +501,31 @@ const AdminMovies = () => {
                 >
                   Backdrop URL
                 </label>
-                <input
-                  id="backdrop_path"
-                  type="url"
-                  name="backdrop_path"
-                  placeholder="https://example.com/backdrop.jpg"
-                  value={formData.backdrop_path}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                />
+                <div className="space-y-2">
+                  <input
+                    id="backdrop_path"
+                    type="url"
+                    name="backdrop_path"
+                    placeholder="https://example.com/backdrop.jpg"
+                    value={formData.backdrop_path}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  />
+                  {formData.backdrop_path && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-400 mb-1">Preview:</p>
+                      <img
+                        src={formData.backdrop_path}
+                        alt="Backdrop preview"
+                        className="w-full h-32 object-cover rounded-lg border border-gray-600"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          console.error('Failed to load backdrop image:', formData.backdrop_path);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label
@@ -610,16 +676,31 @@ const AdminMovies = () => {
                     >
                       Profile URL
                     </label>
-                    <input
-                      id={`cast-profile-${index}`}
-                      type="text"
-                      placeholder="https://example.com/profile.jpg"
-                      value={cast.profile_path}
-                      onChange={(e) =>
-                        handleCastChange(index, "profile_path", e.target.value)
-                      }
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                    />
+                    <div className="space-y-2">
+                      <input
+                        id={`cast-profile-${index}`}
+                        type="url"
+                        placeholder="https://example.com/profile.jpg"
+                        value={cast.profile_path}
+                        onChange={(e) =>
+                          handleCastChange(index, "profile_path", e.target.value)
+                        }
+                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                      />
+                      {cast.profile_path && (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={cast.profile_path}
+                            alt={`${cast.name} profile`}
+                            className="w-12 h-12 rounded-full object-cover border border-gray-600"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <span className="text-xs text-gray-400">Profile preview</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -733,7 +814,9 @@ const AdminMovies = () => {
             </div>
           </form>
         </div>
-      )}
+      </div>
+    </div>
+  )}
 
       {/* Movies Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -747,6 +830,20 @@ const AdminMovies = () => {
             }`}
           >
             <div className="space-y-3">
+              {/* Movie Poster */}
+              {movie.poster_path && (
+                <div className="w-32 h-48 overflow-hidden rounded-lg">
+                  <img
+                    src={movie.poster_path}
+                    alt={movie.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+              
               <div className="flex justify-between items-start">
                 <h3 className="text-xl font-bold">{movie.title}</h3>
                 <div className="flex items-center gap-2">
@@ -863,6 +960,19 @@ const AdminMovies = () => {
               </button>
             </div>
             <div className="space-y-4">
+              {/* Movie Poster */}
+              {viewingMovie.poster_path && (
+                <div className="flex justify-center">
+                  <img
+                    src={viewingMovie.poster_path}
+                    alt={viewingMovie.title}
+                    className="w-48 h-72 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
               <div>
                 <h3 className="font-semibold text-primary">Overview</h3>
                 <p className="text-gray-300">{viewingMovie.overview}</p>
@@ -910,11 +1020,20 @@ const AdminMovies = () => {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
                     {viewingMovie.casts.slice(0, 6).map((cast, index) => (
                       <div key={index} className="flex items-center gap-3">
-                        <img
-                          src={cast.profile_path}
-                          alt={cast.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
+                        {cast.profile_path ? (
+                          <img
+                            src={cast.profile_path}
+                            alt={cast.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">{cast.name?.charAt(0) || '?'}</span>
+                          </div>
+                        )}
                         <span className="text-gray-300">{cast.name}</span>
                       </div>
                     ))}

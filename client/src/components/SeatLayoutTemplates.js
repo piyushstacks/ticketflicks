@@ -2,6 +2,7 @@
 export const SEAT_LAYOUTS = {
   // Small screens (50-100 seats)
   SMALL_1: {
+    key: 'SMALL_1',
     name: "Compact (8x7)",
     rows: 8,
     seatsPerRow: 7,
@@ -18,6 +19,7 @@ export const SEAT_LAYOUTS = {
     ]
   },
   SMALL_2: {
+    key: 'SMALL_2',
     name: "Mini (6x8)",
     rows: 6,
     seatsPerRow: 8,
@@ -34,6 +36,7 @@ export const SEAT_LAYOUTS = {
 
   // Medium screens (100-200 seats)
   MEDIUM_1: {
+    key: 'MEDIUM_1',
     name: "Standard (12x10)",
     rows: 12,
     seatsPerRow: 10,
@@ -54,6 +57,7 @@ export const SEAT_LAYOUTS = {
     ]
   },
   MEDIUM_2: {
+    key: 'MEDIUM_2',
     name: "Classic (14x12)",
     rows: 14,
     seatsPerRow: 12,
@@ -78,6 +82,7 @@ export const SEAT_LAYOUTS = {
 
   // Large screens (200-300 seats)
   LARGE_1: {
+    key: 'LARGE_1',
     name: "Premium (16x14)",
     rows: 16,
     seatsPerRow: 14,
@@ -102,6 +107,7 @@ export const SEAT_LAYOUTS = {
     ]
   },
   LARGE_2: {
+    key: 'LARGE_2',
     name: "Mega (18x16)",
     rows: 18,
     seatsPerRow: 16,
@@ -130,6 +136,7 @@ export const SEAT_LAYOUTS = {
 
   // Special layouts - single tier only
   COUPLE_FRIENDLY: {
+    key: 'COUPLE_FRIENDLY',
     name: "Couple Friendly (10x8)",
     rows: 10,
     seatsPerRow: 8,
@@ -150,6 +157,7 @@ export const SEAT_LAYOUTS = {
 
   // VIP/Luxury layout - single tier only
   VIP: {
+    key: 'VIP',
     name: "VIP Luxury (8x6)",
     rows: 8,
     seatsPerRow: 6,

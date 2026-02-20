@@ -469,7 +469,7 @@ export const dummyBookingData = [
             movie: dummyShowsData[0],
             showDateTime: "2025-06-30T02:30:00.000Z",
             showPrice: 59,
-            theater: {
+            theatre: {
                 id: 1,
                 name: "PVR Cinemas - Downtown",
                 location: "Downtown Mall, Main Street",
@@ -488,9 +488,9 @@ export const dummyBookingData = [
             movie: dummyShowsData[1],
             showDateTime: "2025-06-28T18:00:00.000Z",
             showPrice: 79,
-            theater: {
+            theatre: {
                 id: 2,
-                name: "IMAX Theater - Central",
+                name: "IMAX Theatre - Central",
                 location: "Central Plaza, Highway 1",
                 distance: "5.2 km"
             }
@@ -507,7 +507,7 @@ export const dummyBookingData = [
             movie: dummyShowsData[2],
             showDateTime: "2025-06-25T20:30:00.000Z",
             showPrice: 99,
-            theater: {
+            theatre: {
                 id: 3,
                 name: "Cineplex - Westside",
                 location: "Westside Shopping Center",
@@ -579,9 +579,9 @@ export const dummyFeedbackData = [
     }
 ]
 
-export const dummyTheatersData = [
+export const dummyTheatresData = [
     { "id": 1, "name": "PVR Cinemas - Downtown", "location": "Downtown Mall, Main Street", "distance": "2.5 km" },
-    { "id": 2, "name": "IMAX Theater - Central", "location": "Central Plaza, Highway 1", "distance": "5.2 km" },
+    { "id": 2, "name": "IMAX Theatre - Central", "location": "Central Plaza, Highway 1", "distance": "5.2 km" },
     { "id": 3, "name": "Cineplex - Westside", "location": "Westside Shopping Center", "distance": "7.8 km" },
     { "id": 4, "name": "Carnival Cinemas - Eastside", "location": "Eastside Plaza", "distance": "3.4 km" }
 ]
@@ -589,14 +589,14 @@ export const dummyTheatersData = [
 export const dummyFavoriteMovies = [
     {
         ...dummyShowsData[0],
-        theaters: [dummyTheatersData[0], dummyTheatersData[1]]
+        theatres: [dummyTheatresData[0], dummyTheatresData[1]]
     },
     {
         ...dummyShowsData[1],
-        theaters: [dummyTheatersData[2], dummyTheatersData[3]]
+        theatres: [dummyTheatresData[2], dummyTheatresData[3]]
     },
     {
         ...dummyShowsData[2],
-        theaters: [dummyTheatersData[0], dummyTheatersData[2]]
+        theatres: [dummyTheatresData[0], dummyTheatresData[2]]
     }
 ]

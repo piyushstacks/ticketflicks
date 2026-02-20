@@ -620,10 +620,14 @@ const SeatLayout = () => {
         return {
           seatNumber,
           tierName: tierInfo?.tierName || "Standard",
+          price: tierInfo?.price || 150, // Add price here
         };
       });
 
       const token = await getToken();
+      console.log("Booking request token:", token);
+      console.log("Booking request seatsWithTier:", seatsWithTier);
+      console.log("Booking request showId:", showId);
       const { data } = await axios.post(
         "/api/booking/create",
         {

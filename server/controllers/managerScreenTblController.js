@@ -91,15 +91,23 @@ export const getTheatreScreensTbl = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const theatreId = manager.managedTheatreId;
 
     const screens = await ScreenTbl.find({
       theatre: theatreId,
     })
+      .select('name screenNumber theatre seatLayout seatTiers isActive status createdBy lastModifiedBy created_at updated_at')
       .populate("theatre", "name location")
       .populate("createdBy", "name email")
       .populate("lastModifiedBy", "name email")
-      .sort({ created_at: -1 });
+      .sort({ created_at: -1 })
+      .lean();
+
+    console.log("[getTheatreScreensTbl] Fetched screens with seatTiers:", screens.map(s => ({ 
+      name: s.name, 
+      seatTiersCount: s.seatTiers?.length || 0,
+      seatTiers: s.seatTiers 
+    })));
 
     res.json({ success: true, screens });
   } catch (error) {
@@ -119,7 +127,7 @@ export const addScreenTbl = async (req, res) => {
       });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const theatreId = manager.managedTheatreId;
     const {
       name,
       screenNumber,
@@ -223,7 +231,7 @@ export const editScreenTbl = async (req, res) => {
     // Find the screen and verify it belongs to manager's theatre
     const screen = await ScreenTbl.findOne({
       _id: screenId,
-      theatre: manager.managedTheaterId || manager.managedTheatreId,
+      theatre: manager.managedTheatreId,
     });
 
     if (!screen) {
@@ -299,9 +307,9 @@ export const toggleScreenStatusTbl = async (req, res) => {
     const { screenId } = req.params;
 
     const screen = await ScreenTbl.findOne({
-      _id: screenId,
-      theatre: manager.managedTheaterId || manager.managedTheatreId,
-    });
+        _id: screenId,
+        theatre: manager.managedTheatreId,
+      });
 
     if (!screen) {
       return res.json({
@@ -348,7 +356,7 @@ export const deleteScreenTbl = async (req, res) => {
 
     const screen = await ScreenTbl.findOne({
       _id: screenId,
-      theatre: manager.managedTheaterId || manager.managedTheatreId,
+      theatre: manager.managedTheatreId,
     });
 
     if (!screen) {
@@ -400,7 +408,7 @@ export const getScreenTblById = async (req, res) => {
 
     const screen = await ScreenTbl.findOne({
       _id: screenId,
-      theatre: manager.managedTheaterId || manager.managedTheatreId,
+      theatre: manager.managedTheatreId,
     })
       .populate("theatre", "name location")
       .populate("createdBy", "name email")

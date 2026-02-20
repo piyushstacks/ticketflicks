@@ -222,13 +222,17 @@ const ManagerScreens = () => {
                 <div className="flex justify-between text-gray-400">
                   <span>Layout:</span>
                   <span className="text-gray-200">
-                    {screen.seatLayout?.rows?.length || 0} rows × {screen.seatLayout?.seatsPerRow || 0} cols
+                    {screen.seatLayout?.rows || 0} rows × {screen.seatLayout?.seatsPerRow || 0} cols
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-400">
                   <span>Pricing Type:</span>
                   <span className="text-gray-200">
-                    {screen.seatTiers?.length > 1 ? 'Tiered' : 'Unified'}
+                    {screen.seatTiers?.length === 1 
+                      ? 'Unified' 
+                      : screen.seatTiers?.length > 1 
+                        ? screen.seatTiers.map(t => t.tierName).join(', ')
+                        : 'Not Set'}
                   </span>
                 </div>
               </div>

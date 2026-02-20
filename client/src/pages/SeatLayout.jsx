@@ -129,11 +129,36 @@ const SeatLayout = () => {
       .map((seatNumber) => {
         const code = getSeatCodeFromLayout(seatNumber);
         const tier = code ? SEAT_TIERS[code] : null;
+        
+        // Get actual price from show data
+        let actualPrice = 150; // fallback
+        if (show?.seatTiers && Array.isArray(show.seatTiers)) {
+          const row = seatNumber.charAt(0);
+          for (const showTier of show.seatTiers) {
+            const rows = showTier.rows || [];
+            if (rows.includes(row)) {
+              actualPrice = showTier.price || 150;
+              break;
+            }
+          }
+          
+          // If no row-specific tier found, try to match by tier name
+          if (tier && tier.name) {
+            const matchingTier = show.seatTiers.find(t => t.tierName === tier.name);
+            if (matchingTier && matchingTier.price) {
+              actualPrice = matchingTier.price;
+            }
+          }
+        } else {
+          // Use hardcoded prices as fallback
+          actualPrice = tier?.basePrice || 150;
+        }
+        
         return {
           seatNumber,
           code,
           tierName: tier?.name || "Standard",
-          price: tier?.basePrice || 150,
+          price: actualPrice,
           color: tier?.color || "#94a3b8",
         };
       })
@@ -146,7 +171,7 @@ const SeatLayout = () => {
         const numB = parseInt(b.seatNumber.slice(1), 10);
         return numA - numB;
       });
-  }, [selectedSeats, getSeatCodeFromLayout]);
+  }, [selectedSeats, getSeatCodeFromLayout, show]);
 
   // Calculate total price
   const totalPrice = useMemo(() => {
@@ -346,10 +371,31 @@ const SeatLayout = () => {
   }, []);
 
   // Get seat price based on type
-  const getSeatPrice = useCallback((seatType) => {
+  const getSeatPrice = useCallback((seatType, seatNumber) => {
+    // First try to get price from show's seatTiers
+    if (show?.seatTiers && Array.isArray(show.seatTiers)) {
+      const row = seatNumber ? seatNumber.charAt(0) : '';
+      for (const tier of show.seatTiers) {
+        const rows = tier.rows || [];
+        if (rows.includes(row)) {
+          return tier.price || 150;
+        }
+      }
+      
+      // If no row-specific tier found, try to match by tier name
+      const tierInfo = SEAT_TIERS[seatType];
+      if (tierInfo) {
+        const matchingTier = show.seatTiers.find(t => t.tierName === tierInfo.name);
+        if (matchingTier && matchingTier.price) {
+          return matchingTier.price;
+        }
+      }
+    }
+    
+    // Fallback to hardcoded prices
     const tier = SEAT_TIERS[seatType];
     return tier ? tier.basePrice : 150;
-  }, []);
+  }, [show]);
 
   // Render individual seat
   const renderSeat = useCallback(
@@ -360,7 +406,7 @@ const SeatLayout = () => {
       const isLocked = lockedSeats.has(seatId);
       const seatColor = getSeatColor(seatType);
       const seatName = getSeatName(seatType);
-      const seatPrice = getSeatPrice(seatType);
+      const seatPrice = getSeatPrice(seatType, seatId);
 
       // Empty space
       if (!seatType || seatType === "" || seatType === null) {
@@ -538,7 +584,12 @@ const SeatLayout = () => {
         toast.error(errorMessage);
       }
     } catch (error) {
-      console.error("Booking error:", error);
+      console.error("Booking error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        bookingData: bookingData
+      });
       toast.error(
         error.response?.data?.message || "Booking failed. Please try again.",
       );
@@ -754,24 +805,35 @@ const SeatLayout = () => {
 
             {/* Seat Type Legend */}
             <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mb-4">
-              {Object.entries(SEAT_TIERS).map(([key, tier]) => (
-                <div key={key} className="flex items-center gap-2">
-                  <div
-                    className="w-5 h-5 rounded-md border-2 flex items-center justify-center text-[8px] font-bold"
-                    style={{
-                      backgroundColor: `${tier.color}30`,
-                      borderColor: tier.color,
-                      color: tier.color,
-                    }}
-                  >
-                    {key}
+              {Object.entries(SEAT_TIERS).map(([key, tier]) => {
+                // Get actual price from show data
+                let actualPrice = tier.basePrice;
+                if (show?.seatTiers && Array.isArray(show.seatTiers)) {
+                  const matchingTier = show.seatTiers.find(t => t.tierName === tier.name);
+                  if (matchingTier && matchingTier.price) {
+                    actualPrice = matchingTier.price;
+                  }
+                }
+                
+                return (
+                  <div key={key} className="flex items-center gap-2">
+                    <div
+                      className="w-5 h-5 rounded-md border-2 flex items-center justify-center text-[8px] font-bold"
+                      style={{
+                        backgroundColor: `${tier.color}30`,
+                        borderColor: tier.color,
+                        color: tier.color,
+                      }}
+                    >
+                      {key}
+                    </div>
+                    <span className="text-xs text-gray-300">{tier.name}</span>
+                    <span className="text-xs text-gray-500">
+                      ₹{actualPrice}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-300">{tier.name}</span>
-                  <span className="text-xs text-gray-500">
-                    ₹{tier.basePrice}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Status Legend */}

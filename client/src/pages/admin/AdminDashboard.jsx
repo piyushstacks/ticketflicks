@@ -12,7 +12,6 @@ import toast from "react-hot-toast";
 import Loading from "../../components/Loading";
 
 const AdminDashboard = () => {
-  const currency = import.meta.env.VITE_CURRENCY || "$";
   const { axios, getAuthHeaders, user } = useAppContext();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,7 +60,7 @@ const AdminDashboard = () => {
     },
     {
       title: "Total Revenue",
-      value: `${currency}${dashboardData?.totalRevenue?.toFixed(2) || "0.00"}`,
+      value: `₹${dashboardData?.totalRevenue?.toFixed(2) || "0.00"}`,
       icon: TrendingUp,
       color: "text-green-500",
       bgColor: "bg-green-500/10",

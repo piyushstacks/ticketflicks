@@ -121,19 +121,19 @@ const MyBookings = () => {
                     </div>
                   </div>
 
-                  {/* Theater & Screen Info */}
+                  {/* Theatre & Screen Info */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 pb-4 border-b border-gray-700">
                     <div className="flex items-start gap-3">
                       <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-gray-500 uppercase font-semibold">
-                          Theater
+                          Theatre
                         </p>
                         <p className="text-white font-semibold">
-                          {booking.theater.name}
+                          {booking.theatre.name}
                         </p>
                         <p className="text-sm text-gray-400">
-                          {booking.theater.address}
+                          {booking.theatre.address}
                         </p>
                       </div>
                     </div>

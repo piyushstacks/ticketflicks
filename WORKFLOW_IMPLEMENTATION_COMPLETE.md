@@ -84,11 +84,11 @@ The complete role-based movie ticketing workflow has been successfully implement
   tmdbId: Number,                           // Unique index from TMDB
   isActive: Boolean,                        // Soft delete flag
   addedByAdmin: ObjectId ref User,          // Which admin added it
-  theatres: [ObjectId ref Theater],         // Which theatres show it
+  theatres: [ObjectId ref Theatre],         // Which theatres show it
 }
 ```
 
-### Theater Model
+### Theatre Model
 ```javascript
 {
   _id: ObjectId,
@@ -106,7 +106,7 @@ The complete role-based movie ticketing workflow has been successfully implement
 {
   _id: ObjectId,
   screenName: String,
-  theater: ObjectId ref Theater,
+  theatre: ObjectId ref Theatre,
   seatsPerRow: Number,
   rows: Number,
 }
@@ -117,7 +117,7 @@ The complete role-based movie ticketing workflow has been successfully implement
 {
   _id: ObjectId,
   movie: ObjectId ref Movie,
-  theater: ObjectId ref Theater,
+  theatre: ObjectId ref Theatre,
   screen: ObjectId ref Screen,
   showDateTime: Date,
   basePrice: Number,
@@ -185,7 +185,6 @@ PUT /api/admin/movies/:movieId
 Request: { title, overview, genres, etc. }
 Response: { success, message, movie: {...} }
 ```
-
 #### Theatre Management
 ```bash
 GET /api/admin/theatres

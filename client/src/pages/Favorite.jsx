@@ -33,26 +33,26 @@ const Favorite = () => {
               <MovieCard movie={movie} />
             </div>
 
-            {/* Theaters dropdown */}
-            {selectedMovieId === movie._id && movie.theaters && (
+            {/* Theatres dropdown */}
+            {selectedMovieId === movie._id && movie.theatres && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white/10 backdrop-blur-md border border-primary/30 rounded-lg p-4 z-10 min-w-max shadow-lg">
                 <h3 className="font-semibold text-sm text-white mb-3">
-                  Theaters Showing This Movie
+                  Theatres Showing This Movie
                 </h3>
                 <div className="space-y-2">
-                  {movie.theaters.map((theater) => (
+                  {movie.theatres.map((theatre) => (
                     <div
-                      key={theater.id}
+                      key={theatre.id}
                       className="bg-primary/10 rounded p-3 hover:bg-primary/20 transition-colors"
                     >
                       <p className="font-medium text-white text-sm">
-                        {theater.name}
+                        {theatre.name}
                       </p>
                       <div className="flex items-start gap-1 text-xs text-gray-300 mt-1">
                         <MapPin size={14} className="mt-0.5 flex-shrink-0" />
                         <div>
-                          <p>{theater.location}</p>
-                          <p className="text-gray-400">{theater.distance}</p>
+                          <p>{theatre.location}</p>
+                          <p className="text-gray-400">{theatre.distance}</p>
                         </div>
                       </div>
                     </div>

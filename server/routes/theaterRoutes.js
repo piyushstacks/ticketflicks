@@ -1,24 +1,24 @@
 import express from "express";
 import {
-  createTheater,
-  fetchAllTheaters,
-  fetchTheater,
-  updateTheater,
-  deleteTheater,
-  fetchScreensByTheater,
-} from "../controllers/theaterController.js";
+  createTheatre,
+  fetchAllTheatres,
+  fetchTheatre,
+  updateTheatre,
+  deleteTheatre,
+  fetchScreensByTheatre,
+} from "../controllers/theatreController.js";
 import { protectAdmin } from "../middleware/auth.js";
 
-const theaterRouter = express.Router();
+const theatreRouter = express.Router();
 
-// Theater Routes
-theaterRouter.post("/", protectAdmin, createTheater);
-theaterRouter.get("/", fetchAllTheaters);
-theaterRouter.get("/:theaterId", fetchTheater);
-theaterRouter.put("/:theaterId", protectAdmin, updateTheater);
-theaterRouter.delete("/:theaterId", protectAdmin, deleteTheater);
+// Theatre Routes
+theatreRouter.post("/", protectAdmin, createTheatre);
+theatreRouter.get("/", fetchAllTheatres);
+theatreRouter.get("/:theatreId", fetchTheatre);
+theatreRouter.put("/:theatreId", protectAdmin, updateTheatre);
+theatreRouter.delete("/:theatreId", protectAdmin, deleteTheatre);
 
 // Screen Routes (only the ones that exist)
-theaterRouter.get("/:theaterId/screens", fetchScreensByTheater);
+theatreRouter.get("/:theatreId/screens", fetchScreensByTheatre);
 
-export default theaterRouter;
+export default theatreRouter;

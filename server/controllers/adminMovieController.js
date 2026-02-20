@@ -331,7 +331,7 @@ export const getAllAvailableMovies = async (req, res) => {
     }
 
     // Get manager's theatre ID
-    const managerTheatreId = manager.managedTheaterId;
+    const managerTheatreId = manager.managedTheatreId;
     if (!managerTheatreId) {
       return res.json({
         success: false,

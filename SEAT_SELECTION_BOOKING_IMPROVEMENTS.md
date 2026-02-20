@@ -154,27 +154,27 @@ export const SEAT_TIERS = {
 
 #### **Smart Theatre Fetching**
 ```jsx
-const fetchTheatersWithShows = async () => {
+const fetchTheatresWithShows = async () => {
   try {
     setLoading(true);
     const { data } = await axios.get(`/api/show/by-movie/${id}`);
     if (data.success && data.groupedShows) {
       // Extract unique theatres from grouped shows
-      const theaterIds = Object.keys(data.groupedShows);
-      const theaterDetails = await Promise.all(
-        theaterIds.map(async (theaterId) => {
-          const { data: theaterData } = await axios.get(`/api/theatre/${theaterId}`);
-          return theaterData.success ? theaterData.theatre : null;
+      const theatreIds = Object.keys(data.groupedShows);
+      const theatreDetails = await Promise.all(
+        theatreIds.map(async (theatreId) => {
+          const { data: theatreData } = await axios.get(`/api/theatre/${theatreId}`);
+          return theatreData.success ? theatreData.theatre : null;
         })
       );
       
-      const validTheaters = theaterDetails.filter(theater => theater !== null);
-      setTheaters(validTheaters);
+      const validTheatres = theatreDetails.filter(theatre => theatre !== null);
+      setTheatres(validTheatres);
       setShows(data.groupedShows);
     }
   } catch (error) {
     console.error("Error fetching theatres with shows:", error);
-    setTheaters([]);
+    setTheatres([]);
     setShows({});
   } finally {
     setLoading(false);
@@ -188,15 +188,15 @@ const fetchTheatersWithShows = async () => {
 ```jsx
 {loading ? (
   <div className="w-full p-3 bg-gray-800 text-gray-400 rounded-lg border border-gray-700 text-center">
-    Loading available theaters...
+    Loading available theatres...
   </div>
-) : theaters.length === 0 ? (
+) : theatres.length === 0 ? (
   <div className="w-full p-3 bg-red-900/20 text-red-400 rounded-lg border border-red-600/30 text-center">
-    No theaters showing this movie currently
+    No theatres showing this movie currently
   </div>
 ) : (
   <select>
-    {/* Theater options */}
+    {/* Theatre options */}
   </select>
 )}
 ```
@@ -277,7 +277,7 @@ const fetchTheatersWithShows = async () => {
 2. Test screen selection dropdown
 3. Test show time selection cards
 4. **Expected**: All interactions have proper visual feedback
-5. **Expected**: Empty states handled gracefully
+5. **Expected**: All empty states handled gracefully
 
 ---
 

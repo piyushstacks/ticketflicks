@@ -4,7 +4,7 @@ const feedbackSchema = new mongoose.Schema(
   {
     user: { type: String, required: true, ref: "User" },
     show: { type: mongoose.Schema.Types.ObjectId, ref: "Show" },
-    theater: { type: mongoose.Schema.Types.ObjectId, ref: "Theatre" },
+    theatre: { type: mongoose.Schema.Types.ObjectId, ref: "Theatre" },
     rating: { type: Number, required: true, min: 1, max: 5 },
     message: { type: String },
   },

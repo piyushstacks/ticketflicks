@@ -1,13 +1,14 @@
 import express from "express";
 import { protectManager } from "../middleware/auth.js";
 import {
-  getAvailableMovies,
-  getTheatreScreens,
+  getManagerMovies,
   addShow,
-  getTheatreShows,
   editShow,
   deleteShow,
   dashboardManagerData,
+} from "../controllers/managerController.js";
+import {
+  getTheatreShows,
   toggleShowStatus,
 } from "../controllers/managerShowController.js";
 import {
@@ -16,11 +17,13 @@ import {
   deleteScreen,
   getManagerBookings,
   addMovie,
-  getManagerMovies,
   toggleMovieStatus,
   removeMovie,
   toggleScreenStatus,
 } from "../controllers/managerController.js";
+import {
+  getTheatreScreensTbl as getTheatreScreens,
+} from "../controllers/managerScreenTblController.js";
 
 const managerRouter = express.Router();
 
@@ -32,7 +35,7 @@ managerRouter.get("/movies", protectManager, getManagerMovies);
 managerRouter.post("/movies/add", protectManager, addMovie);
 managerRouter.patch("/movies/:movieId/toggle", protectManager, toggleMovieStatus);
 managerRouter.delete("/movies/:movieId", protectManager, removeMovie);
-managerRouter.get("/movies/available", protectManager, getAvailableMovies);
+managerRouter.get("/movies/available", protectManager, getManagerMovies);
 
 // Screen Management
 managerRouter.get("/screens", protectManager, getTheatreScreens);

@@ -8,8 +8,7 @@ import Loading from "../../components/Loading";
 const AdminPayments = () => {
   const { theatreId } = useParams();
   const navigate = useNavigate();
-  const currency = import.meta.env.VITE_CURRENCY || "$";
-  const { axios, getAuthHeaders, imageBaseURL } = useAppContext();
+  const { axios, getAuthHeaders } = useAppContext();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,8 +61,7 @@ const AdminPayments = () => {
           <div>
             <p className="text-gray-400 text-sm">Total Revenue</p>
             <p className="text-4xl font-bold mt-2">
-              {currency}
-              {totalRevenue.toFixed(2)}
+              ₹{totalRevenue.toFixed(2)}
             </p>
             <p className="text-gray-400 text-sm mt-2">
               From {bookings.length} bookings
@@ -133,8 +131,7 @@ const AdminPayments = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm font-bold">
-                      {currency}
-                      {booking.amount?.toFixed(2)}
+                      ₹{booking.amount?.toFixed(2)}
                     </td>
                   </tr>
                 ))

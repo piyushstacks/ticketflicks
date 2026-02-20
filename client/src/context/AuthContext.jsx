@@ -172,6 +172,7 @@ export const AuthProvider = ({ children }) => {
     changePassword,
     requestTheatreRegistrationOtp,
     completeTheatreRegistration,
+    saveAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import Loading from "../../components/Loading";
 
 const ManagerDashboard = () => {
-  const currency = import.meta.env.VITE_CURRENCY || "$";
+  const currency = import.meta.env.VITE_CURRENCY || "₹";
   const { axios, getAuthHeaders, user } = useAppContext();
   const { getTheatresByManager } = useAuthContext();
   const [dashboardData, setDashboardData] = useState(null);

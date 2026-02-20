@@ -8,7 +8,7 @@ const DateTimePicker = ({ movieId }) => {
   const navigate = useNavigate();
   const { axios, getAuthHeaders } = useAppContext();
 
-  const [shows, setShows] = useState({}); // grouped by theater -> screen -> shows
+  const [shows, setShows] = useState({}); // grouped by theatre -> screen -> shows
   const [selectedDate, setSelectedDate] = useState(null);
   const [theatresList, setTheatresList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +26,7 @@ const DateTimePicker = ({ movieId }) => {
         setShows(data.groupedShows || {});
         // Extract unique theatres
         const theatres = Object.values(data.groupedShows || {})
-          .map((t) => t.theater)
+          .map((t) => t.theatre)
           .filter((t, i, arr) => arr.findIndex((x) => x._id === t._id) === i);
         setTheatresList(theatres);
 
@@ -64,14 +64,28 @@ const DateTimePicker = ({ movieId }) => {
     fetchShowsByMovie();
   }, [movieId]);
 
+  const getTodayString = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.toISOString().split('T')[0];
+  };
+
   const getDateRange = () => {
     const dates = [];
     const today = new Date();
-    today.setDate(today.getDate() + dateOffset);
-
+    today.setHours(0, 0, 0, 0);
+    
+    // Calculate the actual start date with offset
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() + dateOffset);
+    
+    // Ensure we never start before today
+    const actualStart = new Date(Math.max(startDate.getTime(), today.getTime()));
+    
+    // Generate 7 days from the actual start
     for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
+      const date = new Date(actualStart);
+      date.setDate(actualStart.getDate() + i);
       dates.push(date);
     }
     return dates;
@@ -89,8 +103,29 @@ const DateTimePicker = ({ movieId }) => {
     });
   };
 
+  const isDateInPast = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Create a copy and normalize both dates to start of day
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    // Simple comparison - if check date is before today, it's past
+    return checkDate.getTime() < today.getTime();
+  };
+
+  const isDateToday = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    return date.toDateString() === today.toDateString();
+  };
+
   const handleNavigateDate = (direction) => {
-    setDateOffset((prev) => prev + direction * 7);
+    const newOffset = dateOffset + direction * 7;
+    // Prevent navigation to past dates
+    if (newOffset < 0) return;
+    setDateOffset(newOffset);
   };
 
   if (loading) {
@@ -114,30 +149,47 @@ const DateTimePicker = ({ movieId }) => {
             onClick={() => handleNavigateDate(-1)}
             className="p-2 hover:bg-gray-800 rounded-lg transition"
             disabled={dateOffset === 0}
+            title={dateOffset === 0 ? "Already at earliest date" : "Previous week"}
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
 
           <div className="flex items-center gap-3 overflow-x-auto flex-1 pb-2">
-            {dateRangeArray.map((date) => (
-              <button
-                key={date.toISOString()}
-                onClick={() => setSelectedDate(date)}
-                className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-lg border-2 transition min-w-max ${
-                  selectedDate?.toDateString() === date.toDateString()
-                    ? "border-primary bg-primary/20"
-                    : "border-gray-600 hover:border-primary"
-                }`}
-              >
-                <span className="font-bold text-lg">{date.getDate()}</span>
-                <span className="text-xs text-gray-400">
-                  {date.toLocaleDateString("en-US", { weekday: "short" })}
-                </span>
-                <span className="text-xs">
-                  {date.toLocaleDateString("en-US", { month: "short" })}
-                </span>
-              </button>
-            ))}
+            {dateRangeArray.map((date) => {
+              const isPast = isDateInPast(date);
+              const isToday = isDateToday(date);
+              const isSelected = selectedDate?.toDateString() === date.toDateString();
+              
+              return (
+                <button
+                  key={date.toISOString()}
+                  onClick={() => !isPast && setSelectedDate(date)}
+                  disabled={isPast}
+                  min={getTodayString()}
+                  title={isPast ? "Past date - not available" : isToday ? "Today" : ""}
+                  className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-lg border-2 transition min-w-max ${
+                    isSelected
+                      ? "border-primary bg-primary/20"
+                      : isPast
+                      ? "border-gray-700 bg-gray-800/50 cursor-not-allowed opacity-50"
+                      : "border-gray-600 hover:border-primary cursor-pointer"
+                  }`}
+                >
+                  <span className={`font-bold text-lg ${isPast ? 'text-gray-500' : ''}`}>
+                    {date.getDate()}
+                  </span>
+                  <span className={`text-xs ${isPast ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {date.toLocaleDateString("en-US", { weekday: "short" })}
+                  </span>
+                  <span className={`text-xs ${isPast ? 'text-gray-500' : ''}`}>
+                    {date.toLocaleDateString("en-US", { month: "short" })}
+                  </span>
+                  {isToday && (
+                    <span className="text-xs text-primary font-semibold mt-1">Today</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <button

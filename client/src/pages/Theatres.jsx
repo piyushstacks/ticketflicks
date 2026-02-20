@@ -10,46 +10,46 @@ const Theatres = () => {
   const navigate = useNavigate()
   const { axios, imageBaseURL } = useAppContext()
 
-  const [theaters, setTheaters] = useState([])
-  const [theatersWithShows, setTheatersWithShows] = useState([])
+  const [theatres, setTheatres] = useState([])
+  const [theatresWithShows, setTheatresWithShows] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
-  const [filteredTheaters, setFilteredTheaters] = useState([])
+  const [filteredTheatres, setFilteredTheatres] = useState([])
   const [showRegistration, setShowRegistration] = useState(false)
 
-  // Fetch all theaters with their shows
-  const fetchTheatersWithShows = async () => {
+  // Fetch all theatres with their shows
+  const fetchTheatresWithShows = async () => {
     try {
       setLoading(true)
       const { data } = await axios.get('/api/theatre/')
       if (data && data.success) {
-        const theatersList = Array.isArray(data.theatres) ? data.theatres : []
+        const theatresList = Array.isArray(data.theatres) ? data.theatres : []
         
-        // Fetch shows for each theater
-        const theatersWithShowsData = await Promise.all(
-          theatersList.map(async (theater) => {
+        // Fetch shows for each theatre
+        const theatresWithShowsData = await Promise.all(
+          theatresList.map(async (theatre) => {
             try {
-              const showsResponse = await axios.get(`/api/public/shows/by-theatre/${theater._id}`)
+              const showsResponse = await axios.get(`/api/public/shows/by-theatre/${theatre._id}`)
               const showsData = showsResponse.data.success ? showsResponse.data.shows || [] : []
-              return { ...theater, shows: showsData }
+              return { ...theatre, shows: showsData }
             } catch (error) {
-              console.error(`Error fetching shows for theater ${theater._id}:`, error)
-              return { ...theater, shows: [] }
+              console.error(`Error fetching shows for theatre ${theatre._id}:`, error)
+              return { ...theatre, shows: [] }
             }
           })
         )
         
-        setTheaters(theatersList)
-        setTheatersWithShows(theatersWithShowsData)
-        setFilteredTheaters(theatersWithShowsData)
+        setTheatres(theatresList)
+        setTheatresWithShows(theatresWithShowsData)
+        setFilteredTheatres(theatresWithShowsData)
       } else {
-        setTheaters([])
-        setTheatersWithShows([])
-        setFilteredTheaters([])
+        setTheatres([])
+        setTheatresWithShows([])
+        setFilteredTheatres([])
       }
     } catch (error) {
-      console.error('Error fetching theaters:', error)
-      toast.error('Failed to load theaters')
+      console.error('Error fetching theatres:', error)
+      toast.error('Failed to load theatres')
     } finally {
       setLoading(false)
     }
@@ -59,16 +59,16 @@ const Theatres = () => {
   const handleSearch = (query) => {
     setSearchQuery(query)
     if (query.trim() === '') {
-      setFilteredTheaters(theatersWithShows)
+      setFilteredTheatres(theatresWithShows)
     } else {
       const q = query.toLowerCase()
-      const filtered = theatersWithShows.filter((theater) => {
-        const name = (theater.name || '').toString().toLowerCase()
-        const city = (theater.city || '').toString().toLowerCase()
-        const location = (theater.location || '').toString().toLowerCase()
+      const filtered = theatresWithShows.filter((theatre) => {
+        const name = (theatre.name || '').toString().toLowerCase()
+        const city = (theatre.city || '').toString().toLowerCase()
+        const location = (theatre.location || '').toString().toLowerCase()
         return name.includes(q) || city.includes(q) || location.includes(q)
       })
-      setFilteredTheaters(filtered)
+      setFilteredTheatres(filtered)
     }
   }
 
@@ -92,7 +92,7 @@ const Theatres = () => {
   }
 
   useEffect(() => {
-    fetchTheatersWithShows()
+    fetchTheatresWithShows()
   }, [])
 
   return (
@@ -124,7 +124,7 @@ const Theatres = () => {
           <Search className="absolute left-4 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search theaters by name, city, or location..."
+            placeholder="Search theatres by name, city, or location..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-primary outline-none transition placeholder-gray-500"
@@ -132,21 +132,21 @@ const Theatres = () => {
         </div>
       </div>
 
-      {/* Theaters with Shows */}
+      {/* Theatres with Shows */}
       {loading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-400">Loading theaters and shows...</p>
+        <div className="flex justify-center items-center h-64">
+          <p className="text-gray-400">Loading theatres and shows...</p>
         </div>
-      ) : filteredTheaters.length === 0 ? (
+      ) : filteredTheatres.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-400 text-lg mb-2">No theaters found</p>
+          <p className="text-gray-400 text-lg mb-2">No theatres found</p>
           <p className="text-gray-500 text-sm">Try searching with different keywords</p>
         </div>
       ) : (
         <div className="space-y-8">
-          {filteredTheaters.map((theater) => (
+          {filteredTheatres.map((theatre) => (
             <div
-              key={theater._id}
+              key={theatre._id}
               className="bg-gray-900/30 backdrop-blur-md border border-gray-700 rounded-2xl overflow-hidden"
             >
               {/* Theatre Header */}
@@ -157,8 +157,8 @@ const Theatres = () => {
                       <MapPin className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-white">{theater.name}</h2>
-                      <p className="text-gray-300">{theater.location}, {theater.city}</p>
+                      <h2 className="text-2xl font-bold text-white">{theatre.name}</h2>
+                      <p className="text-gray-300">{theatre.location}, {theatre.city}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -176,13 +176,13 @@ const Theatres = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-semibold text-white">Now Showing</h3>
                   <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm font-semibold">
-                    {theater.shows?.length || 0} Shows
+                    {theatre.shows?.length || 0} Shows
                   </span>
                 </div>
 
-                {theater.shows && theater.shows.length > 0 ? (
+                {theatre.shows && theatre.shows.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {theater.shows.map((show) => (
+                    {theatre.shows.map((show) => (
                       <div
                         key={show._id}
                         className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden hover:border-primary hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 group"

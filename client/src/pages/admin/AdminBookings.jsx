@@ -188,9 +188,9 @@ const AdminBookings = () => {
                     <td className="px-6 py-4 text-sm">
                       <div>
                         <p className="font-medium">{booking.show?.movie?.title || "N/A"}</p>
-                        {booking.show?.theater?.name && (
+                        {booking.show?.theatre?.name && (
                           <p className="text-xs text-gray-400">
-                            {booking.show.theater.name}
+                            {booking.show.theatre.name}
                           </p>
                         )}
                       </div>
@@ -343,7 +343,7 @@ const AdminBookings = () => {
                   <div>
                     <span className="text-gray-400">Theatre:</span>
                     <span className="ml-2 text-gray-300">
-                      {viewingBooking.show?.theater?.name || "N/A"}
+                      {viewingBooking.show?.theatre?.name || "N/A"}
                     </span>
                   </div>
                   <div>

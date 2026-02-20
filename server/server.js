@@ -12,6 +12,8 @@ import managerRouter from "./routes/managerRoutes.js";
 import managerScreenTblRouter from "./routes/managerScreenTblRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import theatreRouter from "./routes/theatreRoutes.js";
+import { searchTheatres } from "./controllers/theatreController.js";
+import { searchMoviesAndShows } from "./controllers/showController.js";
 import debugRouter, { requestLogger } from "./routes/debugRoutes.js";
 import publicRouter from "./routes/publicRoutes.js";
 import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
@@ -41,12 +43,22 @@ app.get("/", (req, res) => {
 });
 app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/public", publicRouter);
+// Add search route before show router to avoid conflicts
+app.get("/api/search/movies", (req, res) => {
+  console.log('Movies search route hit directly in server.js');
+  searchMoviesAndShows(req, res);
+});
 app.use("/api/show", showRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/manager", managerRouter);
 app.use("/api/manager", managerScreenTblRouter); // SCREEN_TBL routes
 app.use("/api/user", userRouter);
+// Add search route before theatre router to avoid conflicts
+app.get("/api/search/theatres", (req, res) => {
+  console.log('Search route hit directly in server.js');
+  searchTheatres(req, res);
+});
 app.use("/api/theatre", theatreRouter);
 // Debug routes (safe: requires DEBUG_EMAIL_SECRET when NODE_ENV=production)
 app.use("/api/debug", debugRouter);

@@ -469,10 +469,58 @@ export const fetchAllTheatres = async (req, res) => {
   }
 };
 
+// Search theatres by name or address
+export const searchTheatres = async (req, res) => {
+  try {
+    console.log('Search theatres called with query:', req.query);
+    const { q } = req.query;
+    
+    if (!q || !q.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+
+    const searchRegex = new RegExp(q.trim(), 'i'); // Case-insensitive search
+    
+    const theatres = await Theatre.find({
+      disabled: { $ne: true },
+      approval_status: 'approved',
+      $or: [
+        { name: searchRegex },
+        { address: searchRegex },
+        { city: searchRegex }
+      ]
+    }).populate("manager_id", "name email phone").limit(10);
+
+    res.status(200).json({
+      success: true,
+      theatres,
+    });
+  } catch (error) {
+    console.error("Error searching theatres:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error searching theatres",
+      error: error.message,
+    });
+  }
+};
+
 // Fetch theatre by ID (public: only approved, non-disabled theatres)
 export const fetchTheatre = async (req, res) => {
   try {
+    console.log('Fetch theatre called with params:', req.params);
     const { id } = req.params;
+    
+    // Skip if this is actually a search request (route conflict)
+    if (id === 'search') {
+      return res.status(404).json({
+        success: false,
+        message: "Theatre not found",
+      });
+    }
     const theatre = await Theatre.findById(id).populate("manager_id", "name email phone");
 
     if (!theatre || theatre.approval_status !== "approved" || theatre.disabled) {
@@ -559,7 +607,7 @@ export const deleteTheatre = async (req, res) => {
     // Update manager to remove managedTheatreId
     if (theatre.manager_id) {
       await User.findByIdAndUpdate(theatre.manager_id, {
-        managedTheaterId: null,
+        managedTheatreId: null,
         managedTheatreId: null,
         role: "customer" // Or some other appropriate role
       });
@@ -599,5 +647,27 @@ export const getTheatresByManager = async (req, res) => {
       message: "Error fetching theatres",
       error: error.message,
     });
+  }
+};
+
+// Fetch screens by theatre
+export const fetchScreensByTheatre = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Use ScreenTbl to get screens data - only for approved, non-disabled theatres
+    const theatre = await Theatre.findById(id);
+    
+    if (!theatre || theatre.approval_status !== "approved" || theatre.disabled) {
+      return res.json({ success: false, message: "Theatre not found" });
+    }
+    
+    // Fetch screens from ScreenTbl
+    const screens = await ScreenTbl.find({ theatre: id });
+    
+    res.json({ success: true, screens });
+  } catch (error) {
+    console.error("[fetchScreensByTheatre]", error);
+    res.json({ success: false, message: error.message });
   }
 };

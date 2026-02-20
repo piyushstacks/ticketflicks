@@ -13,8 +13,8 @@ The error occurred because multiple files were importing screen management funct
 
 #### **Files with Import Issues**
 1. **`server/routes/theatreRoutes.js`** - Importing non-existent functions
-2. **`server/controllers/theaterController.js`** - Compatibility layer trying to export non-existent functions
-3. **`server/routes/theaterRoutes.js`** - Additional file with similar import issues
+2. **`server/controllers/theatreController.js`** - Compatibility layer trying to export non-existent functions
+3. **`server/routes/theatreRoutes.js`** - Additional file with similar import issues
 
 #### **Missing Functions**
 - `addScreen` - Removed during ScreenTbl migration
@@ -54,7 +54,7 @@ import {
 } from "../controllers/theatreController.js";
 ```
 
-#### **2. Fixed theaterController.js (Compatibility Layer)**
+#### **2. Fixed theatreController.js (Compatibility Layer)**
 **Before:**
 ```javascript
 // Screen-related forwards
@@ -66,49 +66,49 @@ export const deleteScreen = theatreController.deleteScreen;   // ❌ Non-existen
 **After:**
 ```javascript
 // Screen-related forwards
-export const fetchScreensByTheater = async (req, res) => {
+export const fetchScreensByTheatre = async (req, res) => {
   // Only existing function kept
 };
 export const fetchScreen = theatreController.fetchTheatre; // Compatibility mapping
 ```
 
-#### **3. Fixed theaterRoutes.js (Additional File)**
+#### **3. Fixed theatreRoutes.js (Additional File)**
 **Before:**
 ```javascript
 import {
-  createTheater,
-  fetchAllTheaters,
-  fetchTheater,
-  updateTheater,
-  deleteTheater,
+  createTheatre,
+  fetchAllTheatres,
+  fetchTheatre,
+  updateTheatre,
+  deleteTheatre,
   createScreen,        // ❌ Non-existent
-  fetchScreensByTheater,
+  fetchScreensByTheatre,
   fetchScreen,          // ❌ Non-existent
   updateScreen,         // ❌ Non-existent
   deleteScreen,         // ❌ Non-existent
-} from "../controllers/theaterController.js";
+} from "../controllers/theatreController.js";
 
 // Screen Routes
-theaterRouter.post("/:theaterId/screens", protectAdmin, createScreen);     // ❌ Non-existent
-theaterRouter.get("/:theaterId/screens", fetchScreensByTheater);
-theaterRouter.get("/screens/:screenId", fetchScreen);                     // ❌ Non-existent
-theaterRouter.put("/screens/:screenId", protectAdmin, updateScreen);      // ❌ Non-existent
-theaterRouter.delete("/screens/:screenId", protectAdmin, deleteScreen);   // ❌ Non-existent
+theatreRouter.post("/:theatreId/screens", protectAdmin, createScreen);     // ❌ Non-existent
+theatreRouter.get("/:theatreId/screens", fetchScreensByTheatre);
+theatreRouter.get("/screens/:screenId", fetchScreen);                     // ❌ Non-existent
+theatreRouter.put("/screens/:screenId", protectAdmin, updateScreen);      // ❌ Non-existent
+theatreRouter.delete("/screens/:screenId", protectAdmin, deleteScreen);   // ❌ Non-existent
 ```
 
 **After:**
 ```javascript
 import {
-  createTheater,
-  fetchAllTheaters,
-  fetchTheater,
-  updateTheater,
-  deleteTheater,
-  fetchScreensByTheater,
-} from "../controllers/theaterController.js";
+  createTheatre,
+  fetchAllTheatres,
+  fetchTheatre,
+  updateTheatre,
+  deleteTheatre,
+  fetchScreensByTheatre,
+} from "../controllers/theatreController.js";
 
 // Screen Routes (only the ones that exist)
-theaterRouter.get("/:theaterId/screens", fetchScreensByTheater);
+theatreRouter.get("/:theatreId/screens", fetchScreensByTheatre);
 ```
 
 ### **🧪 **Testing Results**
@@ -129,8 +129,8 @@ cd server && node -c server.js
 
 #### **Fixed Files**
 - ✅ `server/routes/theatreRoutes.js` - Removed non-existent imports
-- ✅ `server/controllers/theaterController.js` - Removed non-existent exports
-- ✅ `server/routes/theaterRoutes.js` - Removed non-existent imports and routes
+- ✅ `server/controllers/theatreController.js` - Removed non-existent exports
+- ✅ `server/routes/theatreRoutes.js` - Removed non-existent imports and routes
 
 #### **Remaining Functionality**
 - ✅ Theatre registration and management

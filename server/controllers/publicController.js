@@ -43,10 +43,12 @@ export const getShowsByTheatre = async (req, res) => {
     }
 
     // Get all shows for this theatre – only for active (non-disabled) movies
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
     const shows = await Show.find({
       theatre: theatreId,
       isActive: true,
-      showDateTime: { $gte: new Date() }
+      showDateTime: { $gte: startOfToday }
     })
     .populate("movie", "title poster_path backdrop_path isActive")
     .populate("theatre", "name location city")
@@ -99,10 +101,12 @@ export const getShowsByMovie = async (req, res) => {
     }
 
     // Get all shows for this movie (only from approved theatres)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
     const shows = await Show.find({
       movie: movieId,
       isActive: true,
-      showDateTime: { $gte: new Date() }
+      showDateTime: { $gte: startOfToday }
     })
     .populate({
       path: "theatre",

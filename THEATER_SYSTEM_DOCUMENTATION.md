@@ -1,9 +1,9 @@
-# TicketFlicks - Theater Management System Implementation
+# TicketFlicks - Theatre Management System Implementation
 
 ## Overview
-This document details the implementation of a comprehensive theater management system with support for:
-- Multiple theaters
-- Multiple screens per theater
+This document details the implementation of a comprehensive theatre management system with support for:
+- Multiple theatres
+- Multiple screens per theatre
 - Seats organized by tiers (Standard, Premium, VIP) with different prices
 - MongoDB integration for all entities
 
@@ -11,8 +11,8 @@ This document details the implementation of a comprehensive theater management s
 
 ## MongoDB Collections Structure
 
-### 1. **Theater Collection**
-Stores information about cinema theaters.
+### 1. **Theatre Collection**
+Stores information about cinema theatres.
 
 ```javascript
 {
@@ -33,13 +33,13 @@ Stores information about cinema theaters.
 ```
 
 ### 2. **Screen Collection**
-Stores information about individual screens within a theater.
+Stores information about individual screens within a theatre.
 
 ```javascript
 {
   _id: ObjectId,
   screenNumber: "Screen 1",
-  theater: ObjectId, // Reference to Theater
+  theatre: ObjectId, // Reference to Theatre
   seatLayout: {
     rows: 10,        // Number of rows (A-J)
     seatsPerRow: 9,  // Seats per row
@@ -78,7 +78,7 @@ Stores movie show information with seat tier management.
 {
   _id: ObjectId,
   movie: "550",              // Movie ID from TMDB
-  theater: ObjectId,         // Reference to Theater
+  theatre: ObjectId,         // Reference to Theatre
   screen: ObjectId,          // Reference to Screen
   showDateTime: Date,        // UTC datetime of the show
   seatTiers: [
@@ -123,7 +123,7 @@ Stores booking information with seat tier details.
   _id: ObjectId,
   user: "user_id",           // User ID
   show: ObjectId,            // Reference to Show
-  theater: ObjectId,         // Reference to Theater
+  theatre: ObjectId,         // Reference to Theatre
   screen: ObjectId,          // Reference to Screen
   bookedSeats: [
     {
@@ -189,7 +189,7 @@ Stores booking information with seat tier details.
   _id: ObjectId,
   user: "user_id",
   show: ObjectId,            // Reference to Show (new)
-  theater: ObjectId,         // Reference to Theater (new)
+  theatre: ObjectId,         // Reference to Theatre (new)
   rating: 4,                 // 1-5
   message: "Great experience!",
   createdAt: Date,
@@ -201,39 +201,39 @@ Stores booking information with seat tier details.
 
 ## API Endpoints
 
-### Theater Management
+### Theatre Management
 
-#### Create Theater
+#### Create Theatre
 ```
-POST /api/theater/
+POST /api/theatre/
 Body: {
   name, location, address, city, state, zipCode, phone, email
 }
-Response: { success, message, theater }
+Response: { success, message, theatre }
 ```
 
-#### Get All Theaters
+#### Get All Theatres
 ```
-GET /api/theater/
-Response: { success, theaters }
-```
-
-#### Get Theater Details
-```
-GET /api/theater/{theaterId}
-Response: { success, theater }
+GET /api/theatre/
+Response: { success, theatres }
 ```
 
-#### Update Theater
+#### Get Theatre Details
 ```
-PUT /api/theater/{theaterId}
+GET /api/theatre/{theatreId}
+Response: { success, theatre }
+```
+
+#### Update Theatre
+```
+PUT /api/theatre/{theatreId}
 Body: { name, location, address, city, state, zipCode, phone, email }
-Response: { success, message, theater }
+Response: { success, message, theatre }
 ```
 
-#### Delete Theater
+#### Delete Theatre
 ```
-DELETE /api/theater/{theaterId}
+DELETE /api/theatre/{theatreId}
 Response: { success, message }
 ```
 
@@ -241,7 +241,7 @@ Response: { success, message }
 
 #### Create Screen
 ```
-POST /api/theater/{theaterId}/screens
+POST /api/theatre/{theatreId}/screens
 Body: {
   screenNumber,
   seatLayout: { rows, seatsPerRow },
@@ -254,28 +254,28 @@ Body: {
 Response: { success, message, screen }
 ```
 
-#### Get Screens by Theater
+#### Get Screens by Theatre
 ```
-GET /api/theater/{theaterId}/screens
+GET /api/theatre/{theatreId}/screens
 Response: { success, screens }
 ```
 
 #### Get Screen Details
 ```
-GET /api/theater/screens/{screenId}
+GET /api/theatre/screens/{screenId}
 Response: { success, screen }
 ```
 
 #### Update Screen
 ```
-PUT /api/theater/screens/{screenId}
+PUT /api/theatre/screens/{screenId}
 Body: { screenNumber, seatLayout, seatTiers }
 Response: { success, message, screen }
 ```
 
 #### Delete Screen
 ```
-DELETE /api/theater/screens/{screenId}
+DELETE /api/theatre/screens/{screenId}
 Response: { success, message }
 ```
 
@@ -286,7 +286,7 @@ Response: { success, message }
 POST /api/show/add
 Body: {
   movieId,
-  theaterId,
+  theatreId,
   screenId,
   showsInput: [
     {
@@ -310,8 +310,8 @@ GET /api/show/by-movie/{movieId}
 Response: {
   success,
   groupedShows: {
-    theaterId: {
-      theater: {},
+    theatreId: {
+      theatre: {},
       screens: {
         screenId: {
           screen: {},
@@ -371,11 +371,11 @@ Response: { success, message }
 
 ---
 
-## Example: Creating Complete Theater Setup
+## Example: Creating Complete Theatre Setup
 
-### Step 1: Create Theater
+### Step 1: Create Theatre
 ```bash
-curl -X POST http://localhost:3000/api/theater/ \
+curl -X POST http://localhost:3000/api/theatre/ \
   -H "Content-Type: application/json" \
   -d '{
     "name": "PVR Cinemas",
@@ -388,11 +388,11 @@ curl -X POST http://localhost:3000/api/theater/ \
     "email": "contact@pvr.com"
   }'
 ```
-Response: `{ success: true, theater: { _id: "theater_1", ... } }`
+Response: `{ success: true, theatre: { _id: "theatre_1", ... } }`
 
 ### Step 2: Create Screen with Seat Tiers
 ```bash
-curl -X POST http://localhost:3000/api/theater/theater_1/screens \
+curl -X POST http://localhost:3000/api/theatre/theatre_1/screens \
   -H "Content-Type: application/json" \
   -d '{
     "screenNumber": "Screen 1",
@@ -428,7 +428,7 @@ curl -X POST http://localhost:3000/api/show/add \
   -H "Authorization: Bearer token" \
   -d '{
     "movieId": "550",
-    "theaterId": "theater_1",
+    "theatreId": "theatre_1",
     "screenId": "screen_1",
     "showsInput": [
       {
@@ -444,13 +444,13 @@ Response: `{ success: true, message: "Show Added Successfully." }`
 
 ## Features Implemented
 
-### ✅ Multiple Theaters
-- Create and manage multiple cinema theaters
-- Each theater has location, address, and contact details
-- Theater activation/deactivation
+### ✅ Multiple Theatres
+- Create and manage multiple cinema theatres
+- Each theatre has location, address, and contact details
+- Theatre activation/deactivation
 
 ### ✅ Multiple Screens
-- Each theater can have multiple screens
+- Each theatre can have multiple screens
 - Each screen has configurable seat layout
 - Screen activation/deactivation
 
@@ -463,7 +463,7 @@ Response: `{ success: true, message: "Show Added Successfully." }`
 
 ### ✅ MongoDB Integration
 - All data properly stored in MongoDB
-- References between collections (theater → screen → show → booking)
+- References between collections (theatre → screen → show → booking)
 - Proper indexing and optimization
 - Atomic seat reservation operations
 
@@ -474,10 +474,10 @@ Response: `{ success: true, message: "Show Added Successfully." }`
 - Cancellation with seat release
 
 ### ✅ Admin Features
-- Create/Update/Delete theaters
+- Create/Update/Delete theatres
 - Create/Update/Delete screens
 - Configure seat tiers and pricing
-- Add shows to specific theater/screen combinations
+- Add shows to specific theatre/screen combinations
 - View all bookings and shows
 
 ---
@@ -488,7 +488,7 @@ For optimal performance, create these indexes:
 
 ```javascript
 // Shows collection
-db.shows.createIndex({ theater: 1, screen: 1 })
+db.shows.createIndex({ theatre: 1, screen: 1 })
 db.shows.createIndex({ movie: 1, showDateTime: 1 })
 db.shows.createIndex({ showDateTime: 1 })
 
@@ -497,11 +497,11 @@ db.bookings.createIndex({ user: 1, createdAt: -1 })
 db.bookings.createIndex({ show: 1 })
 db.bookings.createIndex({ isPaid: 1 })
 
-// Theaters collection
-db.theaters.createIndex({ isActive: 1 })
+// Theatres collection
+db.theatres.createIndex({ isActive: 1 })
 
 // Screens collection
-db.screens.createIndex({ theater: 1, isActive: 1 })
+db.screens.createIndex({ theatre: 1, isActive: 1 })
 ```
 
 ---
@@ -535,9 +535,9 @@ If you have existing shows with the old `showPrice` and `occupiedSeats` structur
 
 1. **Backup your MongoDB database**
 2. **Export existing data** from Show and Booking collections
-3. **Create new Theater and Screen documents** with appropriate configurations
-4. **Update Show documents** to include theater, screen, and seatTiers structure
-5. **Update Booking documents** to include theater, screen, and bookedSeats with tier information
+3. **Create new Theatre and Screen documents** with appropriate configurations
+4. **Update Show documents** to include theatre, screen, and seatTiers structure
+5. **Update Booking documents** to include theatre, screen, and bookedSeats with tier information
 6. **Test thoroughly** before going live
 
 ---
@@ -554,8 +554,8 @@ The seat layout component should now:
 
 ### Updated MovieDetails Component
 Should now:
-1. Show theater and screen selection before date/time selection
-2. Display available shows grouped by theater and screen
+1. Show theatre and screen selection before date/time selection
+2. Display available shows grouped by theatre and screen
 3. Show seat tier information and pricing
 
 ### Example Frontend API Call (Creating Booking)
@@ -577,10 +577,10 @@ const response = await axios.post('/api/booking/create', {
 
 ## Testing Checklist
 
-- [ ] Create theater successfully
-- [ ] Create multiple screens in theater
-- [ ] Create shows for specific theater/screen
-- [ ] Fetch shows grouped by theater
+- [ ] Create theatre successfully
+- [ ] Create multiple screens in theatre
+- [ ] Create shows for specific theatre/screen
+- [ ] Fetch shows grouped by theatre
 - [ ] Book seats from different tiers
 - [ ] Verify pricing calculation
 - [ ] Check occupied seats update correctly
@@ -596,7 +596,7 @@ const response = await axios.post('/api/booking/create', {
 If you have any questions about:
 1. **MongoDB Schema**: Check the Collections Structure section above
 2. **API Usage**: See the API Endpoints section
-3. **Setup**: Follow the "Creating Complete Theater Setup" example
+3. **Setup**: Follow the "Creating Complete Theatre Setup" example
 4. **Frontend Changes**: See "Notes for Frontend Integration"
 
 Feel free to ask for clarification on any aspect!

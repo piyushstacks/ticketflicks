@@ -28,9 +28,9 @@ const User = mongoose.model('User', new mongoose.Schema({
 }, { collection: 'user_tbls' }));
 
 // Dummy theatres data from assets
-const dummyTheatersData = [
+const dummyTheatresData = [
     { "id": 1, "name": "PVR Cinemas - Downtown", "location": "Downtown Mall, Main Street", "distance": "2.5 km" },
-    { "id": 2, "name": "IMAX Theater - Central", "location": "Central Plaza, Highway 1", "distance": "5.2 km" },
+    { "id": 2, "name": "IMAX Theatre - Central", "location": "Central Plaza, Highway 1", "distance": "5.2 km" },
     { "id": 3, "name": "Cineplex - Westside", "location": "Westside Shopping Center", "distance": "7.8 km" },
     { "id": 4, "name": "Carnival Cinemas - Eastside", "location": "Eastside Plaza", "distance": "3.4 km" }
 ];
@@ -133,7 +133,7 @@ async function importTheatres() {
         }
 
         // Transform and import theatres
-        const theatresToImport = dummyTheatersData.map((theatre, index) => ({
+        const theatresToImport = dummyTheatresData.map((theatre, index) => ({
             name: theatre.name,
             location: theatre.location,
             manager_id: managerId,

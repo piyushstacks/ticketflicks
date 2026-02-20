@@ -3,6 +3,7 @@ import {
   fetchFavorites,
   fetchUserBookings,
   updateFavorite,
+  updateUserProfile,
 } from "../controllers/userController.js";
 import { protectUser } from "../middleware/protectUser.js";
 import { submitFeedback } from "../controllers/feedbackController.js";
@@ -37,6 +38,7 @@ userRouter.post("/reset-password", resetPasswordWithOtp);
 
 // Authenticated routes
 userRouter.post("/change-password", protectUser, changePassword);
+userRouter.put("/profile", protectUser, updateUserProfile);
 userRouter.get("/bookings", protectUser, fetchUserBookings);
 userRouter.post("/update-favorite", protectUser, updateFavorite);
 userRouter.get("/favorites", protectUser, fetchFavorites);

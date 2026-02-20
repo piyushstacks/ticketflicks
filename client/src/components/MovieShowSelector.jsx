@@ -85,7 +85,7 @@ const MovieShowSelector = () => {
         setShows(data.groupedShows || {});
         // Extract unique theatres
         const theatres = Object.values(data.groupedShows || {})
-          .map((t) => t.theatre || t.theater)
+          .map((t) => t.theatre)
           .filter((t, i, arr) => arr.findIndex((x) => x._id === t._id) === i);
         setTheatresList(theatres);
 

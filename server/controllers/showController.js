@@ -89,7 +89,7 @@ export const fetchNowPlayingMovies = async (req, res) => {
   }
 };
 
-//API to add a new show to the database (Updated for Theater and Screen)
+//API to add a new show to the database (Updated for Theatre and Screen)
 export const addShow = async (req, res) => {
   try {
     const { movieId, theatreId, screenId, showsInput } = req.body;
@@ -197,8 +197,12 @@ export const addShow = async (req, res) => {
 // API to get all shows from the database – only active movies that have future shows (Now Showing)
 export const fetchShows = async (req, res) => {
   try {
+    // Get current date and set time to beginning of day to include today's shows
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const shows = await Show.find({
-      showDateTime: { $gte: new Date() },
+      showDateTime: { $gte: today },
       isActive: true,
     })
       .populate(
@@ -224,7 +228,7 @@ export const fetchShows = async (req, res) => {
   }
 };
 
-//API to get all shows for a specific movie (with theater and screen details)
+//API to get all shows for a specific movie (with theatre and screen details)
 export const fetchShowsByMovie = async (req, res) => {
   try {
     const { movieId } = req.params;
@@ -362,7 +366,7 @@ export const fetchShowByMovieId = async (req, res) => {
       dateTime[date].push({
         time: show.showDateTime,
         showId: show._id,
-        theater: show.theater,
+        theatre: show.theatre,
         screen: show.screen,
         seatTiers: show.seatTiers,
       });
@@ -378,11 +382,12 @@ export const fetchShowByMovieId = async (req, res) => {
 // API to get all available movies for customers (public endpoint)
 export const getAvailableMoviesForCustomers = async (req, res) => {
   try {
-    // Get all active movies that have shows scheduled in the future
-    const futureDate = new Date();
+    // Get all active movies that have shows scheduled in the future or today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const moviesWithShows = await Show.find({
-      showDateTime: { $gte: futureDate },
+      showDateTime: { $gte: today },
       isActive: true,
     })
       .distinct("movie")
@@ -405,8 +410,12 @@ export const getAvailableMoviesForCustomers = async (req, res) => {
 // API to get movies for Now Showing – only active movies that have at least one future show (fallback when /all returns empty)
 export const getAllActiveMovies = async (req, res) => {
   try {
+    // Get current date and set time to beginning of day to include today's shows
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const movieIdsWithShows = await Show.find({
-      showDateTime: { $gte: new Date() },
+      showDateTime: { $gte: today },
       isActive: true,
     }).distinct("movie");
 
@@ -421,5 +430,124 @@ export const getAllActiveMovies = async (req, res) => {
   } catch (error) {
     console.error("[getAllActiveMovies]", error);
     res.json({ success: false, message: error.message });
+  }
+};
+
+// Debug API to get all shows regardless of date (for troubleshooting)
+export const getAllShowsDebug = async (req, res) => {
+  try {
+    const shows = await Show.find({ isActive: true })
+      .populate("movie")
+      .populate("theatre")
+      .populate("screen")
+      .sort({ showDateTime: 1 });
+
+    const currentDate = new Date();
+    const futureShows = shows.filter(show => new Date(show.showDateTime) >= currentDate);
+    const pastShows = shows.filter(show => new Date(show.showDateTime) < currentDate);
+
+    res.json({ 
+      success: true, 
+      totalShows: shows.length,
+      futureShows: futureShows.length,
+      pastShows: pastShows.length,
+      shows: shows,
+      currentDate: currentDate.toISOString()
+    });
+  } catch (error) {
+    console.error("[getAllShowsDebug]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// API to search movies and shows
+export const searchMoviesAndShows = async (req, res) => {
+  try {
+    console.log('Search movies/shows called with query:', req.query);
+    const { q } = req.query;
+    
+    if (!q || !q.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Search query is required",
+      });
+    }
+
+    const searchRegex = new RegExp(q.trim(), 'i'); // Case-insensitive search
+
+    // Search for movies by title, overview, or genre
+    const movies = await Movie.find({
+      isActive: true,
+      $or: [
+        { title: searchRegex },
+        { overview: searchRegex },
+        { tagline: searchRegex }
+      ]
+    }).select(
+      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id",
+    ).limit(10);
+
+    // Search for shows that have matching movies
+    const shows = await Show.find({
+      isActive: true,
+      showDateTime: { $gte: new Date() },
+    })
+      .populate({
+        path: "movie",
+        match: {
+          isActive: true,
+          $or: [
+            { title: searchRegex },
+            { overview: searchRegex },
+            { tagline: searchRegex }
+          ]
+        },
+        select: "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
+      })
+      .populate("theatre", "name address city")
+      .populate("screen", "screenName")
+      .sort({ showDateTime: 1 })
+      .limit(10);
+
+    // Filter out shows where movie didn't match
+    const validShows = shows.filter(show => show.movie);
+
+    // Format the response
+    const movieResults = movies.map(movie => ({
+      type: 'movie',
+      id: movie._id,
+      title: movie.title,
+      subtitle: movie.overview?.substring(0, 100) + (movie.overview?.length > 100 ? '...' : ''),
+      image: movie.poster_path,
+      release_date: movie.release_date,
+      vote_average: movie.vote_average,
+      movieData: movie
+    }));
+
+    const showResults = validShows.map(show => ({
+      type: 'show',
+      id: show._id,
+      title: `${show.movie.title} - ${show.theatre.name}`,
+      subtitle: `${show.theatre.city} • ${new Date(show.showDateTime).toLocaleString()}`,
+      image: show.movie.poster_path,
+      showDateTime: show.showDateTime,
+      movieData: show.movie,
+      theatreData: show.theatre,
+      showData: show
+    }));
+
+    res.status(200).json({
+      success: true,
+      movies: movieResults,
+      shows: showResults,
+      totalResults: movieResults.length + showResults.length
+    });
+  } catch (error) {
+    console.error("Error searching movies and shows:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error searching movies and shows",
+      error: error.message,
+    });
   }
 };

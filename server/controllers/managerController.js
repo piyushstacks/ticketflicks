@@ -13,9 +13,20 @@ export const dashboardManagerData = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    let theatreId = manager.managedTheatreId;
     if (!theatreId) {
-      return res.json({ success: false, message: "Manager has no theatre assigned" });
+      // Fallback: Look for theatre by manager_id
+      const theatreDoc = await Theatre.findOne({ 
+        manager_id: manager._id, 
+        disabled: { $ne: true },
+        approval_status: 'approved' 
+      });
+      if (!theatreDoc) {
+        return res.json({ success: false, message: "Manager has no theatre assigned" });
+      }
+      theatreId = theatreDoc._id;
+      // Update manager with the found theatre ID
+      await User.findByIdAndUpdate(manager._id, { managedTheatreId: theatreId });
     }
 
     const activeShows = await Show.countDocuments({
@@ -70,13 +81,24 @@ export const addShow = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    let theatreId = manager.managedTheatreId;
     if (!theatreId) {
-      return res.json({ success: false, message: "Manager has no theatre assigned" });
+      // Fallback: Look for theatre by manager_id
+      const theatreDoc = await Theatre.findOne({ 
+        manager_id: manager._id, 
+        disabled: { $ne: true },
+        approval_status: 'approved' 
+      });
+      if (!theatreDoc) {
+        return res.json({ success: false, message: "Manager has no theatre assigned" });
+      }
+      theatreId = theatreDoc._id;
+      // Update manager with the found theatre ID
+      await User.findByIdAndUpdate(manager._id, { managedTheatreId: theatreId });
     }
     const { movieId, screenId, showDateTime, seatTiers } = req.body;
 
-    if (!movieId || !screenId || !showDateTime) {
+    if (!movieId || !screenId || !showDateTime || !seatTiers) {
       return res.json({ success: false, message: "Missing required fields" });
     }
 
@@ -86,12 +108,20 @@ export const addShow = async (req, res) => {
       return res.json({ success: false, message: "Invalid screen" });
     }
 
+    // Calculate basePrice from seatTiers or use default
+    let basePrice = 150;
+    if (seatTiers && Array.isArray(seatTiers) && seatTiers.length > 0) {
+      // Use the lowest tier price as basePrice
+      basePrice = Math.min(...seatTiers.map(t => t.price));
+    }
+
     const show = await Show.create({
       movie: movieId,
       theatre: theatreId,
       screen: screenId,
       showDateTime,
-      seatTiers: seatTiers || [],
+      basePrice,
+      seatTiers: seatTiers,
       totalCapacity: screen.seatLayout?.totalSeats || 200,
       occupiedSeatsCount: 0,
     });
@@ -111,9 +141,9 @@ export const editShow = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const theatreId = manager.managedTheatreId;
     const { showId } = req.params;
-    const { movieId, screenId, showDateTime, seatTiers } = req.body;
+    const { movieId, screenId, showDateTime, seatTiers, basePrice: providedBasePrice } = req.body;
 
     const show = await Show.findById(showId);
     if (!show || show.theatre.toString() !== theatreId.toString()) {
@@ -124,7 +154,14 @@ export const editShow = async (req, res) => {
     if (movieId) updateData.movie = movieId;
     if (screenId) updateData.screen = screenId;
     if (showDateTime) updateData.showDateTime = showDateTime;
-    if (seatTiers) updateData.seatTiers = seatTiers;
+    if (seatTiers) {
+      updateData.seatTiers = seatTiers;
+      // If seatTiers are updated, update basePrice too if not explicitly provided
+      if (!providedBasePrice && Array.isArray(seatTiers) && seatTiers.length > 0) {
+        updateData.basePrice = Math.min(...seatTiers.map(t => t.price));
+      }
+    }
+    if (providedBasePrice) updateData.basePrice = providedBasePrice;
 
     const updatedShow = await Show.findByIdAndUpdate(showId, updateData, { new: true })
       .populate("movie")
@@ -145,7 +182,7 @@ export const deleteShow = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const theatreId = manager.managedTheatreId;
     const { showId } = req.params;
 
     const show = await Show.findById(showId);
@@ -170,7 +207,7 @@ export const addScreen = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    let theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    let theatreId = manager.managedTheatreId;
     if (!theatreId) {
       const theatreDoc = await Theatre.findOne({ 
         manager_id: manager._id, 
@@ -181,7 +218,7 @@ export const addScreen = async (req, res) => {
         return res.json({ success: false, message: "Manager has no theatre assigned" });
       }
       theatreId = theatreDoc._id;
-      await User.findByIdAndUpdate(manager._id, { managedTheaterId: theatreId });
+      await User.findByIdAndUpdate(manager._id, { managedTheatreId: theatreId });
     }
     const { screenNumber, seatLayout, pricing } = req.body; // Expecting pricing from frontend
 
@@ -297,7 +334,7 @@ export const editScreen = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const theatreId = manager.managedTheatreId;
     const { screenId } = req.params;
     const { screenNumber, seatLayout, pricing } = req.body;
 
@@ -397,7 +434,7 @@ export const deleteScreen = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const theatreId = manager.managedTheatreId;
     const { screenId } = req.params;
 
     const screen = await ScreenTbl.findById(screenId);
@@ -428,9 +465,20 @@ export const getManagerBookings = async (req, res) => {
       return res.json({ success: false, message: "Not authorized" });
     }
 
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    let theatreId = manager.managedTheatreId;
     if (!theatreId) {
-      return res.json({ success: false, message: "Manager has no theatre assigned" });
+      // Fallback: Look for theatre by manager_id
+      const theatreDoc = await Theatre.findOne({ 
+        manager_id: manager._id, 
+        disabled: { $ne: true },
+        approval_status: 'approved' 
+      });
+      if (!theatreDoc) {
+        return res.json({ success: false, message: "Manager has no theatre assigned" });
+      }
+      theatreId = theatreDoc._id;
+      // Update manager with the found theatre ID
+      await User.findByIdAndUpdate(manager._id, { managedTheatreId: theatreId });
     }
 
     const bookings = await Booking.find({ theatre: theatreId })
@@ -514,7 +562,7 @@ export const toggleMovieStatus = async (req, res) => {
 
     const { movieId } = req.params;
     const { isActive } = req.body;
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const theatreId = manager.managedTheatreId;
 
     if (!theatreId) {
       return res.json({ success: false, message: "Manager has no theatre assigned" });
@@ -598,7 +646,7 @@ export const toggleScreenStatus = async (req, res) => {
     }
 
     // Verify screen belongs to manager's theatre
-    const theatreId = manager.managedTheaterId || manager.managedTheatreId;
+    const theatreId = manager.managedTheatreId;
     if (screen.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Not authorized to manage this screen" });
     }

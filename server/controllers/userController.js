@@ -71,3 +71,44 @@ export const fetchFavorites = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const updateUserProfile = async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.json({ success: false, message: "User not found" });
+    }
+
+    // Update fields if provided
+    if (name) user.name = name;
+    if (email && user.email !== email) {
+      // Check if new email already exists for another user
+      const existingUserWithEmail = await User.findOne({ email });
+      if (existingUserWithEmail && existingUserWithEmail._id.toString() !== userId) {
+        return res.json({ success: false, message: "Email already in use by another account" });
+      }
+      user.email = email;
+    }
+    if (phone) user.phone = phone;
+
+    await user.save();
+
+    // Return updated user data, excluding sensitive info
+    const updatedUser = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      managedTheatreId: user.managedTheatreId,
+    };
+
+    res.json({ success: true, message: "Profile updated successfully", user: updatedUser });
+  } catch (error) {
+    console.error("[updateUserProfile]", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

@@ -125,19 +125,19 @@ const renderSeat = (seatType, row, col) => {
 
 #### **Smart Theatre Fetching**
 ```javascript
-const fetchTheatersWithShows = async () => {
+const fetchTheatresWithShows = async () => {
   const { data } = await axios.get(`/api/show/by-movie/${id}`);
   if (data.success && data.groupedShows) {
-    const theaterIds = Object.keys(data.groupedShows);
-    const theaterDetails = await Promise.all(
-      theaterIds.map(async (theaterId) => {
-        const { data: theaterData } = await axios.get(`/api/theatre/${theaterId}`);
-        return theaterData.success ? theaterData.theatre : null;
+    const theatreIds = Object.keys(data.groupedShows);
+    const theatreDetails = await Promise.all(
+      theatreIds.map(async (theatreId) => {
+        const { data: theatreData } = await axios.get(`/api/theatre/${theatreId}`);
+        return theatreData.success ? theatreData.theatre : null;
       })
     );
     
-    const validTheaters = theaterDetails.filter(theater => theater !== null);
-    setTheaters(validTheaters);
+    const validTheatres = theatreDetails.filter(theatre => theatre !== null);
+    setTheatres(validTheatres);
   }
 };
 ```

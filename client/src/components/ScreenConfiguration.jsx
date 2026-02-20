@@ -49,6 +49,9 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
     }
   };
 
+  // Track previous screen to avoid resetting layout on same screen
+  const [prevScreenId, setPrevScreenId] = useState(null);
+
   // Sync states when switching between screens
   useEffect(() => {
     const screen = screens[currentScreenIndex] || {
@@ -56,6 +59,14 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
       layout: null,
       pricing: {}
     };
+
+    // Only reset states when actually switching to a different screen
+    const currentScreenId = screen.name || currentScreenIndex;
+    if (currentScreenId === prevScreenId) {
+      // Same screen, don't reset layout selection
+      return;
+    }
+    setPrevScreenId(currentScreenId);
 
     // Find the layout key for the current screen's layout
     if (screen.layout) {
@@ -86,7 +97,7 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
     }
     
     setErrors({});
-  }, [currentScreenIndex, screens]);
+  }, [currentScreenIndex]); // Remove screens from dependencies
 
   const handleLayoutSelect = (layoutKey) => {
     const layout = getLayoutByKey(layoutKey);
@@ -338,20 +349,29 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
             <div className="grid grid-cols-2 gap-3">
               {keys.map(key => {
                 const layout = SEAT_LAYOUTS[key];
+                const isSelected = selectedLayout === key;
                 return (
                   <button
                     key={key}
                     onClick={() => handleLayoutSelect(key)}
-                    className={`p-3 border rounded-lg text-left transition ${
-                      selectedLayout === key
-                        ? 'border-blue-600 bg-blue-600 text-white shadow-md'
-                        : 'border-gray-300 bg-white text-gray-900 hover:border-gray-400 hover:bg-gray-50'
+                    className={`p-4 border-2 rounded-xl text-left transition-all duration-200 relative overflow-hidden ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 shadow-lg ring-2 ring-primary/50'
+                        : 'border-gray-700 bg-gray-800/50 text-gray-300 hover:border-gray-500 hover:bg-gray-700/50'
                     }`}
                   >
-                    <div className={`font-medium text-sm ${selectedLayout === key ? 'text-white' : 'text-gray-900'}`}>
+                    {/* Selection indicator */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className={`font-semibold text-sm ${isSelected ? 'text-primary' : 'text-gray-200'}`}>
                       {layout.name}
                     </div>
-                    <div className={`text-xs ${selectedLayout === key ? 'text-blue-100' : 'text-gray-600'}`}>
+                    <div className={`text-xs mt-1 ${isSelected ? 'text-gray-400' : 'text-gray-500'}`}>
                       {layout.rows}×{layout.seatsPerRow} • {layout.totalSeats} seats
                     </div>
                   </button>
@@ -630,18 +650,12 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between mt-8">
-        <button
-          onClick={onPrevious}
-          className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-        >
-          Previous
-        </button>
+      <div className="flex justify-end mt-8">
         <button
           onClick={handleNext}
           className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
         >
-          Next: Review & Submit
+          Update
         </button>
       </div>
     </div>

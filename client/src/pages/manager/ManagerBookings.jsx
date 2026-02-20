@@ -5,7 +5,7 @@ import { User, Calendar, Ticket, TrendingUp } from "lucide-react";
 import Loading from "../../components/Loading";
 
 const ManagerBookings = () => {
-  const currency = import.meta.env.VITE_CURRENCY || "$";
+  const currency = import.meta.env.VITE_CURRENCY || "₹";
   const { axios, getAuthHeaders } = useAppContext();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);

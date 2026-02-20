@@ -6,9 +6,11 @@ import { ArrowRight } from "lucide-react";
 import UpcomingMovieCard from "./UpcomingMovieCard";
 import useWindowWidth from "../hooks/useWindowWidth";
 import SkeletonCard from "./SkeletonCard";
+import { useTheme } from "../context/ThemeContext.jsx";
 
 const UpcomingFeaturedSection = () => {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const width = useWindowWidth();
 
   let sliceCount = 4;
@@ -36,13 +38,17 @@ const UpcomingFeaturedSection = () => {
     <div className="px-6 md:px-16 lg:px-24 xl:px-44 overflow-hidden">
       <div className="relative flex items-center justify-between pt-20 pb-10">
         <BlurCircle top="130px" left="50px" />
-        <p className="text-gray-300 font-medium text-xl">Upcoming Movies</p>
+        <p className={`font-medium text-xl ${
+          isDark ? 'text-gray-300' : 'text-gray-800'
+        }`}>Upcoming Movies</p>
         <button
           onClick={() => {
             navigate("/upcoming-movies");
             scrollTo(0, 0);
           }}
-          className="group flex items-center gap-2 text-sm text-gray-300 cursor-pointer"
+          className={`group flex items-center gap-2 text-sm cursor-pointer transition-colors ${
+            isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-primary'
+          }`}
         >
           View All
           <ArrowRight className="group-hover:translate-x-0.75 transition w-4.5 h-4.5" />
@@ -61,7 +67,7 @@ const UpcomingFeaturedSection = () => {
             navigate("/upcoming-movies");
             scrollTo(0, 0);
           }}
-          className="px-10 py-3 bg-primary text-sm hover:bg-primary-dull transition rounded-md font-medium cursor-pointer"
+          className="px-10 py-3 bg-primary text-sm hover:bg-primary-dull transition rounded-md font-medium cursor-pointer text-white"
         >
           Show more
         </button>

@@ -5,7 +5,14 @@ import { inngest } from "../inngest/index.js";
 
 export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, session) {
   const booking = await Booking.findById(bookingId);
-  if (!booking || booking.isPaid) return;
+  
+  // Check if booking is already paid to prevent double processing
+  if (!booking || booking.isPaid) {
+    console.log(`Booking ${bookingId} not found or already paid`);
+    return;
+  }
+  
+  console.log(`Processing payment for booking ${bookingId}`);
 
   const showData = await Show.findById(booking.show);
   if (showData && showData.seatTiers) {
@@ -71,12 +78,16 @@ export const stripeWebhooks = async (req, res) => {
   }
 
   try {
+    console.log("Stripe webhook received:", event.type);
+    
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
+        console.log("Checkout session completed:", session.id);
         const bookingId = session.metadata?.bookingId;
 
         if (bookingId && session.payment_status === "paid") {
+          console.log("Processing checkout.session.completed for booking:", bookingId);
           await markSeatsAndCompleteBooking(stripeInstance, bookingId, session);
         }
         break;
@@ -84,6 +95,7 @@ export const stripeWebhooks = async (req, res) => {
 
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object;
+        console.log("Payment intent succeeded:", paymentIntent.id);
         const sessionList = await stripeInstance.checkout.sessions.list({
           payment_intent: paymentIntent.id,
         });
@@ -92,6 +104,7 @@ export const stripeWebhooks = async (req, res) => {
         const bookingId = session?.metadata?.bookingId;
 
         if (bookingId) {
+          console.log("Processing payment_intent.succeeded for booking:", bookingId);
           await markSeatsAndCompleteBooking(stripeInstance, bookingId, {
             ...session,
             payment_intent: paymentIntent.id,

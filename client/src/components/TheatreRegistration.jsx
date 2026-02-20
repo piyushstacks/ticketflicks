@@ -97,6 +97,45 @@ const TheatreRegistration = ({ onClose }) => {
 
   // Password strength state
   const passwordStrength = getPasswordStrength(managerData.password);
+
+  // Legal documents PDF state
+  const [legalDocuments, setLegalDocuments] = useState(null);
+  const [pdfError, setPdfError] = useState("");
+
+  // Handle PDF file upload
+  const handlePdfUpload = (e) => {
+    const file = e.target.files[0];
+    
+    if (!file) {
+      setLegalDocuments(null);
+      setPdfError("");
+      return;
+    }
+
+    // Validate file type
+    if (file.type !== "application/pdf") {
+      setPdfError("Please upload a PDF file only");
+      setLegalDocuments(null);
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+      setPdfError("PDF file size must be less than 10MB");
+      setLegalDocuments(null);
+      return;
+    }
+
+    setLegalDocuments(file);
+    setPdfError("");
+  };
+
+  // Remove uploaded PDF
+  const removePdf = () => {
+    setLegalDocuments(null);
+    setPdfError("");
+  };
   const passwordsMatch = managerData.password === managerData.confirmPassword;
 
   // Theatre Information
@@ -298,12 +337,22 @@ const TheatreRegistration = ({ onClose }) => {
         
         if (missingFields.length > 0) {
           toast.error(`Please fill in: ${missingFields.join(", ")}`);
+        } else {
+          toast.error("Please fill in all required theatre information");
         }
       }
+    } else if (step === 3) {
+      // Validate legal documents
+      if (!legalDocuments) {
+        toast.error("Please upload legal documents to proceed");
+        return;
+      }
+      setStep(4);
+      setErrors({});
     }
   };
 
-  // Handle registration submission - Request OTP
+  // Handle form submission
   const handleSubmit = async () => {
     // Validate all screens have required data
     const invalidScreens = screens.filter(screen => {
@@ -357,7 +406,8 @@ const TheatreRegistration = ({ onClose }) => {
           window.location.href = `/theatre-verify?data=${encodeURIComponent(JSON.stringify({
             managerData,
             theatreData,
-            screens
+            screens,
+            legalDocuments
           }))}`;
         }, 1000);
       } else {
@@ -377,24 +427,28 @@ const TheatreRegistration = ({ onClose }) => {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h2 className="text-2xl font-bold text-white">Register Your Theatre</h2>
-            <p className="text-sm text-gray-400 mt-1">Step {step} of 3</p>
+            <p className="text-sm text-gray-400 mt-1">Step {step} of 4</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-800 rounded-lg transition"
+            className="text-gray-400 hover:text-white transition-colors"
           >
-            <X className="w-6 h-6 text-gray-400 hover:text-white" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Form Content */}
+        <div className="px-6 py-6">
           {/* Step 1: Manager Information */}
           {step === 1 && (
             <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-4">Manager Information</h3>
+                <p className="text-gray-400 mb-6">Please provide your personal details for the theatre manager account.</p>
+              </div>
               <InputField
                 label="Manager Name"
                 name="name"
@@ -607,13 +661,133 @@ const TheatreRegistration = ({ onClose }) => {
             </div>
           )}
 
-          {/* Step 3: Screen Configuration */}
+          {/* Step 3: Legal Documents */}
           {step === 3 && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-4">Legal Documents</h3>
+                <p className="text-gray-400 mb-6">Please upload your legal documents as a combined PDF file.</p>
+              </div>
+
+              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
+                <h4 className="text-lg font-medium text-white mb-3">Required Documents:</h4>
+                <ul className="space-y-2 text-gray-300 mb-6">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-1">•</span>
+                    <span>GST Certificate</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-1">•</span>
+                    <span>PAN Card (Business/Proprietor)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-1">•</span>
+                    <span>Business Registration Proof</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-1">•</span>
+                    <span>Any other relevant business licenses</span>
+                  </li>
+                </ul>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">
+                      Upload Legal Documents (Combined PDF) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handlePdfUpload}
+                        className="hidden"
+                        id="legal-documents-upload"
+                      />
+                      <label
+                        htmlFor="legal-documents-upload"
+                        className={`flex items-center justify-center w-full px-4 py-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                          pdfError
+                            ? "border-red-500 bg-red-500/10"
+                            : legalDocuments
+                            ? "border-green-500 bg-green-500/10"
+                            : "border-gray-600 bg-gray-800/50 hover:border-primary hover:bg-primary/10"
+                        }`}
+                      >
+                        <div className="text-center">
+                          {legalDocuments ? (
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+                                <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                              <div className="text-left">
+                                <p className="text-white font-medium">{legalDocuments.name}</p>
+                                <p className="text-gray-400 text-sm">
+                                  {(legalDocuments.size / (1024 * 1024)).toFixed(2)} MB
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={removePdf}
+                                className="ml-auto text-red-400 hover:text-red-300 transition-colors"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                              </div>
+                              <p className="text-white font-medium mb-1">Click to upload PDF</p>
+                              <p className="text-gray-400 text-sm">Maximum file size: 10MB</p>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                    {pdfError && (
+                      <p className="text-red-400 text-sm mt-2 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {pdfError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition active:scale-95"
+                >
+                  ← Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={!legalDocuments}
+                  className="flex-1 py-3 bg-primary hover:bg-primary-dull text-white font-semibold rounded-lg transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next: Add Screens →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Screen Configuration */}
+          {step === 4 && (
             <ScreenConfiguration
               screens={screens}
               setScreens={setScreens}
               onNext={handleSubmit}
-              onPrevious={() => setStep(2)}
+              onPrevious={() => setStep(3)}
             />
           )}
         </div>

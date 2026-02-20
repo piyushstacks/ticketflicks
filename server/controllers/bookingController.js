@@ -48,19 +48,30 @@ const getSeatCodeFromLayout = (seatLayout, seatNumber) => {
   if (!Array.isArray(row)) return null;
   if (colIndex >= row.length) return null;
 
-  const code = row[colIndex];
-  if (!code) return null;
-  return code;
+  return row[colIndex]?.code || null;
 };
 
-const getTierInfoForSeat = (screen, seatNumber) => {
+const getTierInfoForSeat = (show, seatNumber) => {
+  const screen = show.screen;
+
   // Prefer explicit tier configuration by rows (if present)
   if (screen?.seatTiers && Array.isArray(screen.seatTiers) && screen.seatTiers.length > 0) {
     const row = seatNumber.charAt(0);
     for (const tier of screen.seatTiers) {
       const rows = tier.rows || [];
       if (rows.includes(row)) {
-        return { tierName: tier.tierName, price: tier.price };
+        // If show has override price for this tier, use it
+        if (show.seatTiers && Array.isArray(show.seatTiers)) {
+          const showTier = show.seatTiers.find((t) => t.tierName === tier.tierName);
+          if (showTier && typeof showTier.price === "number") {
+            return { tierName: tier.tierName, price: showTier.price };
+          }
+        }
+        // Validate tier.price
+        const price = Number(tier.price);
+        if (!isNaN(price)) {
+          return { tierName: tier.tierName, price };
+        }
       }
     }
   }
@@ -69,6 +80,14 @@ const getTierInfoForSeat = (screen, seatNumber) => {
   const seatCode = getSeatCodeFromLayout(screen?.seatLayout, seatNumber);
   const mapped = SEAT_CODE_MAP[seatCode];
   if (!mapped) return null;
+
+  // If show has tier prices configured with same names, prefer those prices
+  if (show.seatTiers && Array.isArray(show.seatTiers) && show.seatTiers.length > 0) {
+    const showTier = show.seatTiers.find((t) => t.tierName === mapped.tierName);
+    if (showTier && typeof showTier.price === "number") {
+      return { tierName: showTier.tierName, price: showTier.price };
+    }
+  }
 
   // If screen has tier prices configured with same names, prefer those prices
   if (screen?.seatTiers && Array.isArray(screen.seatTiers) && screen.seatTiers.length > 0) {
@@ -107,76 +126,100 @@ const fetchSeatsAvailablity = async (showId, selectedSeats) => {
 
 export const confirmStripePayment = async (req, res) => {
   try {
+    console.log("[confirmStripePayment] Starting payment confirmation");
     const { sessionId } = req.body;
-    if (!sessionId) {
-      return res.status(400).json({ success: false, message: "Missing sessionId" });
-    }
+    console.log("[confirmStripePayment] Session ID:", sessionId);
 
     const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
     const session = await stripeInstance.checkout.sessions.retrieve(sessionId);
-    const bookingId = session?.metadata?.bookingId;
+    console.log("[confirmStripePayment] Retrieved session:", session.id);
 
+    // Get booking ID from session metadata
+    const bookingId = session.metadata?.bookingId;
+    console.log("[confirmStripePayment] Booking ID:", bookingId);
+    
     if (!bookingId) {
+      console.log("[confirmStripePayment] Missing booking ID in session metadata");
       return res.status(400).json({
         success: false,
-        message: "Missing bookingId in Stripe session metadata",
+        message: "Invalid session - missing booking reference",
       });
     }
 
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
-    }
-
-    if (booking.user?.toString() !== req.user.id?.toString()) {
-      return res.status(403).json({ success: false, message: "Forbidden" });
-    }
-
-    if (booking.isPaid) {
-      return res.json({ success: true, bookingId, isPaid: true });
-    }
-
-    if (session?.payment_status !== "paid") {
-      return res.json({ success: true, bookingId, isPaid: false });
-    }
-
+    // Complete the booking process
+    console.log("[confirmStripePayment] Calling markSeatsAndCompleteBooking");
     await markSeatsAndCompleteBooking(stripeInstance, bookingId, session);
-    return res.json({ success: true, bookingId, isPaid: true });
+    console.log("[confirmStripePayment] Completed markSeatsAndCompleteBooking");
+
+    res.json({ success: true });
   } catch (error) {
-    console.error("[confirmStripePayment]", error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("[confirmStripePayment] Error occurred:", error);
+    
+    // Handle specific error cases
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid session ID format."
+      });
+    }
+    
+    if (error.message && error.message.includes('timeout')) {
+      return res.status(500).json({
+        success: false,
+        message: "Payment confirmation is taking too long. Please check your bookings page."
+      });
+    }
+    
+    // Generic error with user-friendly message
+    res.status(500).json({ 
+      success: false, 
+      message: "Unable to confirm your payment right now. Please check your bookings page." 
+    });
+    
   }
 };
 
 export const createBooking = async (req, res) => {
   try {
     const { showId, selectedSeats } = req.body;
-    const { origin } = req.headers;
+    const { user } = req;
+    const origin = req.get("origin") || req.get("host");
 
-    const normalizedSeats = normalizeSelectedSeats(selectedSeats);
+    console.log("[createBooking] Request received:", {
+      showId,
+      selectedSeats,
+      user: user?._id,
+      origin
+    });
 
-    if (!normalizedSeats || normalizedSeats.length === 0) {
+    if (!showId) {
+      console.log("[createBooking] Missing showId");
+      return res.status(400).json({ success: false, message: "Show ID is required" });
+    }
+
+    let uniqueSeats = normalizeSelectedSeats(selectedSeats);
+
+    if (uniqueSeats.length === 0) {
+      return res.json({ success: false, message: "At least one seat must be selected" });
+    }
+
+    // Enforce maximum seat limit
+    if (uniqueSeats.length > 10) {
       return res.json({
         success: false,
-        message: "Please select at least one seat",
+        message: "Maximum 10 seats allowed per booking",
       });
     }
 
-    // de-dup seats
-    const uniqueSeatNumbers = [...new Set(normalizedSeats.map((s) => s.seatNumber))];
-    const uniqueSeats = uniqueSeatNumbers.map((seatNumber) => ({ seatNumber }));
-
-    // Check if seat is available for the selected seats
+    // Check if selected seats are still available (race condition avoidance)
     const isAvailable = await fetchSeatsAvailablity(showId, uniqueSeats);
-
     if (!isAvailable) {
       return res.json({
         success: false,
-        message: "Selected seats are not available.",
+        message: "One or more selected seats are no longer available. Please try again.",
       });
     }
 
-    // Get the show details with theatre and screen
     const showData = await Show.findById(showId)
       .populate("movie")
       .populate("theatre")
@@ -194,10 +237,15 @@ export const createBooking = async (req, res) => {
     // Calculate total amount and create booking seats array (tier from show or screen)
     let totalAmount = 0;
     const bookedSeatsWithTier = [];
-
     const invalidSeats = [];
+
+    console.log("=== DEBUG: Price Calculation ===");
+    console.log("Selected seats:", selectedSeats);
+
     uniqueSeats.forEach((seat) => {
-      const tierInfo = getTierInfoForSeat(showData.screen, seat.seatNumber);
+      const tierInfo = getTierInfoForSeat(showData, seat.seatNumber);
+      console.log(`Seat ${seat.seatNumber}: tierInfo =`, tierInfo);
+      
       if (!tierInfo) {
         invalidSeats.push(seat.seatNumber);
         return;
@@ -208,58 +256,75 @@ export const createBooking = async (req, res) => {
         tierName: tierInfo.tierName,
         price: tierInfo.price,
       });
-      totalAmount += tierInfo.price;
+
+      totalAmount += Number(tierInfo.price);
+      console.log(`Added price: ${tierInfo.price}, Running total: ${totalAmount}`);
     });
 
-    if (invalidSeats.length > 0) {
+    console.log(`Final totalAmount: ${totalAmount}`);
+
+    if (isNaN(totalAmount) || totalAmount <= 0) {
       return res.status(400).json({
         success: false,
-        message: `Invalid seat selection: ${invalidSeats.join(", ")}`,
+        message: "Invalid total amount calculated. Please contact support.",
       });
     }
 
-    // Create booking as pending – seats will be marked occupied only after Stripe payment success
-    const booking = await Booking.create({
-      user: req.user.id,
+    if (invalidSeats.length > 0) {
+      return res.json({
+        success: false,
+        message: `Invalid seat(s): ${invalidSeats.join(", ")}. Please select valid seats.`,
+      });
+    }
+
+    // Create booking record with tentative status
+    const bookingData = {
+      user: user._id,
       show: showId,
-      theatre: showData.theatre._id,
-      screen: showData.screen._id,
-      bookedSeats: bookedSeatsWithTier,
+      theatre: showData.theatre?._id,
+      screen: showData.screen?._id,
+      bookedSeats: bookedSeatsWithTier.map((s) => ({
+        seatNumber: s.seatNumber,
+        tierName: s.tierName,
+        price: s.price,
+      })),
       amount: totalAmount,
       isPaid: false,
-    });
+      paymentLink: null,
+      paymentIntentId: null,
+    };
 
-    // Lock seats immediately to avoid race conditions.
-    // These locks will be replaced with the user id on payment success,
-    // or released by the Inngest check-payment job.
-    if (showData && showData.seatTiers && Array.isArray(showData.seatTiers)) {
+    console.log("[createBooking] Booking data to save:", JSON.stringify(bookingData, null, 2));
+
+    const booking = new Booking(bookingData);
+
+    // Validate before saving to catch errors early
+    const validationError = booking.validateSync();
+    if (validationError) {
+      console.error("[createBooking] Validation errors:", JSON.stringify(validationError.errors, null, 2));
+      const errorMessages = Object.values(validationError.errors).map(err => err.message).join(", ");
+      return res.status(400).json({
+        success: false,
+        message: `Booking validation failed: ${errorMessages}`
+      });
+    }
+
+    await booking.save();
+
+    // Lock the selected seats temporarily to prevent double booking
+    if (showData.seatTiers && Array.isArray(showData.seatTiers)) {
       for (const seat of bookedSeatsWithTier) {
-        let tierIndex = showData.seatTiers.findIndex((t) => t.tierName === seat.tierName);
+        const tierIndex = showData.seatTiers.findIndex(
+          (t) => t.tierName === seat.tierName
+        );
 
-        // Ensure tier exists in showData so the Stripe webhook can mark it paid later.
-        if (tierIndex === -1) {
-          showData.seatTiers.push({
-            tierName: seat.tierName,
-            price: seat.price,
-            occupiedSeats: {},
-          });
-          tierIndex = showData.seatTiers.length - 1;
+        if (tierIndex !== -1) {
+          if (!showData.seatTiers[tierIndex].occupiedSeats) {
+            showData.seatTiers[tierIndex].occupiedSeats = {};
+          }
+
+          showData.seatTiers[tierIndex].occupiedSeats[seat.seatNumber] = `LOCKED:${booking._id.toString()}`;
         }
-
-        if (!showData.seatTiers[tierIndex].occupiedSeats) {
-          showData.seatTiers[tierIndex].occupiedSeats = {};
-        }
-
-        // If someone locked/booked it between availability check and now, abort
-        if (showData.seatTiers[tierIndex].occupiedSeats[seat.seatNumber]) {
-          await Booking.findByIdAndDelete(booking._id);
-          return res.status(409).json({
-            success: false,
-            message: "Selected seats are not available.",
-          });
-        }
-
-        showData.seatTiers[tierIndex].occupiedSeats[seat.seatNumber] = `LOCKED:${booking._id.toString()}`;
       }
       showData.markModified("seatTiers");
       await showData.save();
@@ -268,22 +333,39 @@ export const createBooking = async (req, res) => {
     // Stripe Gateway initialize
     const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    const amountInUsd = convertInrToUsd(totalAmount);
-
-    // Creating line items from Stripe
-    const lineItems = [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: showData.movie.title,
-            description: `${bookedSeatsWithTier.length} seat(s) - Screen ${showData.screen?.screenNumber || ""} at ${showData.theatre?.name || ""}`,
-          },
-          unit_amount: Math.round(amountInUsd * 100),
+    // STRIPE PAYMENT (INR) - Create line items per seat with correct pricing
+    const lineItems = bookedSeatsWithTier.map((seat) => ({
+      price_data: {
+        currency: "inr",
+        product_data: {
+          name: `${showData.movie.title} - ${seat.tierName}`,
+          description: `Seat ${seat.seatNumber} | Screen ${showData.screen?.screenNumber || ""} | ${showData.theatre?.name || ""}`,
         },
-        quantity: 1,
+        unit_amount: Math.round(Number(seat.price) * 100), // INR → paise
       },
-    ];
+      quantity: 1,
+    }));
+
+    // Calculate total amount in paise for verification
+    const totalAmountInPaise = Math.round(totalAmount * 100);
+    const lineItemsTotal = lineItems.reduce((sum, item) => sum + item.price_data.unit_amount, 0);
+    
+    // Log for debugging the discrepancy
+    console.log("=== STRIPE PAYMENT DEBUG ===");
+    console.log("Total Amount Calculated:", totalAmount);
+    console.log("Total Amount in Paise:", totalAmountInPaise);
+    console.log("Line Items Total:", lineItemsTotal);
+    console.log("Number of Seats:", bookedSeatsWithTier.length);
+    console.log("============================");
+    
+    // Verify that our calculation matches the line items total
+    if (totalAmountInPaise !== lineItemsTotal) {
+      console.error("PRICE MISMATCH DETECTED!", {
+        calculated: totalAmountInPaise,
+        lineItems: lineItemsTotal,
+        difference: totalAmountInPaise - lineItemsTotal
+      });
+    }
 
     const session = await stripeInstance.checkout.sessions.create({
       success_url: `${origin}/my-bookings?payment=success&session_id={CHECKOUT_SESSION_ID}`,
@@ -314,28 +396,14 @@ export const createBooking = async (req, res) => {
     if (error.name === 'ValidationError') {
       return res.status(400).json({
         success: false,
-        message: "Invalid booking data. Please check all fields and try again."
+        message: "Invalid booking data provided."
       });
     }
     
     if (error.name === 'CastError') {
       return res.status(400).json({
         success: false,
-        message: "Invalid data format. Please check your selection and try again."
-      });
-    }
-    
-    if (error.type === 'StripeCardError') {
-      return res.status(400).json({
-        success: false,
-        message: "Payment failed. Please check your card details and try again."
-      });
-    }
-    
-    if (error.type === 'StripeRateLimitError') {
-      return res.status(429).json({
-        success: false,
-        message: "Too many requests. Please wait a moment and try again."
+        message: "Invalid show ID format."
       });
     }
     
@@ -398,42 +466,42 @@ export const fetchOccupiedSeats = async (req, res) => {
     // Generic error with user-friendly message
     res.status(500).json({ 
       success: false, 
-      message: "Unable to load seat information. Please try again in a few minutes." 
+      message: "Unable to load seat information right now. Please try again in a few minutes." 
     });
   }
 };
 
 export const fetchUserBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ user: req.user.id })
-      .populate({ path: "show", populate: { path: "movie" } })
-      .populate("theatre")
-      .populate("screen")
+    const userId = req.user._id;
+    const statusFilter = req.query.status;
+
+    let query = { user: userId };
+    if (statusFilter && ["confirmed", "cancelled"].includes(statusFilter)) {
+      query.status = statusFilter;
+    } else if (!statusFilter || statusFilter === "active") {
+      query.status = { $in: ["confirmed", "tentative"] };
+      query.expiresAt = { $gt: new Date() };
+    }
+
+    const bookings = await Booking.find(query)
+      .populate("show")
+      .populate({
+        path: "show",
+        populate: [
+          { path: "movie" },
+          { path: "theatre" },
+          { path: "screen" },
+        ],
+      })
       .sort({ createdAt: -1 });
 
     res.json({ success: true, bookings });
   } catch (error) {
     console.error("[fetchUserBookings]", error);
-    
-    // Handle specific error cases
-    if (error.name === 'CastError') {
-      return res.status(500).json({
-        success: false,
-        message: "Unable to load your bookings. Please log out and log back in."
-      });
-    }
-    
-    if (error.message && error.message.includes('timeout')) {
-      return res.status(500).json({
-        success: false,
-        message: "Loading your bookings is taking too long. Please try again."
-      });
-    }
-    
-    // Generic error with user-friendly message
     res.status(500).json({ 
       success: false, 
-      message: "Unable to load your bookings right now. Please try again in a few minutes." 
+      message: "Unable to load your bookings. Please try again." 
     });
   }
 };
@@ -441,49 +509,64 @@ export const fetchUserBookings = async (req, res) => {
 export const cancelBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { reason } = req.body;
+    const userId = req.user._id;
 
-    const booking = await Booking.findById(bookingId);
+    // Find booking and verify ownership
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      user: userId,
+    }).populate("show");
 
     if (!booking) {
-      return res.json({ success: false, message: "Booking not found" });
-    }
-
-    if (booking.user !== req.user.id) {
-      return res.json({
+      return res.status(404).json({
         success: false,
-        message: "Unauthorized to cancel this booking",
+        message: "Booking not found or unauthorized access.",
       });
     }
 
-    if (booking.isPaid === false) {
-      return res.json({
+    // Check if booking can be cancelled
+    if (booking.status !== "confirmed") {
+      return res.status(400).json({
         success: false,
-        message: "Cannot cancel unpaid bookings",
+        message: "Only confirmed bookings can be cancelled.",
       });
     }
 
-    // Release seats back to available pool (only if they were marked – i.e. was paid)
-    const showData = await Show.findById(booking.show);
-    if (showData && showData.seatTiers) {
-      booking.bookedSeats.forEach((seat) => {
-        const tierIndex = showData.seatTiers.findIndex(
-          (t) => t.tierName === seat.tierName
+    // Check cancellation deadline
+    const showTime = new Date(booking.show.dateTime);
+    const currentTime = new Date();
+    const hoursUntilShow = (showTime - currentTime) / (1000 * 60 * 60);
+
+    if (hoursUntilShow < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot cancel booking within 2 hours of show time.",
+      });
+    }
+
+    // Release the seats back to available
+    if (booking.show && booking.show.seatTiers) {
+      for (const bookedSeat of booking.bookedSeats) {
+        const tierIndex = booking.show.seatTiers.findIndex(
+          (t) => t.tierName === bookedSeat.tierName
         );
-        if (tierIndex !== -1 && showData.seatTiers[tierIndex].occupiedSeats) {
-          delete showData.seatTiers[tierIndex].occupiedSeats[seat.seatNumber];
+        
+        if (tierIndex !== -1 && booking.show.seatTiers[tierIndex].occupiedSeats) {
+          delete booking.show.seatTiers[tierIndex].occupiedSeats[bookedSeat.seatNumber];
         }
-      });
-      showData.occupiedSeatsCount = Math.max(0, (showData.occupiedSeatsCount || 0) - booking.bookedSeats.length);
-      showData.markModified("seatTiers");
-      await showData.save();
+      }
+      booking.show.markModified("seatTiers");
+      await booking.show.save();
     }
 
-    booking.cancellationReason = reason || "User requested cancellation";
-    booking.isPaid = false;
+    // Update booking status
+    booking.status = "cancelled";
     await booking.save();
 
-    res.json({ success: true, message: "Booking cancelled successfully" });
+    res.json({
+      success: true,
+      message: "Booking cancelled successfully. Refund will be processed shortly.",
+    });
   } catch (error) {
     console.error("[cancelBooking]", error);
     
@@ -509,4 +592,3 @@ export const cancelBooking = async (req, res) => {
     });
   }
 };
-
