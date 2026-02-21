@@ -3,6 +3,7 @@ import BlurCircle from "../components/BlurCircle";
 import { useAppContext } from "../context/AppContext";
 import UpcomingMovieCard from "../components/UpcomingMovieCard";
 import Loading from "../components/Loading";
+import { Film } from "lucide-react";
 
 const Upcoming = () => {
   const { upcomingMovies, loading } = useAppContext();
@@ -11,21 +12,35 @@ const Upcoming = () => {
     return <Loading />;
   }
 
-  return upcomingMovies.length > 0 ? (
-    <div className="relative my-40 mb-60 px-6 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[80vh]">
+  return (
+    <div className="relative pt-24 pb-20 px-4 sm:px-6 md:px-12 lg:px-20 xl:px-36 overflow-hidden min-h-screen">
       <BlurCircle top="100px" />
       <BlurCircle bottom="0" right="100px" />
 
-      <h1 className="font-medium text-xl my-4">Upcoming Movies</h1>
-      <div className="flex flex-wrap max-sm:justify-center gap-9 max-md:mt-10">
-        {upcomingMovies.map((movie) => (
-          <UpcomingMovieCard movie={movie} key={movie.id} />
-        ))}
-      </div>
-    </div>
-  ) : (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-3xl font-bold text-center">No movies available</h1>
+      <h1 className="font-semibold text-2xl mb-2" style={{ color: "var(--text-primary)" }}>
+        Upcoming Movies
+      </h1>
+      <p className="text-sm mb-8" style={{ color: "var(--text-muted)" }}>
+        Movies releasing soon in theatres
+      </p>
+
+      {upcomingMovies.length > 0 ? (
+        <div className="movie-grid">
+          {upcomingMovies.map((movie) => (
+            <UpcomingMovieCard movie={movie} key={movie.id} />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="flex flex-col items-center justify-center h-64 rounded-xl"
+          style={{ backgroundColor: "var(--bg-secondary)" }}
+        >
+          <Film className="w-10 h-10 mb-3" style={{ color: "var(--text-muted)" }} />
+          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
+            No upcoming movies available
+          </p>
+        </div>
+      )}
     </div>
   );
 };
