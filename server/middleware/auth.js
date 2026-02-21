@@ -30,14 +30,20 @@ export const protectManager = async (req, res, next) => {
       ? authHeader.slice(7)
       : null;
 
+    console.log("protectManager: authHeader:", authHeader);
+    console.log("protectManager: token:", token);
+
     if (!token) {
       return res.json({ success: false, message: "not authorized" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("protectManager: decoded:", decoded);
     
     // Check if user exists and has manager role
     const user = await User.findById(decoded.id);
+    console.log("protectManager: user found:", !!user);
+    console.log("protectManager: user role:", user?.role);
     if (!user || user.role !== "manager") {
       return res.json({ success: false, message: "not authorized - manager role required" });
     }
@@ -49,6 +55,7 @@ export const protectManager = async (req, res, next) => {
     };
     next();
   } catch (error) {
+    console.log("protectManager error:", error.message);
     return res.json({ success: false, message: "not authorized" });
   }
 };

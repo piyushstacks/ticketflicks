@@ -166,57 +166,45 @@ const UniversalSearch = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  return (
-    <div 
-      ref={searchContainerRef}
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4"
-      onClick={handleOverlayClick}
-    >
-      {/* Backdrop */}
-      <div className={`absolute inset-0 ${isDark ? 'bg-black/80' : 'bg-white/80'} backdrop-blur-sm`} />
+    return (
+      <div 
+        ref={searchContainerRef}
+        className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4"
+        onClick={handleOverlayClick}
+      >
+        {/* Backdrop */}
+        <div className={`absolute inset-0 bg-black/80 backdrop-blur-lg`} />
       
-      {/* Search Container */}
-      <div className={`relative w-full max-w-2xl max-h-[80vh] rounded-2xl shadow-2xl backdrop-blur-xl border overflow-hidden ${
-        isDark 
-          ? 'bg-black/90 border-white/20' 
-          : 'bg-white/95 border-gray-200'
-      }`}>
+        {/* Search Container */}
+        <div className="glass-card shadow-2xl border border-white/10 relative w-full max-w-2xl max-h-[80vh] rounded-2xl overflow-hidden animate-fade-in">
         {/* Search Input */}
         <div className={`flex items-center gap-3 p-4 border-b ${
-          isDark ? 'border-white/20' : 'border-gray-200'
-        }`}>
+            isDark ? 'border-white/20' : 'border-gray-200'
+          }`}>
           <Search className={`w-5 h-5 ${isDark ? 'text-white/60' : 'text-gray-500'}`} />
           <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search movies and theatres..."
-            className={`flex-1 bg-transparent outline-none text-lg ${
-              isDark ? 'text-white placeholder-white/40' : 'text-gray-800 placeholder-gray-500'
-            }`}
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search movies and theatres..."
+              className="flex-1 bg-transparent outline-none text-lg movie-title placeholder-movie-meta"
           />
           <button
-            onClick={onClose}
-            className={`p-2 rounded-full transition ${
-              isDark 
-                ? 'hover:bg-white/10 text-white/60 hover:text-white' 
-                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <X className="w-5 h-5" />
-          </button>
+              onClick={onClose}
+              className="btn-secondary p-2 rounded-full transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
         </div>
 
         {/* Search Results */}
         <div className="overflow-y-auto max-h-[60vh]">
-          {isSearching && (
-            <div className="flex items-center justify-center p-8">
-              <div className={`animate-spin rounded-full h-6 w-6 border-2 border-transparent ${
-                isDark ? 'border-t-white' : 'border-t-primary'
-              }`} />
-            </div>
-          )}
+            {isSearching && (
+              <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-accent border-t-transparent" />
+              </div>
+            )}
 
           {!isSearching && searchResults.length === 0 && searchQuery && (
             <div className="text-center p-8">
@@ -246,24 +234,20 @@ const UniversalSearch = ({ isOpen, onClose }) => {
             <div className="py-2">
               {searchResults.map((result, index) => (
                 <button
-                  key={`${result.type}-${result.id}`}
-                  onClick={() => handleResultClick(result)}
-                  className={`w-full flex items-center gap-4 p-4 text-left transition ${
-                    index === selectedIndex
-                      ? isDark 
-                        ? 'bg-white/10' 
-                        : 'bg-gray-100'
-                      : isDark 
-                        ? 'hover:bg-white/5' 
-                        : 'hover:bg-gray-50'
-                  }`}
+                    key={`${result.type}-${result.id}`}
+                    onClick={() => handleResultClick(result)}
+                    className={`w-full flex items-center gap-4 p-4 text-left transition-all duration-200 rounded-xl ${
+                      index === selectedIndex
+                        ? 'bg-accent/10 shadow-md scale-[1.01]'
+                        : 'hover:bg-accent/5 hover:shadow-sm'
+                    }`}
                 >
                   {/* Icon */}
                   <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                    result.type === 'movie'
-                      ? isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600'
-                      : isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
-                  }`}>
+                      result.type === 'movie'
+                        ? 'bg-accent/20 text-accent'
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}>
                     {result.type === 'movie' ? (
                       <Film className="w-5 h-5" />
                     ) : (
@@ -273,31 +257,23 @@ const UniversalSearch = ({ isOpen, onClose }) => {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <h3 className={`font-medium truncate ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {result.title}
-                    </h3>
+                      <h3 className="font-medium truncate movie-title">
+                        {result.title}
+                      </h3>
                     {result.subtitle && (
-                      <p className={`text-sm truncate ${
-                        isDark ? 'text-white/60' : 'text-gray-600'
-                      }`}>
-                        {result.subtitle}
-                      </p>
+                        <p className="text-sm truncate movie-meta">
+                          {result.subtitle}
+                        </p>
                     )}
                   </div>
 
                   {/* Type Badge */}
                   <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    result.type === 'movie'
-                      ? isDark 
-                        ? 'bg-red-500/20 text-red-400' 
-                        : 'bg-red-100 text-red-600'
-                      : isDark 
-                        ? 'bg-blue-500/20 text-blue-400' 
-                        : 'bg-blue-100 text-blue-600'
-                  }`}>
-                    {result.type === 'movie' ? 'Movie' : 'Theatre'}
+                      result.type === 'movie'
+                        ? 'bg-accent/20 text-accent' 
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      {result.type === 'movie' ? 'Movie' : 'Theatre'}
                   </div>
                 </button>
               ))}

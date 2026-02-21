@@ -7,20 +7,30 @@ import { MapPin, Calendar, CreditCard, FileText, ExternalLink } from "lucide-rea
 import toast from "react-hot-toast";
 
 const MyBookings = () => {
-  const { axios, getToken, user, imageBaseURL } = useAppContext();
+  const { axios, getToken, user, imageBaseURL, loading: appLoading } = useAppContext();
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  console.log("[MyBookings] RENDER - user:", user?.email, "appLoading:", appLoading, "authChecked:", authChecked, "retryCount:", retryCount);
 
   const fetchMyBookings = async () => {
     try {
+      console.log("Fetching bookings for user:", user);
+      const token = await getToken();
+      console.log("Token retrieved:", token ? "Yes" : "No");
+      
       const { data } = await axios.get("/api/booking/my-bookings", {
-        headers: { Authorization: `Bearer ${await getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Bookings response:", data);
       if (data.success) {
         setBookings(data.bookings || []);
+        console.log("Bookings set:", data.bookings?.length || 0);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching bookings:", error);
       toast.error("Failed to load bookings");
     } finally {
       setIsLoading(false);
@@ -29,28 +39,66 @@ const MyBookings = () => {
 
   useEffect(() => {
     if (user) fetchMyBookings();
+    console.log("[MyBookings] Auth state:", { user: user?.email, userId: user?.id });
   }, [user]);
 
   useEffect(() => {
     const confirmPaymentIfNeeded = async () => {
-      if (!user) return;
-
+      console.log("[MyBookings] confirmPaymentIfNeeded called, user:", user?.email, "appLoading:", appLoading);
+      
+      // Don't proceed if app is still loading auth
+      if (appLoading) {
+        console.log("[MyBookings] App still loading, waiting...");
+        return;
+      }
+      
+      // Check for URL params first
       const params = new URLSearchParams(window.location.search);
       const payment = params.get("payment");
       const sessionId = params.get("session_id");
-      if (payment !== "success" || !sessionId) return;
+      
+      if (payment !== "success" || !sessionId) {
+        console.log("[MyBookings] No payment success params, setting authChecked");
+        setAuthChecked(true);
+        return;
+      }
+      
+      // We have payment success params - ensure auth is loaded
+      if (!user) {
+        console.log("[MyBookings] No user yet, retry count:", retryCount);
+        
+        // Check storage directly
+        const stored = localStorage.getItem("auth") || sessionStorage.getItem("auth");
+        if (stored && retryCount < 10) { // Max 10 retries (5 seconds)
+          console.log("[MyBookings] Auth exists in storage, retrying in 500ms...");
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 500);
+          return;
+        }
+        
+        console.log("[MyBookings] No auth found or max retries reached");
+        setAuthChecked(true);
+        return;
+      }
 
+      console.log("[MyBookings] User available, confirming payment. URL params:", { payment, sessionId });
+      
       try {
-        console.log("Confirming payment with session ID:", sessionId);
+        console.log("[MyBookings] Confirming payment with session ID:", sessionId);
         const token = await getToken();
+        console.log("[MyBookings] Got token for payment confirmation:", token ? "Yes" : "No");
+        
         const response = await axios.post(
           "/api/booking/confirm-stripe",
           { sessionId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log("Payment confirmation response:", response.data);
+        console.log("[MyBookings] Payment confirmation response:", response.data);
+        toast.success("Payment confirmed successfully!");
       } catch (error) {
-        console.error("Payment confirmation error:", error);
+        console.error("[MyBookings] Payment confirmation error:", error);
+        console.error("[MyBookings] Error response:", error.response?.data);
         toast.error("Payment received, but booking confirmation is still processing.");
       } finally {
         params.delete("payment");
@@ -61,20 +109,22 @@ const MyBookings = () => {
           "",
           window.location.pathname + (next ? `?${next}` : "")
         );
+        setAuthChecked(true);
+        setRetryCount(0);
         fetchMyBookings();
       }
     };
 
     confirmPaymentIfNeeded();
-  }, [user]);
+  }, [user, appLoading, retryCount]);
 
   useEffect(() => {
     const handleVisibility = () => {
-      if (!document.hidden && user) fetchMyBookings();
+      if (!document.hidden && user && authChecked) fetchMyBookings();
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [user]);
+  }, [user, authChecked]);
 
   if (isLoading) return <Loading />;
 
@@ -94,6 +144,12 @@ const MyBookings = () => {
       ) : (
         <div className="space-y-6 max-w-4xl">
           {bookings.map((item) => {
+            console.log("Booking item:", { 
+              id: item._id, 
+              isPaid: item.isPaid, 
+              paymentLink: item.paymentLink,
+              amount: item.amount 
+            });
             const theatre = item.theatre;
             const posterPath = item.show?.movie?.poster_path;
             const posterUrl = posterPath?.startsWith("http")

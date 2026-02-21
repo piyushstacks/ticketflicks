@@ -47,7 +47,9 @@ const UpcomingMovieDetails = () => {
     <div className="px-6 md:px-16 lg:px-40 pt-30 md:pt-50">
       <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
         <img
-          src={imageBaseURL + upcomingMovie.poster_path}
+          src={upcomingMovie.poster_path?.startsWith("http") 
+            ? upcomingMovie.poster_path 
+            : imageBaseURL + upcomingMovie.poster_path}
           alt={upcomingMovie.title}
           className="max-md:mx-auto rounded-xl h-104 max-w-70 object-cover"
           onError={(e) => {

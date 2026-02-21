@@ -21,6 +21,10 @@ const FeaturedSection = () => {
   }
 
   const { shows, loading } = useAppContext();
+  
+  console.log("[FeaturedSection] Shows data:", shows);
+  console.log("[FeaturedSection] Loading state:", loading);
+  console.log("[FeaturedSection] Shows length:", shows?.length);
 
   if (loading) {
     return (

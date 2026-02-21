@@ -66,22 +66,57 @@ const ManagerShows = () => {
   const fetchShows = async () => {
     try {
       setLoading(true);
-      console.log("Fetching shows...");
+      console.log("[ManagerShows] Fetching shows...");
+      
+      // Check if user is authenticated and has proper role
+      const authHeaders = getAuthHeaders();
+      console.log("[ManagerShows] Auth headers:", authHeaders);
+      
+      if (!authHeaders.Authorization) {
+        console.error("[ManagerShows] No authentication token found");
+        toast.error("Authentication required. Please log in.");
+        setLoading(false);
+        return;
+      }
+      
       const { data } = await axios.get("/api/manager/shows", {
-        headers: getAuthHeaders(),
+        headers: authHeaders,
       });
 
-      console.log("Shows response:", data);
-
+      console.log("[ManagerShows] Shows response:", data);
+      console.log("[ManagerShows] Response success:", data.success);
+      console.log("[ManagerShows] Shows count:", data.shows?.length);
+      
       if (data.success) {
-        setShows(data.shows || []);
-        console.log("Shows set:", data.shows);
+        // Validate and sanitize show data
+        const validShows = (data.shows || []).filter(show => {
+          const isValid = show && show._id && show.movie && show.screen;
+          if (!isValid) {
+            console.warn("[ManagerShows] Filtering out invalid show:", show);
+          }
+          return isValid;
+        });
+        
+        console.log("[ManagerShows] Setting validated shows:", validShows.length);
+        if (validShows.length > 0) {
+          console.log("[ManagerShows] First validated show sample:", JSON.stringify(validShows[0], null, 2));
+          console.log("[ManagerShows] First show movie:", validShows[0].movie);
+          console.log("[ManagerShows] First show screen:", validShows[0].screen);
+        }
+        setShows(validShows);
       } else {
-        console.error("Shows API error:", data.message);
+        console.error("[ManagerShows] API error:", data.message);
+        toast.error(data.message || "Failed to fetch shows");
       }
     } catch (error) {
-      console.error("Error fetching shows:", error);
-      toast.error("Failed to fetch shows");
+      console.error("[ManagerShows] Error fetching shows:", error);
+      if (error.response?.status === 401) {
+        toast.error("Authentication failed. Please log in again.");
+      } else if (error.response?.status === 403) {
+        toast.error("Access denied. Manager privileges required.");
+      } else {
+        toast.error("Failed to fetch shows");
+      }
     } finally {
       setLoading(false);
     }
@@ -89,37 +124,63 @@ const ManagerShows = () => {
 
   const fetchMovies = async () => {
     try {
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders.Authorization) {
+        console.warn("[ManagerShows] No auth token for movies fetch");
+        return;
+      }
+      
       const { data } = await axios.get("/api/manager/movies/available", {
-        headers: getAuthHeaders(),
+        headers: authHeaders,
       });
 
       if (data.success) {
-        setMovies(data.movies || []);
+        // Validate movie data
+        const validMovies = (data.movies || []).filter(movie => movie && movie._id && movie.title);
+        setMovies(validMovies);
       } else {
         console.error("Movies API error:", data.message);
+        toast.error(data.message || "Failed to fetch movies");
       }
     } catch (error) {
       console.error("Error fetching movies:", error);
-      toast.error("Failed to fetch movies");
+      if (error.response?.status === 401) {
+        toast.error("Authentication required for movies");
+      } else {
+        toast.error("Failed to fetch movies");
+      }
     }
   };
 
   const fetchScreens = async () => {
     try {
+      const authHeaders = getAuthHeaders();
+      if (!authHeaders.Authorization) {
+        console.warn("[ManagerShows] No auth token for screens fetch");
+        return;
+      }
+      
       const { data } = await axios.get("/api/manager/screens", {
-        headers: getAuthHeaders(),
+        headers: authHeaders,
       });
 
       if (data.success) {
         console.log("Screens fetched:", data.screens);
         console.log("First screen seatTiers:", data.screens?.[0]?.seatTiers);
-        setScreens(data.screens || []);
+        // Validate screen data
+        const validScreens = (data.screens || []).filter(screen => screen && screen._id);
+        setScreens(validScreens);
       } else {
         console.error("Screens API error:", data.message);
+        toast.error(data.message || "Failed to fetch screens");
       }
     } catch (error) {
       console.error("Error fetching screens:", error);
-      toast.error("Failed to fetch screens");
+      if (error.response?.status === 401) {
+        toast.error("Authentication required for screens");
+      } else {
+        toast.error("Failed to fetch screens");
+      }
     }
   };
 
@@ -497,40 +558,90 @@ const ManagerShows = () => {
   };
 
   const getFilteredShows = () => {
+    console.log("[ManagerShows] getFilteredShows called, raw shows:", shows.length);
     let filtered = [...shows];
     
     // Filter by week
     const currentWeek = getCurrentWeekDates();
     const nextWeek = getNextWeekDates();
     
+    console.log("[ManagerShows] Filter week:", filterWeek);
+    console.log("[ManagerShows] Current week:", currentWeek);
+    console.log("[ManagerShows] Next week:", nextWeek);
+    
     if (filterWeek === 'current') {
       filtered = filtered.filter(show => {
-        const showDate = new Date(show.showDateTime);
+        // Handle both showDateTime and date fields for backward compatibility
+        const dateField = show.showDateTime || show.startDate;
+        if (!dateField) {
+          console.warn(`[ManagerShows] Show ${show._id} missing date field`);
+          return false;
+        }
+        
+        const showDate = new Date(dateField);
         const start = new Date(currentWeek.start);
         const end = new Date(currentWeek.end);
         end.setHours(23, 59, 59, 999);
-        return showDate >= start && showDate <= end;
+        
+        // Validate date
+        if (isNaN(showDate.getTime())) {
+          console.warn(`[ManagerShows] Invalid date for show ${show._id}:`, dateField);
+          return false;
+        }
+        
+        const inRange = showDate >= start && showDate <= end;
+        console.log(`[ManagerShows] Show ${show._id}: date=${showDate}, inRange=${inRange}`);
+        return inRange;
       });
     } else if (filterWeek === 'next') {
       filtered = filtered.filter(show => {
-        const showDate = new Date(show.showDateTime);
+        const dateField = show.showDateTime || show.startDate;
+        if (!dateField) {
+          console.warn(`[ManagerShows] Show ${show._id} missing date field`);
+          return false;
+        }
+        
+        const showDate = new Date(dateField);
         const start = new Date(nextWeek.start);
         const end = new Date(nextWeek.end);
         end.setHours(23, 59, 59, 999);
+        
+        if (isNaN(showDate.getTime())) {
+          console.warn(`[ManagerShows] Invalid date for show ${show._id}:`, dateField);
+          return false;
+        }
+        
         return showDate >= start && showDate <= end;
       });
     }
     
+    console.log("[ManagerShows] After week filter:", filtered.length);
+    
     // Filter by movie
     if (filterMovie) {
-      filtered = filtered.filter(show => show.movie?._id === filterMovie);
+      filtered = filtered.filter(show => {
+        const hasMovie = show.movie?._id === filterMovie;
+        if (!hasMovie) {
+          console.log(`[ManagerShows] Filtering out show ${show._id} - movie mismatch`);
+        }
+        return hasMovie;
+      });
+      console.log("[ManagerShows] After movie filter:", filtered.length);
     }
     
     // Filter by screen
     if (filterScreen) {
-      filtered = filtered.filter(show => show.screen?._id === filterScreen);
+      filtered = filtered.filter(show => {
+        const hasScreen = show.screen?._id === filterScreen;
+        if (!hasScreen) {
+          console.log(`[ManagerShows] Filtering out show ${show._id} - screen mismatch`);
+        }
+        return hasScreen;
+      });
+      console.log("[ManagerShows] After screen filter:", filtered.length);
     }
     
+    console.log("[ManagerShows] Final filtered count:", filtered.length);
     return filtered;
   };
 
@@ -548,6 +659,12 @@ const ManagerShows = () => {
   }
 
   const filteredShows = getFilteredShows();
+  console.log("[ManagerShows] RENDER - filteredShows.length:", filteredShows.length);
+  console.log("[ManagerShows] RENDER - filteredShows:", filteredShows);
+  if (filteredShows.length > 0) {
+    console.log("[ManagerShows] RENDER - First show movie:", filteredShows[0].movie);
+    console.log("[ManagerShows] RENDER - First show screen:", filteredShows[0].screen);
+  }
 
   return (
     <div className="space-y-6">
@@ -589,8 +706,8 @@ const ManagerShows = () => {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 mb-10 backdrop-blur-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-4 md:p-6 mb-6 md:mb-10 backdrop-blur-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
               <Calendar className="w-3 h-3 text-primary" />
@@ -667,18 +784,18 @@ const ManagerShows = () => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl shadow-primary/20 ring-1 ring-white/10">
-            <div className="p-8 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
-              <div className="flex items-center gap-5">
-                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
-                  <Calendar className="w-8 h-8 text-primary" />
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-start md:items-center justify-center z-50 p-2 md:p-4 animate-in fade-in duration-300 overflow-y-auto">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl md:rounded-3xl w-full max-w-2xl my-4 md:my-0 overflow-hidden shadow-2xl shadow-primary/20 ring-1 ring-white/10">
+            <div className="p-4 md:p-8 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
+              <div className="flex items-center gap-3 md:gap-5">
+                <div className="w-10 h-10 md:w-14 md:h-14 bg-primary/10 rounded-xl md:rounded-2xl flex items-center justify-center border border-primary/20">
+                  <Calendar className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white tracking-tight">
+                  <h2 className="text-lg md:text-2xl font-black text-white tracking-tight">
                     {editingId ? "Update Schedule" : "Schedule New Show"}
                   </h2>
-                  <p className="text-gray-400 text-sm font-medium mt-1">
+                  <p className="text-gray-400 text-xs md:text-sm font-medium mt-1">
                     Configure show timings and duration for your screen
                   </p>
                 </div>
@@ -704,8 +821,8 @@ const ManagerShows = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-10 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <form onSubmit={handleSubmit} className="p-4 md:p-10 space-y-6 md:space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 {/* Movie Selection */}
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
@@ -942,7 +1059,7 @@ const ManagerShows = () => {
       )}
 
       {/* Shows Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 pb-6">
         {filteredShows.length > 0 ? (
           filteredShows.map((show) => (
             <div
@@ -955,18 +1072,28 @@ const ManagerShows = () => {
               <div className="relative h-48 overflow-hidden">
                 <img
                   src={show.movie?.poster_path ? (show.movie.poster_path.startsWith('http') ? show.movie.poster_path : `${imageBaseURL}${show.movie.poster_path}`) : '/placeholder-movie.jpg'}
-                  alt={show.movie?.title}
+                  alt={show.movie?.title || 'Movie Poster'}
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  onError={(e) => {
+                    e.target.src = '/placeholder-movie.jpg';
+                    e.target.onerror = null;
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
-                  <h3 className="text-xl font-bold text-white line-clamp-1">{show.movie?.title}</h3>
+                  <h3 className="text-xl font-bold text-white line-clamp-1">
+                    {show.movie?.title || 'Unknown Movie'}
+                  </h3>
                   <div className="flex items-center gap-2 mt-1 text-sm text-gray-300">
                     <span className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs font-semibold">
                       {show.language || "English"}
                     </span>
-                    <span>•</span>
-                    <span>{show.screen?.name || `Screen ${show.screen?.screenNumber}`}</span>
+                    {show.screen && (
+                      <>
+                        <span>•</span>
+                        <span>{show.screen.name || `Screen ${show.screen.screenNumber}`}</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="absolute top-4 right-4">
@@ -979,31 +1106,34 @@ const ManagerShows = () => {
               </div>
 
               {/* Show Card Content */}
-              <div className="p-5 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 text-gray-300 bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
-                    <Clock className="w-5 h-5 text-primary" />
-                    <div>
+              <div className="p-3 md:p-5 space-y-3 md:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4">
+                  <div className="flex items-center gap-2 md:gap-3 text-gray-300 bg-gray-800/50 p-2 md:p-3 rounded-lg border border-gray-700/50">
+                    <Clock className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Show Time</p>
-                      <p className="text-sm font-semibold">{formatShowTime(show.showTime)}</p>
+                      <p className="text-xs md:text-sm font-semibold truncate">{formatShowTime(show.showTime || '')}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-gray-300 bg-gray-800/50 p-3 rounded-lg border border-gray-700/50">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    <div>
+                  <div className="flex items-center gap-2 md:gap-3 text-gray-300 bg-gray-800/50 p-2 md:p-3 rounded-lg border border-gray-700/50">
+                    <Calendar className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Start Date</p>
-                      <p className="text-sm font-semibold">
-                        {new Date(show.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      <p className="text-xs md:text-sm font-semibold truncate">
+                        {show.startDate ? new Date(show.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Not set'}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-sm py-2 px-1">
-                  <div className="flex flex-col">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm py-1 md:py-2 px-1">
+                  <div className="flex flex-col min-w-0">
                     <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Date Range</span>
-                    <span className="text-gray-300">
-                      {new Date(show.startDate).toLocaleDateString()} - {new Date(show.endDate).toLocaleDateString()}
+                    <span className="text-gray-300 text-xs md:text-sm truncate">
+                      {show.startDate && show.endDate 
+                        ? `${new Date(show.startDate).toLocaleDateString()} - ${new Date(show.endDate).toLocaleDateString()}`
+                        : 'Date range not set'
+                      }
                     </span>
                   </div>
                   <div className="flex flex-col items-end">
@@ -1018,33 +1148,33 @@ const ManagerShows = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-2 border-t border-gray-800">
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-800">
                   <button
                     onClick={() => handleEdit(show)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg transition-all text-sm font-bold border border-blue-500/20"
+                    className="flex-1 min-w-[70px] flex items-center justify-center gap-1 md:gap-2 px-2 md:px-3 py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg transition-all text-xs md:text-sm font-bold border border-blue-500/20"
                     title="Edit Show"
                   >
-                    <Edit2 className="w-4 h-4" />
-                    <span>Edit</span>
+                    <Edit2 className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Edit</span>
                   </button>
                   <button
                     onClick={() => handleToggleStatus(show._id, show.isActive)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all text-sm font-bold border ${
+                    className={`flex-1 min-w-[70px] flex items-center justify-center gap-1 md:gap-2 px-2 md:px-3 py-2 rounded-lg transition-all text-xs md:text-sm font-bold border ${
                       show.isActive 
                         ? 'bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 border-orange-500/20' 
                         : 'bg-green-600/10 hover:bg-green-600/20 text-green-400 border-green-500/20'
                     }`}
                     title={show.isActive ? 'Disable Show' : 'Enable Show'}
                   >
-                    {show.isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
-                    <span>{show.isActive ? 'Disable' : 'Enable'}</span>
+                    {show.isActive ? <PowerOff className="w-3 h-3 md:w-4 md:h-4" /> : <Power className="w-3 h-3 md:w-4 md:h-4" />}
+                    <span className="hidden sm:inline">{show.isActive ? 'Disable' : 'Enable'}</span>
                   </button>
                   <button
                     onClick={() => handleDelete(show._id)}
-                    className="flex items-center justify-center p-2.5 bg-red-600/10 hover:bg-red-600/20 text-red-400 rounded-lg transition-all border border-red-500/20"
+                    className="flex items-center justify-center p-2 bg-red-600/10 hover:bg-red-600/20 text-red-400 rounded-lg transition-all border border-red-500/20"
                     title="Delete Show"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                   </button>
                 </div>
                 
@@ -1059,10 +1189,10 @@ const ManagerShows = () => {
             </div>
           ))
         ) : (
-          <div className="col-span-full text-center py-20 bg-gray-900/20 rounded-2xl border-2 border-gray-800 border-dashed">
-            <Film className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-400">No shows found</h3>
-            <p className="text-gray-500 mt-2">
+          <div className="col-span-full text-center py-12 md:py-20 bg-gray-900/20 rounded-2xl border-2 border-gray-800 border-dashed mx-2 md:mx-0">
+            <Film className="w-12 h-12 md:w-16 md:h-16 text-gray-700 mx-auto mb-4" />
+            <h3 className="text-lg md:text-xl font-bold text-gray-400">No shows found</h3>
+            <p className="text-gray-500 mt-2 text-sm md:text-base px-4">
               {filterWeek === 'current' 
                 ? "No shows scheduled for this week. Create your first show to get started."
                 : "No shows found for the selected filters."}

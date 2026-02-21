@@ -20,6 +20,9 @@ export const AppProvider = ({ children }) => {
   const imageBaseURL = import.meta.env.VITE_TMDB_IMAGE_BASE_URL;
 
   const { user, getAuthHeaders, token } = useAuthContext();
+  
+  console.log("[AppContext] RENDER - user from AuthContext:", user?.email, "token exists:", !!token);
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -62,13 +65,20 @@ export const AppProvider = ({ children }) => {
 
   const fetchShows = async () => {
     try {
+      console.log("[AppContext] Fetching shows from /api/show/all...");
       // First try to get shows (movies with future showtimes)
       const { data } = await axios.get("/api/show/all");
+      console.log("[AppContext] Shows API response:", data);
+      
       if (data.success && data.shows && data.shows.length > 0) {
+        console.log("[AppContext] Setting shows:", data.shows);
         setShows(data.shows || []);
       } else {
+        console.log("[AppContext] No shows found, falling back to movies...");
         // If no shows exist, fall back to getting all active movies
         const moviesResponse = await axios.get("/api/show/movies");
+        console.log("[AppContext] Movies API response:", moviesResponse.data);
+        
         if (moviesResponse.data.success && moviesResponse.data.movies) {
           setShows(moviesResponse.data.movies);
         } else {
@@ -76,6 +86,7 @@ export const AppProvider = ({ children }) => {
         }
       }
     } catch (error) {
+      console.error("[AppContext] Error fetching shows:", error);
       handleError("fetchShows", error);
       // On error, try fallback to movies
       try {

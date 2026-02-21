@@ -628,6 +628,7 @@ const SeatLayout = () => {
       console.log("Booking request token:", token);
       console.log("Booking request seatsWithTier:", seatsWithTier);
       console.log("Booking request showId:", showId);
+      
       const { data } = await axios.post(
         "/api/booking/create",
         {
@@ -636,17 +637,30 @@ const SeatLayout = () => {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       );
-
-      if (data.success && data.url) {
-        toast.success("Redirecting to payment...");
-        window.location.href = data.url;
+      
+      console.log("Booking response:", data);
+      
+      if (data.success) {
+        // Check if auth is properly stored before redirect
+        const authCheck = localStorage.getItem("auth") || sessionStorage.getItem("auth");
+        if (!authCheck) {
+          console.error("[SeatLayout] WARNING: Auth not found in storage before Stripe redirect!");
+          toast.error("Session error. Please log in again before payment.");
+          return;
+        }
+        console.log("[SeatLayout] Auth verified in storage before redirect");
+        
+        if (data.paymentLink) {
+          console.log("Redirecting to Stripe:", data.paymentLink);
+          window.location.href = data.paymentLink;
+        } else {
+          toast.success("Booking created! No payment required.");
+          navigate("/my-bookings");
+        }
       } else {
         toast.error(data.message || "Booking failed");
-        if (data.message?.toLowerCase().includes("not available")) {
-          fetchOccupiedSeats();
-        }
       }
     } catch (error) {
       console.error("Booking error:", error);
@@ -721,7 +735,7 @@ const SeatLayout = () => {
   }
 
   return (
-    <div className="relative min-h-screen px-4 md:px-8 lg:px-16 xl:px-32 pt-20 pb-16 overflow-hidden">
+     <div className="relative min-h-screen px-4 md:px-8 lg:px-16 xl:px-32 pt-20 pb-16 overflow-hidden bg-dark-gradient">
       <BlurCircle top="50px" left="0" />
       <BlurCircle bottom="100px" right="100px" />
 
@@ -735,41 +749,41 @@ const SeatLayout = () => {
       </button>
 
       <div className="max-w-5xl mx-auto">
-        {/* Show Info Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
-            {show.movie?.title || "Movie"}
-          </h1>
-          <div className="flex flex-wrap justify-center gap-3 text-gray-400 text-sm md:text-base">
-            <span className="px-3 py-1 bg-gray-800 rounded-full">
-              {show.theatre?.name || "Theatre"}
-            </span>
-            <span className="px-3 py-1 bg-gray-800 rounded-full">
-              {show.screen?.name || `Screen ${show.screen?.screenNumber}`}
-            </span>
-            <span className="px-3 py-1 bg-primary/20 text-primary rounded-full font-medium">
-              {screenTypeLabel}
-            </span>
-            <span className="px-3 py-1 bg-gray-800 rounded-full">
-              {new Date(show.showDateTime).toLocaleString("en-IN", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              })}
-            </span>
+          {/* Show Info Header */}
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl md:text-4xl font-bold movie-title mb-3">
+              {show.movie?.title || "Movie"}
+            </h1>
+            <div className="flex flex-wrap justify-center gap-3 movie-meta text-sm md:text-base">
+              <span className="px-3 py-1 glass-card rounded-full">
+                {show.theatre?.name || "Theatre"}
+              </span>
+              <span className="px-3 py-1 glass-card rounded-full">
+                {show.screen?.name || `Screen ${show.screen?.screenNumber}`}
+              </span>
+              <span className="px-3 py-1 bg-accent/20 text-accent rounded-full font-medium">
+                {screenTypeLabel}
+              </span>
+              <span className="px-3 py-1 glass-card rounded-full">
+                {new Date(show.showDateTime).toLocaleString("en-IN", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </span>
+            </div>
           </div>
-        </div>
 
         {/* Seat Categories Legend */}
-        <div className="bg-gray-900/50 backdrop-blur-md rounded-xl p-5 mb-6 border border-gray-700">
+    <div className="glass-card backdrop-blur-lg rounded-xl p-5 mb-6 border border-white/10 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <Info className="w-4 h-4 text-gray-400" />
               Seat Categories & Pricing
             </h3>
             <button
-              onClick={handleRefresh}
-              disabled={seatsLoading}
-              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition px-3 py-1.5 bg-gray-800 rounded-lg"
+            onClick={handleRefresh}
+            disabled={seatsLoading}
+            className="btn-secondary flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full"
             >
               <RefreshCw
                 className={`w-3.5 h-3.5 ${seatsLoading ? "animate-spin" : ""}`}
@@ -818,13 +832,13 @@ const SeatLayout = () => {
         </div>
 
         {/* Screen */}
-        <div className="text-center mb-6">
-          <div className="w-3/4 max-w-md mx-auto h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full mb-2" />
-          <p className="text-gray-500 text-xs tracking-widest">SCREEN</p>
-        </div>
+          <div className="text-center mb-6">
+            <div className="w-3/4 max-w-md mx-auto h-2 bg-gradient-to-r from-transparent via-accent to-transparent rounded-full mb-2" />
+            <p className="movie-meta text-xs tracking-widest">SCREEN</p>
+          </div>
 
         {/* Seat Layout */}
-        <div className="bg-gray-900/30 backdrop-blur-md rounded-xl p-6 mb-6 border border-gray-700 overflow-x-auto">
+    <div className="glass-card backdrop-blur-lg rounded-xl p-6 mb-6 border border-white/10 shadow-lg overflow-x-auto">
           {seatLayout?.layout && Array.isArray(seatLayout.layout) ? (
             <div className="flex flex-col items-center min-w-max">
               {seatLayout.layout.map((rowData, rowIndex) =>
@@ -854,8 +868,8 @@ const SeatLayout = () => {
         </div>
 
         {/* Selected Seats Summary */}
-        {selectedSeats.size > 0 && (
-          <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-5 mb-6">
+          {selectedSeats.size > 0 && (
+            <div className="glass-card border border-green-500/30 rounded-xl p-5 mb-6 shadow-md">
             <div className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -885,7 +899,7 @@ const SeatLayout = () => {
         )}
 
         {/* Price Breakdown & Booking */}
-        <div className="bg-gray-900/50 backdrop-blur-md rounded-xl p-6 border border-gray-700">
+    <div className="glass-card backdrop-blur-lg rounded-xl p-6 border border-white/10 shadow-lg">
           <h2 className="text-xl font-bold text-white mb-6">Booking Summary</h2>
 
           {selectedSeats.size > 0 ? (
@@ -921,17 +935,9 @@ const SeatLayout = () => {
               </div>
 
               <button
-                onClick={handleBooking}
-                disabled={bookingLoading}
-                className={`
-                  w-full py-4 px-6 rounded-xl font-bold text-white text-lg
-                  transition-all duration-200 flex items-center justify-center gap-3
-                  ${
-                    bookingLoading
-                      ? "bg-gray-600 cursor-not-allowed opacity-50"
-                      : "bg-primary hover:bg-primary-dull active:scale-[0.98] shadow-lg shadow-primary/30"
-                  }
-                `}
+                  onClick={handleBooking}
+                  disabled={bookingLoading}
+                  className={`btn-primary w-full py-4 px-6 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${bookingLoading ? "bg-gray-600 cursor-not-allowed opacity-50" : "active:scale-[0.98] shadow-lg shadow-accent/30"}`}
               >
                 {bookingLoading ? (
                   <>

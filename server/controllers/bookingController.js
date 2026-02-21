@@ -1,6 +1,7 @@
 import { inngest } from "../inngest/index.js";
 import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
+import User from "../models/User.js";
 import Stripe from "stripe";
 import { markSeatsAndCompleteBooking } from "./stripeWebhooks.js";
 
@@ -279,7 +280,7 @@ export const createBooking = async (req, res) => {
 
     // Create booking record with tentative status
     const bookingData = {
-      user: user._id,
+      user: user.id,
       show: showId,
       theatre: showData.theatre?._id,
       screen: showData.screen?._id,
@@ -333,6 +334,15 @@ export const createBooking = async (req, res) => {
     // Stripe Gateway initialize
     const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+    // Fetch user data for customer information (required for Indian regulations)
+    const userData = await User.findById(user.id);
+    if (!userData) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
     // STRIPE PAYMENT (INR) - Create line items per seat with correct pricing
     const lineItems = bookedSeatsWithTier.map((seat) => ({
       price_data: {
@@ -372,10 +382,17 @@ export const createBooking = async (req, res) => {
       cancel_url: `${origin}/seat-layout/${showId}?payment=cancelled`,
       line_items: lineItems,
       mode: "payment",
+      customer_email: userData.email,
       metadata: {
         bookingId: booking._id.toString(),
+        customerName: userData.name,
+        customerPhone: userData.phone,
       },
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // Expires in 30 minutes
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+      // For Indian regulations compliance - collect customer address
+      shipping_address_collection: {
+        allowed_countries: ['IN']
+      }
     });
 
     booking.paymentLink = session.url;
@@ -390,7 +407,10 @@ export const createBooking = async (req, res) => {
 
     res.json({ success: true, url: session.url });
   } catch (error) {
-    console.error("[createBooking]", error);
+    console.error("[createBooking] Error details:", error);
+    console.error("[createBooking] Error message:", error.message);
+    console.error("[createBooking] Error type:", error.type);
+    console.error("[createBooking] Error stack:", error.stack);
     
     // Handle specific error cases
     if (error.name === 'ValidationError') {
@@ -414,10 +434,10 @@ export const createBooking = async (req, res) => {
       });
     }
     
-    // Generic error with user-friendly message
+    // Return actual error message for debugging
     res.status(500).json({ 
       success: false, 
-      message: "Unable to process your booking right now. Please try again in a few minutes." 
+      message: error.message || "Unable to process your booking right now. Please try again in a few minutes." 
     });
   }
 };
@@ -473,16 +493,20 @@ export const fetchOccupiedSeats = async (req, res) => {
 
 export const fetchUserBookings = async (req, res) => {
   try {
-    const userId = req.user._id;
+    console.log("[fetchUserBookings] Request received");
+    console.log("[fetchUserBookings] User from middleware:", req.user);
+    
+    const userId = req.user.id;
     const statusFilter = req.query.status;
 
+    console.log("[fetchUserBookings] User ID:", userId);
+    console.log("[fetchUserBookings] Status filter:", statusFilter);
+
     let query = { user: userId };
-    if (statusFilter && ["confirmed", "cancelled"].includes(statusFilter)) {
-      query.status = statusFilter;
-    } else if (!statusFilter || statusFilter === "active") {
-      query.status = { $in: ["confirmed", "tentative"] };
-      query.expiresAt = { $gt: new Date() };
-    }
+    // Remove status filtering since Booking model doesn't have status field
+    // Just get all bookings for the user
+
+    console.log("[fetchUserBookings] Query:", query);
 
     const bookings = await Booking.find(query)
       .populate("show")
@@ -495,6 +519,9 @@ export const fetchUserBookings = async (req, res) => {
         ],
       })
       .sort({ createdAt: -1 });
+
+    console.log("[fetchUserBookings] Found bookings:", bookings.length);
+    console.log("[fetchUserBookings] Bookings:", bookings.map(b => ({id: b._id, amount: b.amount, isPaid: b.isPaid, paymentLink: b.paymentLink ? "Yes" : "No"})));
 
     res.json({ success: true, bookings });
   } catch (error) {
@@ -509,7 +536,7 @@ export const fetchUserBookings = async (req, res) => {
 export const cancelBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     // Find booking and verify ownership
     const booking = await Booking.findOne({

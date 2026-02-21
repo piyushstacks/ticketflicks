@@ -74,52 +74,7 @@ export const signup = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Signup error:", error);
-    
-    // Handle specific error cases
-    if (error.code === 11000) {
-      // MongoDB duplicate key error
-      const field = Object.keys(error.keyPattern)[0];
-      if (field === 'email') {
-        return res.status(400).json({ 
-          success: false, 
-          message: "This email address is already registered. Please use a different email or try logging in." 
-        });
-      }
-      if (field === 'phone') {
-        return res.status(400).json({ 
-          success: false, 
-          message: "This phone number is already registered. Please use a different phone number." 
-        });
-      }
-      return res.status(400).json({ 
-        success: false, 
-        message: `An account with this ${field} already exists.` 
-      });
-    }
-    
-    if (error.name === 'ValidationError') {
-      // Mongoose validation error
-      const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: "Please check your input and try again.",
-        details: errors
-      });
-    }
-    
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid data format. Please check all fields and try again."
-      });
-    }
-    
-    // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to create your account right now. Please try again in a few minutes." 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -127,6 +82,7 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("Login attempt for email:", email);
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Email and password are required" });
@@ -134,13 +90,15 @@ export const login = async (req, res) => {
 
     // Query with lowercase email (model will apply lowercase automatically)
     const user = await User.findOne({ email: email.toLowerCase() });
+    console.log("User found:", !!user);
     if (!user) {
-      return res.status(400).json({ success: false, message: "Invalid login credentials. Please check your email and password." });
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
+    console.log("Password match:", isMatch);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Invalid login credentials. Please check your email and password." });
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 
     user.last_login = new Date();
@@ -161,203 +119,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
-    
-    // Handle specific error cases
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email format. Please enter a valid email address."
-      });
-    }
-    
-    if (error.message && error.message.includes('timeout')) {
-      return res.status(500).json({
-        success: false,
-        message: "Login is taking too long. Please try again."
-      });
-    }
-    
-    // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to log you in right now. Please try again in a few minutes." 
-    });
-  }
-};
-
-// Request OTP for signup
-export const requestSignupOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ success: false, message: "Invalid email format. Please enter a valid email address." });
-    }
-
-    // Query with lowercase email (model will apply lowercase automatically)
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (user) return res.status(400).json({ success: false, message: "Email already registered" });
-
-    // Delete any existing OTPs for this email (old OTP expires immediately when new one is sent)
-    await Otp.deleteMany({ email: email.toLowerCase(), purpose: "signup" });
-
-    const otp = ("000000" + Math.floor(Math.random() * 999999)).slice(-6);
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`[dev-otp] signup OTP for ${email.toLowerCase()}: ${otp}`);
-    }
-    const otpHash = await bcrypt.hash(otp, 10);
-    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
-
-    await Otp.create({ email: email.toLowerCase(), otpHash, purpose: "signup", expiresAt });
-
-    const subject = "Your TicketFlicks Signup OTP";
-    const body = `<p>Welcome to TicketFlicks! Your signup OTP is <strong>${otp}</strong>. It expires in 2 minutes.</p>`;
-    try {
-      await sendEmail({ to: email, subject, body });
-    } catch (err) {
-      console.error("[requestSignupOtp][sendEmail]", err);
-    }
-
-    res.json({ success: true, message: "OTP sent to your email for signup verification" });
-  } catch (error) {
-    console.error("[requestSignupOtp]", error);
-    
-    // Handle specific error cases
-    if (error.code === 11000) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "This email is already registered." 
-      });
-    }
-    
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email format. Please enter a valid email address."
-      });
-    }
-    
-    if (error.message && error.message.includes('timeout')) {
-      return res.status(500).json({
-        success: false,
-        message: "Request is taking too long. Please try again."
-      });
-    }
-    
-    // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to send OTP right now. Please try again in a few minutes." 
-    });
-  }
-};
-
-// Complete signup with OTP verification
-export const completeSignupWithOtp = async (req, res) => {
-  try {
-    const { name, email, phone, password, otp } = req.body;
-
-    // Validation
-    if (!name || !email || !phone || !password || !otp) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields and OTP are required",
-      });
-    }
-
-    // Validate password
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      return res.status(400).json({
-        success: false,
-        message: passwordValidation.message,
-      });
-    }
-
-    // Verify OTP
-    const otpDoc = await Otp.findOne({ 
-      email: email.toLowerCase(), 
-      purpose: "signup", 
-      expiresAt: { $gte: new Date() } 
-    }).sort({ createdAt: -1 });
-
-    if (!otpDoc) {
-      return res.status(400).json({ success: false, message: "OTP expired or not found" });
-    }
-
-    const match = await bcrypt.compare(otp, otpDoc.otpHash);
-    if (!match) return res.status(400).json({ success: false, message: "Invalid OTP" });
-
-    // Check if email already exists (double check)
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: "Email already registered" });
-    }
-
-    const password_hash = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      name,
-      email,
-      phone,
-      password_hash,
-      role: "customer",
-      last_login: new Date(),
-    });
-
-    // Delete all OTPs for this email after successful signup
-    await Otp.deleteMany({ email: email.toLowerCase(), purpose: "signup" });
-
-    const token = createToken(user);
-
-    res.json({
-      success: true,
-      message: "Signup successful",
-      token,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error("Complete signup error:", error);
-    
-    // Handle specific error cases
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0];
-      if (field === 'email') {
-        return res.status(400).json({ 
-          success: false, 
-          message: "This email address is already registered. Please use a different email or try logging in." 
-        });
-      }
-      return res.status(400).json({ 
-        success: false, 
-        message: `An account with this ${field} already exists.` 
-      });
-    }
-    
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: "Please check your input and try again.",
-        details: errors
-      });
-    }
-    
-    // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to create your account right now. Please try again in a few minutes." 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -394,27 +156,7 @@ export const forgotPasswordRequest = async (req, res) => {
     res.json({ success: true, message: "If the email exists, an OTP has been sent" });
   } catch (error) {
     console.error("[forgotPasswordRequest]", error);
-    
-    // Handle specific error cases
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email format. Please enter a valid email address."
-      });
-    }
-    
-    if (error.message && error.message.includes('timeout')) {
-      return res.status(500).json({
-        success: false,
-        message: "Request is taking too long. Please try again."
-      });
-    }
-    
-    // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to process your request right now. Please try again in a few minutes." 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -493,27 +235,7 @@ export const resetPasswordWithOtp = async (req, res) => {
     res.json({ success: true, message: "Password reset successful" });
   } catch (error) {
     console.error("[resetPasswordWithOtp]", error);
-    
-    // Handle specific error cases
-    if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid data format. Please check all fields and try again."
-      });
-    }
-    
-    if (error.message && error.message.includes('timeout')) {
-      return res.status(500).json({
-        success: false,
-        message: "Password reset is taking too long. Please try again."
-      });
-    }
-    
-    // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to reset your password right now. Please try again in a few minutes." 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -521,74 +243,34 @@ export const resetPasswordWithOtp = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { email, currentPassword, newPassword, confirmPassword } = req.body;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
 
-    console.log("[changePassword] Request received for userId:", userId, "email:", email);
-
-    if (!email || !currentPassword || !newPassword || !confirmPassword) {
-      console.log("[changePassword] Missing fields:", { email: !!email, currentPassword: !!currentPassword, newPassword: !!newPassword, confirmPassword: !!confirmPassword });
+    if (!currentPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
     if (newPassword !== confirmPassword) {
-      console.log("[changePassword] New passwords do not match");
       return res.status(400).json({ success: false, message: "New passwords do not match" });
     }
 
     // Validate new password
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.valid) {
-      console.log("[changePassword] New password validation failed:", passwordValidation.message);
       return res.status(400).json({ success: false, message: passwordValidation.message });
     }
 
     const user = await User.findById(userId);
-    if (!user) {
-      console.log("[changePassword] User not found for userId:", userId);
-      return res.status(400).json({ success: false, message: "User not found" });
-    }
-
-    // Verify email matches the logged-in user
-    if (user.email !== email.toLowerCase()) {
-      console.log("[changePassword] Email mismatch. User email:", user.email, "Provided email:", email);
-      return res.status(400).json({ success: false, message: "Email does not match your account" });
-    }
+    if (!user) return res.status(400).json({ success: false, message: "User not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-    if (!isMatch) {
-      console.log("[changePassword] Current password incorrect for userId:", userId);
-      return res.status(400).json({ success: false, message: "Current password is incorrect" });
-    }
+    if (!isMatch) return res.status(400).json({ success: false, message: "Current password is incorrect" });
 
     user.password_hash = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    console.log("[changePassword] Password updated successfully for userId:", userId);
     res.json({ success: true, message: "Password changed successfully" });
   } catch (error) {
-    console.error("[changePassword] Unexpected error:", error);
-    
-    // Handle specific error cases
-    if (error.name === 'CastError') {
-      console.log("[changePassword] CastError:", error.message);
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user data. Please log out and log back in."
-      });
-    }
-    
-    if (error.message && error.message.includes('timeout')) {
-      console.log("[changePassword] Timeout error:", error.message);
-      return res.status(500).json({
-        success: false,
-        message: "Password change is taking too long. Please try again."
-      });
-    }
-    
-    // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to change your password right now. Please try again in a few minutes." 
-    });
+    console.error("[changePassword]", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

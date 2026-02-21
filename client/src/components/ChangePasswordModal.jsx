@@ -94,87 +94,87 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl p-8 w-full max-w-md relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <h2 className="text-2xl font-bold mb-6 text-white">Change Password</h2>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary ${errors.email ? "border-red-500" : "border-gray-600"}`}
-              required
-            />
-            {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Current Password</label>
-            <input
-              type="password"
-              name="currentPassword"
-              value={formData.currentPassword}
-              onChange={handleChange}
-              placeholder="Enter current password"
-              className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary ${errors.currentPassword ? "border-red-500" : "border-gray-600"}`}
-              required
-            />
-            {errors.currentPassword && <p className="text-xs text-red-400 mt-1">{errors.currentPassword}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
-            <input
-              type="password"
-              name="newPassword"
-              value={formData.newPassword}
-              onChange={handleChange}
-              placeholder="Enter new password"
-              className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary ${errors.newPassword ? "border-red-500" : "border-gray-600"}`}
-              required
-              minLength={8}
-            />
-            {errors.newPassword && <p className="text-xs text-red-400 mt-1">{errors.newPassword}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm new password"
-              className={`w-full px-4 py-2 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary ${errors.confirmPassword ? "border-red-500" : "border-gray-600"}`}
-              required
-              minLength={8}
-            />
-            {errors.confirmPassword && <p className="text-xs text-red-400 mt-1">{errors.confirmPassword}</p>}
-          </div>
-
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-lg flex items-center justify-center z-50">
+        <div className="glass-card shadow-xl border border-white/10 p-8 w-full max-w-md relative animate-fade-in">
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-primary hover:bg-primary-dull text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-accent transition-all"
           >
-            {loading ? "Changing..." : "Change Password"}
+            <X className="w-5 h-5" />
           </button>
-        </form>
+
+          <h2 className="text-2xl font-bold mb-6 movie-title text-center">Change Password</h2>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium movie-meta mb-2">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className={`w-full px-4 py-2 bg-glass border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-accent ${errors.email ? "border-red-500" : "border-white/10"}`}
+                required
+              />
+              {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium movie-meta mb-2">Current Password</label>
+              <input
+                type="password"
+                name="currentPassword"
+                value={formData.currentPassword}
+                onChange={handleChange}
+                placeholder="Enter current password"
+                className={`w-full px-4 py-2 bg-glass border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-accent ${errors.currentPassword ? "border-red-500" : "border-white/10"}`}
+                required
+              />
+              {errors.currentPassword && <p className="text-xs text-red-400 mt-1">{errors.currentPassword}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium movie-meta mb-2">New Password</label>
+              <input
+                type="password"
+                name="newPassword"
+                value={formData.newPassword}
+                onChange={handleChange}
+                placeholder="Enter new password"
+                className={`w-full px-4 py-2 bg-glass border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-accent ${errors.newPassword ? "border-red-500" : "border-white/10"}`}
+                required
+                minLength={8}
+              />
+              {errors.newPassword && <p className="text-xs text-red-400 mt-1">{errors.newPassword}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium movie-meta mb-2">Confirm New Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm new password"
+                className={`w-full px-4 py-2 bg-glass border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-accent ${errors.confirmPassword ? "border-red-500" : "border-white/10"}`}
+                required
+                minLength={8}
+              />
+              {errors.confirmPassword && <p className="text-xs text-red-400 mt-1">{errors.confirmPassword}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full py-3 font-semibold rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Changing..." : "Change Password"}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
   );
 };
 

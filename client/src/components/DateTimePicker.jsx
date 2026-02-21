@@ -129,30 +129,30 @@ const DateTimePicker = ({ movieId }) => {
   };
 
   if (loading) {
-    return (
-      <div className="px-6 md:px-16 lg:px-40 py-20">
-        <div className="flex justify-center items-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      return (
+        <div className="px-6 md:px-16 lg:px-40 py-20">
+          <div className="flex justify-center items-center h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+          </div>
         </div>
-      </div>
-    );
+      );
   }
 
   return (
-    <div className="px-6 md:px-16 lg:px-40 py-20">
-      <h2 className="text-3xl font-bold mb-8">Select Show Date & Time</h2>
+      <div className="px-6 md:px-16 lg:px-40 py-20">
+        <h2 className="text-3xl font-bold mb-8 movie-title">Select Show Date & Time</h2>
 
       {/* Date Carousel */}
-      <div className="mb-12 bg-gray-900/30 backdrop-blur-md rounded-lg p-6 border border-gray-700">
+    <div className="mb-12 glass-card backdrop-blur-lg rounded-xl p-6 border border-white/10 shadow-lg">
         <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={() => handleNavigateDate(-1)}
-            className="p-2 hover:bg-gray-800 rounded-lg transition"
-            disabled={dateOffset === 0}
-            title={dateOffset === 0 ? "Already at earliest date" : "Previous week"}
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
+            <button
+              onClick={() => handleNavigateDate(-1)}
+              className="btn-secondary p-2 rounded-lg transition-all"
+              disabled={dateOffset === 0}
+              title={dateOffset === 0 ? "Already at earliest date" : "Previous week"}
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
 
           <div className="flex items-center gap-3 overflow-x-auto flex-1 pb-2">
             {dateRangeArray.map((date) => {
@@ -162,18 +162,18 @@ const DateTimePicker = ({ movieId }) => {
               
               return (
                 <button
-                  key={date.toISOString()}
-                  onClick={() => !isPast && setSelectedDate(date)}
-                  disabled={isPast}
-                  min={getTodayString()}
-                  title={isPast ? "Past date - not available" : isToday ? "Today" : ""}
-                  className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-lg border-2 transition min-w-max ${
-                    isSelected
-                      ? "border-primary bg-primary/20"
-                      : isPast
-                      ? "border-gray-700 bg-gray-800/50 cursor-not-allowed opacity-50"
-                      : "border-gray-600 hover:border-primary cursor-pointer"
-                  }`}
+                    key={date.toISOString()}
+                    onClick={() => !isPast && setSelectedDate(date)}
+                    disabled={isPast}
+                    min={getTodayString()}
+                    title={isPast ? "Past date - not available" : isToday ? "Today" : ""}
+                    className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all min-w-max shadow-sm ${
+                      isSelected
+                        ? "border-accent bg-accent/20 text-accent"
+                        : isPast
+                        ? "border-gray-700 bg-gray-800/50 cursor-not-allowed opacity-50"
+                        : "border-white/10 hover:border-accent cursor-pointer"
+                    }`}
                 >
                   <span className={`font-bold text-lg ${isPast ? 'text-gray-500' : ''}`}>
                     {date.getDate()}
@@ -202,69 +202,69 @@ const DateTimePicker = ({ movieId }) => {
       </div>
 
       {/* Theatres & Shows */}
-      {selectedDate && theatresList.length > 0 ? (
-        <div className="space-y-6">
-          {getTheatresWithShowsForDate(selectedDate).map((theatre) => (
-            <div
-              key={theatre._id}
-              className="bg-gray-900/30 backdrop-blur-md border border-gray-700 rounded-lg p-6"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-primary/20 rounded-lg">
-                  <MapPin className="w-5 h-5 text-primary" />
+        {selectedDate && theatresList.length > 0 ? (
+          <div className="space-y-6">
+            {getTheatresWithShowsForDate(selectedDate).map((theatre) => (
+              <div
+                key={theatre._id}
+                className="glass-card shadow-lg border border-white/10 rounded-xl p-6"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-accent/20 rounded-lg">
+                    <MapPin className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold movie-title">{theatre.name}</h3>
+                    <p className="text-sm movie-meta">{theatre.location}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{theatre.name}</h3>
-                  <p className="text-sm text-gray-400">{theatre.location}</p>
-                </div>
-              </div>
 
-              {/* Screens & Shows for this theatre */}
-              <div className="space-y-6">
-                {Object.entries(shows[theatre._id]?.screens || {})
-                  .map(([screenId, screenData]) => {
-                    const showsForDate = getShowsForDateAndTheatre(selectedDate, theatre._id, screenId);
-                    return { screenId, screenData, showsForDate };
-                  })
-                  .filter((x) => x.showsForDate.length > 0)
-                  .map(({ screenId, screenData, showsForDate }) => (
-                    <div key={screenId}>
-                      <p className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-primary rounded-full"></span>
-                        Screen {screenData.screen.screenNumber} • {screenData.screen.seatLayout?.totalSeats || 0} seats
-                      </p>
+                {/* Screens & Shows for this theatre */}
+                <div className="space-y-6">
+                  {Object.entries(shows[theatre._id]?.screens || {})
+                    .map(([screenId, screenData]) => {
+                      const showsForDate = getShowsForDateAndTheatre(selectedDate, theatre._id, screenId);
+                      return { screenId, screenData, showsForDate };
+                    })
+                    .filter((x) => x.showsForDate.length > 0)
+                    .map(({ screenId, screenData, showsForDate }) => (
+                      <div key={screenId}>
+                        <p className="text-sm font-semibold movie-meta mb-4 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-accent rounded-full"></span>
+                          Screen {screenData.screen.screenNumber} • {screenData.screen.seatLayout?.totalSeats || 0} seats
+                        </p>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        {showsForDate.map((show) => (
-                          <button
-                            key={show._id}
-                            onClick={() => {
-                              navigate(`/seat-layout/${show._id}`, {
-                                state: {
-                                  selectedDate: selectedDate.toISOString(),
-                                  theatre: theatre,
-                                },
-                              });
-                            }}
-                            className="p-3 bg-gradient-to-br from-primary to-primary-dull hover:shadow-lg hover:shadow-primary/50 rounded-lg transition text-center font-semibold text-white active:scale-95 transform duration-200"
-                          >
-                            <div className="flex items-center justify-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {new Date(show.showDateTime).toLocaleTimeString("en-US", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              })}
-                            </div>
-                          </button>
-                        ))}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                          {showsForDate.map((show) => (
+                            <button
+                              key={show._id}
+                              onClick={() => {
+                                navigate(`/seat-layout/${show._id}`, {
+                                  state: {
+                                    selectedDate: selectedDate.toISOString(),
+                                    theatre: theatre,
+                                  },
+                                });
+                              }}
+                              className="btn-primary p-3 rounded-xl transition-all text-center font-semibold text-white active:scale-95 transform duration-200 shadow-md"
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                {new Date(show.showDateTime).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
       ) : selectedDate ? (
         <div className="text-center py-12">
           <p className="text-gray-400 text-lg">

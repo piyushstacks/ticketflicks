@@ -257,14 +257,28 @@ export const getTheatreShows = async (req, res) => {
     }
 
     console.log("Final query:", query);
+    console.log("Manager theatre ID:", theatreId);
+    
     const shows = await Show.find(query)
-      .populate("movie", "title poster_path")
-      .populate("screen", "screenNumber name")
+      .populate("movie", "_id title poster_path overview")
+      .populate("screen", "_id screenNumber name")
       .sort({ showDateTime: -1 });
 
-    console.log("Found shows:", shows.length, shows);
+    console.log("Raw shows from DB:", shows.length);
+    console.log("First show sample:", shows[0] ? JSON.stringify(shows[0], null, 2) : 'No shows');
 
-    res.json({ success: true, shows });
+    // Filter out shows with invalid/missing movie data
+    const validShows = shows.filter(show => {
+      const hasMovie = show.movie && show.movie._id;
+      const hasScreen = show.screen && show.screen._id;
+      if (!hasMovie) console.warn("Show missing movie:", show._id);
+      if (!hasScreen) console.warn("Show missing screen:", show._id);
+      return hasMovie && hasScreen;
+    });
+    
+    console.log("Valid shows after filtering:", validShows.length);
+
+    res.json({ success: true, shows: validShows });
   } catch (error) {
     console.error("[getTheatreShows]", error);
     res.json({ success: false, message: error.message });

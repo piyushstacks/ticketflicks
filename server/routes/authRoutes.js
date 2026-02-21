@@ -7,7 +7,6 @@ import {
 	changePassword,
  	resendForgotOtp,
 } from "../controllers/authController.js";
-import { publicChangePassword } from "../controllers/publicAuthController.js";
 import { protectUser } from "../middleware/protectUser.js";
 import { otpRateLimiter } from "../middleware/otpRateLimiter.js";
 
@@ -23,9 +22,6 @@ authRouter.post("/reset-password", resetPasswordWithOtp);
 
 // Change password (authenticated)
 authRouter.post("/change-password", protectUser, changePassword);
-
-// Public change password (no login required)
-authRouter.post("/public/change-password", publicChangePassword);
 
 export default authRouter;
 

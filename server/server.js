@@ -17,6 +17,7 @@ import { searchMoviesAndShows } from "./controllers/showController.js";
 import debugRouter, { requestLogger } from "./routes/debugRoutes.js";
 import publicRouter from "./routes/publicRoutes.js";
 import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
+import authRouter from "./routes/authRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +43,7 @@ app.get("/", (req, res) => {
   res.send("Server is Live!");
 });
 app.use("/api/inngest", serve({ client: inngest, functions }));
+app.use("/api/auth", authRouter);
 app.use("/api/public", publicRouter);
 // Add search route before show router to avoid conflicts
 app.get("/api/search/movies", (req, res) => {

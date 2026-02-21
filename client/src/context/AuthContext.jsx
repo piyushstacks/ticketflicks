@@ -1,11 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 
-// Set base URL with fallback
-const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000";
-axios.defaults.baseURL = baseURL;
-
-console.log("AuthContext: Using baseURL:", baseURL);
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
 const AuthContext = createContext();
 
@@ -77,16 +73,6 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const requestTheatreRegistrationOtp = async (payload) => {
-    const { data } = await axios.post("/api/theatre/request-otp", payload);
-    return data;
-  };
-
-  const completeTheatreRegistration = async (payload) => {
-    const { data } = await axios.post("/api/theatre/register", payload);
-    return data;
-  };
-
   const getTheatresByManager = async (managerId) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const { data } = await axios.get(`/api/theatre/manager/${managerId}`, { headers });
@@ -105,45 +91,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signup = async (payload) => {
-    console.log("AuthContext: Direct signup called with payload:", payload);
-    try {
-      const { data } = await axios.post("/api/user/signup", payload);
-      console.log("AuthContext: Direct signup response:", data);
-      if (data.success) {
-        saveAuth(data.user, data.token, true);
-      }
-      return data;
-    } catch (error) {
-      console.error("AuthContext: Direct signup error:", error);
-      throw error;
+    const { data } = await axios.post("/api/user/signup", payload);
+    if (data.success) {
+      saveAuth(data.user, data.token, true);
     }
-  };
-
-  const requestSignupOtp = async (payload) => {
-    console.log("AuthContext: Requesting signup OTP for:", payload.email);
-    try {
-      const { data } = await axios.post("/api/user/signup/request-otp", payload);
-      console.log("AuthContext: Signup OTP response:", data);
-      return data;
-    } catch (error) {
-      console.error("AuthContext: Request signup OTP error:", error);
-      throw error;
-    }
-  };
-
-  const completeSignupWithOtp = async (payload) => {
-    console.log("AuthContext: Completing signup with OTP for:", payload.email);
-    try {
-      const { data } = await axios.post("/api/user/signup/complete", payload);
-      console.log("AuthContext: Complete signup response:", data);
-      if (data.success) {
-        saveAuth(data.user, data.token, true);
-      }
-      return data;
-    } catch (error) {
-      console.error("AuthContext: Complete signup error:", error);
-      throw error;
-    }
+    return data;
   };
 
   const logout = () => {
@@ -160,19 +112,14 @@ export const AuthProvider = ({ children }) => {
     login,
     verifyOtp,
     signup,
-    requestSignupOtp,
-    completeSignupWithOtp,
     logout,
     getAuthHeaders,
     getTheatresByManager,
     forgotPassword,
     resetPassword,
-    resendForgot,
     resendLogin,
+    resendForgot,
     changePassword,
-    requestTheatreRegistrationOtp,
-    completeTheatreRegistration,
-    saveAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
