@@ -50,13 +50,15 @@ const TrailersSection = () => {
       <div className="relative mt-6">
         <BlurCircle top="-10px" />
         <div className="w-full max-w-4xl mx-auto rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-          <ReactPlayer
-            url={currentTrailer.videoUrl}
-            controls={true}
-            className="mx-auto max-w-full"
-            width="100%"
-            height="540px"
-          />
+          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+            <ReactPlayer
+              url={currentTrailer.videoUrl}
+              controls={true}
+              className="absolute inset-0"
+              width="100%"
+              height="100%"
+            />
+          </div>
         </div>
       </div>
 

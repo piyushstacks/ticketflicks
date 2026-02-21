@@ -106,140 +106,96 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-gradient-to-br from-black via-[#050816] to-black">
-      <div className="w-full max-w-md bg-white/5 p-8 rounded-xl border border-white/10">
-        <h2 className="text-white text-2xl mb-6">Reset Password</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm text-white/80 font-medium">Email Address</label>
-            <div className="relative group">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
-                required
-                title="Enter the email address where OTP was sent"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-                  <path d="m22 7-10 5L2 7"></path>
-                </svg>
-              </div>
-            </div>
+    <div className="min-h-screen flex items-center justify-center px-4 py-20 pt-24" style={{ backgroundColor: "var(--bg-primary)" }}>
+      <div className="w-full max-w-md card p-6 sm:p-8">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-6" style={{ color: "var(--text-primary)" }}>Reset Password</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              className="input-field"
+              required
+              title="Enter the email address where OTP was sent"
+            />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm text-white/80 font-medium">OTP Code</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>OTP Code</label>
             <div className="flex gap-2">
-              <div className="relative group flex-1">
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => handleInputChange("otp", e.target.value)}
-                  className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
-                  placeholder="Enter 6-digit OTP"
-                  required
-                  maxLength={6}
-                  title="Enter the 6-digit OTP sent to your email"
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </div>
-              </div>
+              <input
+                type="text"
+                value={otp}
+                onChange={(e) => handleInputChange("otp", e.target.value)}
+                className="input-field flex-1"
+                placeholder="Enter 6-digit OTP"
+                required
+                maxLength={6}
+                title="Enter the 6-digit OTP sent to your email"
+              />
               <button
                 type="button"
                 onClick={handleResend}
-                className="px-3 py-2 bg-white/10 text-white rounded-md hover:bg-white/20 text-sm transition-all duration-200 hover:scale-105 active:scale-95"
+                className="btn-secondary px-3 py-2 text-sm flex-shrink-0"
                 title="Resend OTP to your email"
               >
                 Resend
               </button>
             </div>
-            <p className="text-xs text-white/60">OTP expires in 2 minutes</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>OTP expires in 2 minutes</p>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm text-white/80 font-medium">New Password</label>
-            <div className="relative group">
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => handleInputChange("newPassword", e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
-                placeholder="Create a strong password"
-                required
-                title="Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => handleInputChange("newPassword", e.target.value)}
+              className="input-field"
+              placeholder="Create a strong password"
+              required
+              title="Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters"
+            />
+            {newPassword && (
+              <div className="text-xs flex flex-wrap gap-x-3 gap-y-1" style={{ color: "var(--text-muted)" }}>
+                <span>Strength: <span className={passwordStrength.color}>{passwordStrength.text}</span></span>
+                <span className={newPassword.length >= 8 ? "text-green-500" : ""}>8+</span>
+                <span className={/[A-Z]/.test(newPassword) ? "text-green-500" : ""}>A-Z</span>
+                <span className={/[a-z]/.test(newPassword) ? "text-green-500" : ""}>a-z</span>
+                <span className={/\d/.test(newPassword) ? "text-green-500" : ""}>0-9</span>
+                <span className={/[@$!%*?&]/.test(newPassword) ? "text-green-500" : ""}>@$!</span>
               </div>
-            </div>
-            <div className="mt-1 text-xs">
-              <p>
-                Strength: <span className={passwordStrength.color}>{passwordStrength.text}</span>
-              </p>
-              <p className="text-white/60 mt-1">
-                <span className={newPassword.length >= 8 ? "text-green-400" : "text-white/60"}>✓ 8+ characters</span>
-                {"\n"}
-                <span className={/[A-Z]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Uppercase</span>
-                {"\n"}
-                <span className={/[a-z]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Lowercase</span>
-                {"\n"}
-                <span className={/\d/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Number</span>
-                {"\n"}
-                <span className={/[@$!%*?&]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Special char (@$!%*?&)</span>
-              </p>
-            </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm text-white/80 font-medium">Confirm New Password</label>
-            <div className="relative group">
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                className={`w-full px-3 py-2 rounded-md bg-black/40 text-white border transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80 ${
-                  confirmPassword && !passwordsMatch
-                    ? "border-red-500"
-                    : confirmPassword && passwordsMatch
-                    ? "border-green-500"
-                    : "border-white/20"
-                }`}
-                placeholder="Re-enter your new password"
-                required
-                title="Re-enter your new password to confirm"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-              </div>
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Confirm New Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+              className={`input-field ${confirmPassword && !passwordsMatch ? "border-red-500" : confirmPassword && passwordsMatch ? "border-green-500" : ""}`}
+              placeholder="Re-enter your new password"
+              required
+              title="Re-enter your new password to confirm"
+            />
             {confirmPassword && !passwordsMatch && (
-              <p className="text-xs text-red-400 mt-1 animate-pulse">Passwords do not match</p>
+              <p className="text-xs text-red-500">Passwords do not match</p>
             )}
             {confirmPassword && passwordsMatch && isSameAsOldPassword && (
-              <p className="text-xs text-red-400 mt-1 animate-pulse">New password must be different from current password</p>
+              <p className="text-xs text-red-500">New password must be different from current password</p>
             )}
             {confirmPassword && passwordsMatch && !isSameAsOldPassword && (
-              <p className="text-xs text-green-400 mt-1">Passwords match ✓</p>
+              <p className="text-xs text-green-500">Passwords match</p>
             )}
           </div>
 
           <button
             type="submit"
             disabled={loading || !passwordsMatch || passwordStrength.score < 3 || isSameAsOldPassword}
-            className="w-full py-2 bg-primary text-black rounded-md font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-primary/20"
+            className="btn-primary w-full py-3 text-sm mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
             title={loading ? "Resetting your password..." : "Reset your account password"}
           >
             {loading ? "Resetting..." : "Reset Password"}

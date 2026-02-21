@@ -10,6 +10,8 @@ import {
   AlertCircle,
   CheckCircle,
   Info,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import isoTimeFormat from "../lib/isoTimeFormat";
 import BlurCircle from "../components/BlurCircle";
@@ -28,6 +30,7 @@ const SeatLayout = () => {
   const [show, setShow] = useState(null);
   const [occupiedSeats, setOccupiedSeats] = useState(new Set());
   const [lockedSeats, setLockedSeats] = useState(new Set());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [seatsLoading, setSeatsLoading] = useState(false);
   const [seatLayout, setSeatLayout] = useState(null);
@@ -632,14 +635,11 @@ const SeatLayout = () => {
   // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
-        <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
-        <h2 className="text-2xl font-bold text-white mb-2">Oops!</h2>
-        <p className="text-gray-400 text-center mb-6">{error}</p>
-        <button
-          onClick={() => navigate(-1)}
-          className="px-6 py-3 bg-primary hover:bg-primary-dull rounded-lg transition"
-        >
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 sm:px-6" style={{ backgroundColor: "var(--bg-primary)" }}>
+        <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mb-4" />
+        <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Oops!</h2>
+        <p className="text-sm sm:text-base text-center mb-6" style={{ color: "var(--text-secondary)" }}>{error}</p>
+        <button onClick={() => navigate(-1)} className="btn-primary px-6 py-3">
           Go Back
         </button>
       </div>
@@ -654,32 +654,59 @@ const SeatLayout = () => {
   const screenBadge = getScreenCategoryBadge();
 
   return (
-    <div className="flex flex-col lg:flex-row px-4 md:px-8 lg:px-16 xl:px-40 py-24 md:py-32 gap-6 lg:gap-8">
+    <div className="flex flex-col lg:flex-row px-4 sm:px-6 md:px-8 lg:px-16 xl:px-36 py-20 sm:py-24 md:py-28 gap-6 lg:gap-8" style={{ backgroundColor: "var(--bg-primary)" }}>
       {/* Sidebar - Show Info & Timing */}
       <div className="w-full lg:w-72 xl:w-80 flex-shrink-0">
-        <div className="bg-gradient-to-b from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-6 sticky top-24">
-          {/* Movie Info */}
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-primary mb-1">
+        <div className="card p-5 sm:p-6 lg:sticky lg:top-24">
+          {/* Mobile toggle header */}
+          <button
+            className="flex items-center justify-between w-full lg:hidden mb-4"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <div>
+              <h2 className="text-base font-bold text-left" style={{ color: "var(--text-primary)" }}>
+                {show.movie?.title || "Movie"}
+              </h2>
+              <p className="text-xs text-left" style={{ color: "var(--text-secondary)" }}>
+                {show.theatre?.name || "Theatre"} -- {show.screen?.name || `Screen ${show.screen?.screenNumber}`}
+              </p>
+            </div>
+            {sidebarOpen ? (
+              <ChevronUp className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+            ) : (
+              <ChevronDown className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+            )}
+          </button>
+
+          {/* Desktop always visible movie info */}
+          <div className="hidden lg:block mb-5">
+            <h2 className="text-base sm:text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>
               {show.movie?.title || "Movie"}
             </h2>
-            <p className="text-sm text-gray-400">
-              {show.theatre?.name || "Theatre"} •{" "}
+            <p className="text-xs sm:text-sm" style={{ color: "var(--text-secondary)" }}>
+              {show.theatre?.name || "Theatre"} --{" "}
               {show.screen?.name || `Screen ${show.screen?.screenNumber}`}
             </p>
           </div>
 
+          {/* Collapsible content on mobile, always visible on desktop */}
+          <div className={`${sidebarOpen ? "block" : "hidden"} lg:block`}>
+
           {/* Screen Type Badge */}
           <div
-            className={`mb-6 px-4 py-3 rounded-lg bg-gradient-to-r ${screenBadge.color} border ${screenBadge.border}`}
+            className="mb-5 px-4 py-3 rounded-xl"
+            style={{
+              backgroundColor: "var(--color-accent-soft)",
+              border: "1px solid var(--border)",
+            }}
           >
             <div className="flex items-center gap-2">
               <span className="text-lg">{screenBadge.icon}</span>
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                   {getScreenTypeLabel()}
                 </p>
-                <p className="text-xs text-gray-300">
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   {seatLayout?.totalSeats || 0} seats
                 </p>
               </div>
@@ -687,30 +714,25 @@ const SeatLayout = () => {
           </div>
 
           {/* Date & Time Selection */}
-          <div className="mb-6">
-            <p className="text-sm font-semibold text-gray-300 mb-3">
-              <ClockIcon className="w-4 h-4 inline mr-1" />
+          <div className="mb-5">
+            <p className="text-sm font-semibold mb-3 flex items-center gap-1.5" style={{ color: "var(--text-secondary)" }}>
+              <ClockIcon className="w-4 h-4" />
               Show Time for {date}
             </p>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {show.dateTime[date]?.map((item) => (
                 <button
                   key={item.time}
                   onClick={() => setSelectedTime(item)}
-                  className={`
-                    flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg
-                    transition-all duration-200
-                    ${
-                      selectedTime?.time === item.time
-                        ? "bg-primary text-white shadow-lg shadow-primary/30"
-                        : "bg-gray-800/50 hover:bg-gray-700/50 text-gray-300"
-                    }
-                  `}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium text-sm"
+                  style={{
+                    backgroundColor: selectedTime?.time === item.time ? "var(--color-accent)" : "var(--bg-elevated)",
+                    color: selectedTime?.time === item.time ? "#fff" : "var(--text-secondary)",
+                    border: `1px solid ${selectedTime?.time === item.time ? "var(--color-accent)" : "var(--border)"}`,
+                  }}
                 >
                   <ClockIcon className="w-4 h-4" />
-                  <span className="font-medium">
-                    {isoTimeFormat(item.time)}
-                  </span>
+                  <span>{isoTimeFormat(item.time)}</span>
                 </button>
               ))}
             </div>
@@ -718,39 +740,37 @@ const SeatLayout = () => {
 
           {/* Price Breakdown */}
           {selectedSeats.size > 0 && (
-            <div className="border-t border-gray-700 pt-4">
-              <h3 className="text-sm font-semibold text-gray-300 mb-3">
+            <div className="pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>
                 Price Breakdown
               </h3>
-              <div className="space-y-2 mb-4">
+              <div className="flex flex-col gap-2 mb-4">
                 {Object.entries(priceBreakdown).map(([tier, info]) => (
-                  <div
-                    key={tier}
-                    className="flex justify-between items-center text-sm"
-                  >
+                  <div key={tier} className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: info.color }}
-                      />
-                      <span className="text-gray-400">
-                        {tier} × {info.count}
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: info.color }} />
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {tier} x {info.count}
                       </span>
                     </div>
-                    <span className="text-white font-medium">
-                      ₹{info.total}
+                    <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+                      {'₹'}{info.total}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-gray-700">
-                <span className="text-gray-300 font-semibold">Total</span>
-                <span className="text-xl font-bold text-primary">
-                  ₹{totalPrice}
+              <div
+                className="flex justify-between items-center pt-3"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                <span className="font-semibold text-sm" style={{ color: "var(--text-secondary)" }}>Total</span>
+                <span className="text-xl font-bold text-accent">
+                  {'₹'}{totalPrice}
                 </span>
               </div>
             </div>
           )}
+          </div>{/* end collapsible */}
         </div>
       </div>
 
@@ -761,10 +781,10 @@ const SeatLayout = () => {
 
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
             Select Your Seats
           </h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             {selectedSeats.size > 0
               ? `${selectedSeats.size} seat${selectedSeats.size > 1 ? "s" : ""} selected`
               : "Click on available seats to select"}
@@ -772,41 +792,37 @@ const SeatLayout = () => {
         </div>
 
         {/* Screen */}
-        <div className="w-full max-w-2xl mb-8">
-          <img
-            src={assets.screenImage}
-            alt="Screen"
-            className="w-full opacity-80"
-          />
-          <p className="text-gray-500 text-xs text-center mt-1 tracking-widest">
+        <div className="w-full max-w-2xl mb-6 sm:mb-8">
+          <img src={assets.screenImage} alt="Screen" className="w-full opacity-80" />
+          <p className="text-xs text-center mt-1 tracking-widest" style={{ color: "var(--text-muted)" }}>
             SCREEN
           </p>
         </div>
 
         {/* Seat Legend */}
         <div className="w-full max-w-3xl mb-6">
-          <div className="bg-gray-800/40 backdrop-blur-sm rounded-xl p-4 border border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Info className="w-4 h-4 text-gray-400" />
+          <div
+            className="card p-3 sm:p-4"
+          >
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                <Info className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
                 Seat Categories
               </h3>
               <button
                 onClick={handleRefresh}
                 disabled={seatsLoading}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition"
+                className="flex items-center gap-1 text-xs transition-colors hover:text-accent"
+                style={{ color: "var(--text-muted)" }}
               >
-                <RefreshCw
-                  className={`w-3 h-3 ${seatsLoading ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`w-3 h-3 ${seatsLoading ? "animate-spin" : ""}`} />
                 Refresh
               </button>
             </div>
 
             {/* Seat Type Legend */}
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mb-4">
+            <div className="flex flex-wrap justify-center gap-x-3 sm:gap-x-4 gap-y-2 mb-3 sm:mb-4">
               {Object.entries(SEAT_TIERS).map(([key, tier]) => {
-                // Get actual price from show data
                 let actualPrice = tier.basePrice;
                 if (show?.seatTiers && Array.isArray(show.seatTiers)) {
                   const matchingTier = show.seatTiers.find(t => t.tierName === tier.name);
@@ -814,11 +830,11 @@ const SeatLayout = () => {
                     actualPrice = matchingTier.price;
                   }
                 }
-                
+
                 return (
-                  <div key={key} className="flex items-center gap-2">
+                  <div key={key} className="flex items-center gap-1.5 sm:gap-2">
                     <div
-                      className="w-5 h-5 rounded-md border-2 flex items-center justify-center text-[8px] font-bold"
+                      className="w-4 h-4 sm:w-5 sm:h-5 rounded-md border-2 flex items-center justify-center text-[7px] sm:text-[8px] font-bold"
                       style={{
                         backgroundColor: `${tier.color}30`,
                         borderColor: tier.color,
@@ -827,9 +843,9 @@ const SeatLayout = () => {
                     >
                       {key}
                     </div>
-                    <span className="text-xs text-gray-300">{tier.name}</span>
-                    <span className="text-xs text-gray-500">
-                      ₹{actualPrice}
+                    <span className="text-[10px] sm:text-xs" style={{ color: "var(--text-secondary)" }}>{tier.name}</span>
+                    <span className="text-[10px] sm:text-xs" style={{ color: "var(--text-muted)" }}>
+                      {'₹'}{actualPrice}
                     </span>
                   </div>
                 );
@@ -837,18 +853,18 @@ const SeatLayout = () => {
             </div>
 
             {/* Status Legend */}
-            <div className="flex justify-center gap-6 pt-3 border-t border-gray-700">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-md border-2 border-gray-500 bg-gray-500/30" />
-                <span className="text-xs text-gray-400">Available</span>
+            <div className="flex justify-center gap-4 sm:gap-6 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md seat-available" style={{ border: "2px solid var(--text-muted)" }} />
+                <span className="text-[10px] sm:text-xs" style={{ color: "var(--text-muted)" }}>Available</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-md border-2 border-primary bg-primary ring-2 ring-white ring-offset-1 ring-offset-gray-900" />
-                <span className="text-xs text-gray-400">Selected</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md" style={{ backgroundColor: "var(--color-accent)", border: "2px solid var(--color-accent)" }} />
+                <span className="text-[10px] sm:text-xs" style={{ color: "var(--text-muted)" }}>Selected</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-md border-2 border-gray-600 bg-gray-700 opacity-50" />
-                <span className="text-xs text-gray-400">Booked</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-md opacity-40" style={{ backgroundColor: "var(--bg-elevated)", border: "2px solid var(--border)" }} />
+                <span className="text-[10px] sm:text-xs" style={{ color: "var(--text-muted)" }}>Booked</span>
               </div>
             </div>
           </div>
@@ -857,27 +873,27 @@ const SeatLayout = () => {
         {/* Selected Seats Display */}
         {selectedSeats.size > 0 && (
           <div className="w-full max-w-3xl mb-6">
-            <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-green-400 mb-2">
+            <div className="rounded-xl p-3 sm:p-4" style={{ backgroundColor: "rgba(34, 197, 94, 0.08)", border: "1px solid rgba(34, 197, 94, 0.2)" }}>
+              <div className="flex items-start gap-2 sm:gap-3">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-green-500 mb-2">
                     Selected Seats ({selectedSeats.size})
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {selectedSeatDetails.map((seat) => (
                       <button
                         key={seat.seatNumber}
                         onClick={() => handleSeatClick(seat.seatNumber)}
-                        className="px-3 py-1.5 rounded-full text-xs font-medium border-2 transition-all hover:scale-105 active:scale-95"
+                        className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium border-2 transition-all hover:scale-105 active:scale-95"
                         style={{
                           backgroundColor: `${seat.color}25`,
                           borderColor: seat.color,
-                          color: "#fff",
+                          color: "var(--text-primary)",
                         }}
                         title={`Click to deselect ${seat.seatNumber}`}
                       >
-                        {seat.seatNumber} • {seat.tierName} • ₹{seat.price}
+                        {seat.seatNumber} -- {seat.tierName} -- {'₹'}{seat.price}
                       </button>
                     ))}
                   </div>
@@ -890,12 +906,12 @@ const SeatLayout = () => {
         {/* Seat Layout Grid */}
         <div className="w-full overflow-x-auto pb-4">
           {seatsLoading && !seatLayout?.layout ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <RefreshCw className="w-8 h-8 text-primary animate-spin mb-4" />
-              <p className="text-gray-400">Loading seat layout...</p>
+            <div className="flex flex-col items-center justify-center py-16 sm:py-20">
+              <RefreshCw className="w-8 h-8 text-accent animate-spin mb-4" />
+              <p style={{ color: "var(--text-muted)" }}>Loading seat layout...</p>
             </div>
           ) : seatLayout?.layout ? (
-            <div className="flex flex-col items-center min-w-max px-4">
+            <div className="flex flex-col items-center min-w-max px-2 sm:px-4">
               {seatLayout.layout.map((rowData, rowIndex) =>
                 renderSeatRow(rowData, rowIndex),
               )}
@@ -906,7 +922,8 @@ const SeatLayout = () => {
                 {seatLayout.layout[0]?.map((_, colIndex) => (
                   <span
                     key={colIndex}
-                    className="w-7 md:w-8 text-center text-[10px] text-gray-500 font-medium"
+                    className="w-7 md:w-8 text-center text-[10px] font-medium"
+                    style={{ color: "var(--text-muted)" }}
                   >
                     {colIndex + 1}
                   </span>
@@ -915,10 +932,10 @@ const SeatLayout = () => {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20">
-              <AlertCircle className="w-8 h-8 text-yellow-500 mb-4" />
-              <p className="text-gray-400">Seat layout not available</p>
-              <p className="text-gray-500 text-sm mt-1">
+            <div className="flex flex-col items-center justify-center py-16 sm:py-20">
+              <AlertCircle className="w-8 h-8 text-amber-500 mb-4" />
+              <p style={{ color: "var(--text-muted)" }}>Seat layout not available</p>
+              <p className="text-xs sm:text-sm mt-1" style={{ color: "var(--text-muted)" }}>
                 Please contact support
               </p>
             </div>
@@ -926,23 +943,16 @@ const SeatLayout = () => {
         </div>
 
         {/* Checkout Button */}
-        <div className="mt-8 w-full max-w-md">
+        <div className="mt-6 sm:mt-8 w-full max-w-md px-4 sm:px-0">
           <button
             onClick={bookTickets}
-            disabled={
-              bookingLoading || selectedSeats.size === 0 || !selectedTime
-            }
-            className={`
-              w-full flex items-center justify-center gap-3 px-8 py-4 rounded-xl
-              font-semibold text-lg transition-all duration-300
-              ${
-                selectedSeats.size > 0 && selectedTime
-                  ? "bg-primary hover:bg-primary-dull shadow-lg shadow-primary/30 hover:shadow-primary/50"
-                  : "bg-gray-700 cursor-not-allowed opacity-50"
-              }
-              disabled:opacity-50 disabled:cursor-not-allowed
-              active:scale-[0.98]
-            `}
+            disabled={bookingLoading || selectedSeats.size === 0 || !selectedTime}
+            className="w-full flex items-center justify-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-base sm:text-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: selectedSeats.size > 0 && selectedTime ? "var(--color-accent)" : "var(--bg-elevated)",
+              color: selectedSeats.size > 0 && selectedTime ? "#fff" : "var(--text-muted)",
+              border: `1px solid ${selectedSeats.size > 0 && selectedTime ? "var(--color-accent)" : "var(--border)"}`,
+            }}
           >
             {bookingLoading ? (
               <>
@@ -964,24 +974,48 @@ const SeatLayout = () => {
           </button>
 
           {selectedSeats.size > 0 && (
-            <p className="text-center text-gray-500 text-xs mt-3">
-              {selectedSeats.size} seat{selectedSeats.size > 1 ? "s" : ""} •
-              Secure payment via Stripe
+            <p className="text-center text-xs mt-3" style={{ color: "var(--text-muted)" }}>
+              {selectedSeats.size} seat{selectedSeats.size > 1 ? "s" : ""} -- Secure payment via Stripe
             </p>
           )}
         </div>
 
         {/* Last Refresh Info */}
-        <p className="text-gray-600 text-xs mt-6">
+        <p className="text-xs mt-6 mb-24 lg:mb-0" style={{ color: "var(--text-muted)" }}>
           Seat availability auto-refreshes every 30 seconds
           {lastRefresh && (
             <span>
-              {" "}
-              • Last updated: {new Date(lastRefresh).toLocaleTimeString()}
+              {" "} -- Last updated: {new Date(lastRefresh).toLocaleTimeString()}
             </span>
           )}
         </p>
       </div>
+
+      {/* Mobile fixed bottom bar */}
+      {selectedSeats.size > 0 && (
+        <div
+          className="fixed bottom-0 left-0 right-0 z-40 lg:hidden px-4 py-3 flex items-center justify-between"
+          style={{
+            backgroundColor: "var(--bg-card)",
+            borderTop: "1px solid var(--border)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {selectedSeats.size} seat{selectedSeats.size > 1 ? "s" : ""} selected
+            </p>
+            <p className="text-lg font-bold text-accent">{'₹'}{totalPrice}</p>
+          </div>
+          <button
+            onClick={bookTickets}
+            disabled={bookingLoading || !selectedTime}
+            className="btn-primary px-6 py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {bookingLoading ? "Processing..." : "Pay Now"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
