@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
-import { StarIcon } from "lucide-react";
+import { StarIcon, MessageSquare, User } from "lucide-react";
 import toast from "react-hot-toast";
 import ButtonLoader from "../components/ButtonLoader";
-import Loading from "../components/Loading";
-import BlurCircle from "../components/BlurCircle";
 
 const FeedbackForm = () => {
   const { axios, user, getAuthHeaders } = useAppContext();
@@ -15,15 +13,19 @@ const FeedbackForm = () => {
 
   if (!user) {
     return (
-      <div className="relative my-40 mb-60 w-full max-md:w-[85%] max-w-xl mx-auto border bg-primary/10 border-primary/20 rounded-lg p-8">
-        <BlurCircle bottom="-100px" />
-        <BlurCircle top="-100px" right="0px" />
-        <h1 className="text-center text-2xl font-semibold underline text-primary mb-6">
-          Share Your Experience
-        </h1>
-        <p className="text-center text-gray-400">
-          Please log in to submit feedback.
-        </p>
+      <div
+        className="min-h-screen flex items-center justify-center px-4 py-20 pt-24"
+        style={{ backgroundColor: "var(--bg-primary)" }}
+      >
+        <div className="card p-8 text-center max-w-md w-full">
+          <MessageSquare className="w-10 h-10 mx-auto mb-4" style={{ color: "var(--text-muted)" }} />
+          <h1 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+            Share Your Experience
+          </h1>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Please log in to submit feedback.
+          </p>
+        </div>
       </div>
     );
   }
@@ -36,14 +38,8 @@ const FeedbackForm = () => {
     try {
       const { data } = await axios.post(
         "/api/user/submit-feedback",
-        {
-          rating,
-          message,
-          userId: user.id,
-        },
-        {
-          headers: getAuthHeaders(),
-        }
+        { rating, message, userId: user.id },
+        { headers: getAuthHeaders() }
       );
       setRating(0);
       setMessage("");
@@ -57,81 +53,89 @@ const FeedbackForm = () => {
   };
 
   return (
-    <div className="relative my-40 mb-60 w-full max-md:w-[85%] max-w-xl mx-auto border bg-primary/10 border-primary/20 rounded-lg p-8">
-      <BlurCircle bottom="-100px" />
-      <BlurCircle top="-100px" right="0px" />
-      <h1 className="text-center text-2xl font-semibold underline text-primary mb-6">
-        Share Your Experience
-      </h1>
+    <div
+      className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-20 pt-24"
+      style={{ backgroundColor: "var(--bg-primary)" }}
+    >
+      <div className="w-full max-w-lg">
+        <div className="card p-6 sm:p-8">
+          <h1
+            className="text-xl sm:text-2xl font-bold mb-6 text-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Share Your Experience
+          </h1>
 
-      <form className="space-y-6 text-white mt-10" onSubmit={handleSubmit}>
-        <div className="flex justify-between items-center max-md:block">
-          <label className="text-lg max-md:mb-10 font-medium text-white/80">Username:</label>
-          <div className="relative group w-[80%] max-md:w-full max-md:mt-2">
-            <input
-              type="text"
-              readOnly
-              className="w-full px-4 py-2 bg-white/10 rounded-md text-white border border-white/20 cursor-not-allowed transition-all duration-200"
-              value={user.name || "Guest User"}
-              title="Your account username"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+          <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+            {/* Username */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                Username
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                <input
+                  type="text"
+                  readOnly
+                  className="input-field pl-10 cursor-not-allowed opacity-60"
+                  value={user.name || "Guest User"}
+                  title="Your account username"
+                />
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-2 md:flex-row md:items-center">
-          <label className="text-lg font-medium text-white/80">Rating:</label>
-          <div className="flex gap-3 min-md:ml-8">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <StarIcon
-                key={star}
-                size={28}
-                onClick={() => setRating(star)}
-                onMouseEnter={() => setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(0)}
-                className={`cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 ${
-                  (hoverRating || rating) >= star
-                    ? "text-yellow-400 fill-amber-300"
-                    : "text-white/30"
-                }`}
-                title={`Rate ${star} star${star > 1 ? "s" : ""}`}
+            {/* Rating */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                Rating
+              </label>
+              <div className="flex gap-2 sm:gap-3">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <StarIcon
+                    key={star}
+                    size={28}
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className={`cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 ${
+                      (hoverRating || rating) >= star
+                        ? "text-amber-400 fill-amber-400"
+                        : ""
+                    }`}
+                    style={{
+                      color: (hoverRating || rating) >= star ? undefined : "var(--text-muted)",
+                    }}
+                    title={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Message */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                Your Feedback
+              </label>
+              <textarea
+                rows={5}
+                placeholder="Share your experience with us..."
+                className="input-field resize-none"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                title="Tell us about your experience with TicketFlicks"
               />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="text-lg font-medium text-white/80">Your Feedback:</label>
-          <div className="relative group">
-            <textarea
-              rows={5}
-              placeholder="Share your experience with us..."
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white resize-none mt-2 transition-all duration-200 hover:bg-white/15 focus:outline-none focus:border-primary/80"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              title="Tell us about your experience with TicketFlicks"
-            ></textarea>
-            <div className="absolute right-3 bottom-3 w-5 h-5 text-white/40">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              </svg>
             </div>
-          </div>
-        </div>
 
-        <button
-          type="submit"
-          className="w-full py-3 text-lg bg-primary/70 hover:bg-primary-dull flex items-center justify-center transition-all duration-200 rounded-md border border-primary/90 font-medium active:scale-95 hover:shadow-lg hover:shadow-primary/20"
-          title={loading ? "Submitting your feedback..." : "Submit your feedback to help us improve"}
-        >
-          {loading ? <ButtonLoader /> : <>Submit Feedback</>}
-        </button>
-      </form>
+            <button
+              type="submit"
+              className="btn-primary w-full py-3 text-sm flex items-center justify-center"
+              disabled={loading}
+            >
+              {loading ? <ButtonLoader /> : "Submit Feedback"}
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };

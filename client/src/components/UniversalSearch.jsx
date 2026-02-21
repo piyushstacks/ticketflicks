@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, Film, MapPin, Calendar, Clock, Star } from 'lucide-react';
+import { Search, X, Film, MapPin } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -12,26 +11,20 @@ const UniversalSearch = ({ isOpen, onClose }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   
   const { axios, shows, imageBaseURL } = useAppContext();
-  const { isDark } = useTheme();
   const navigate = useNavigate();
   const searchInputRef = useRef(null);
   const searchContainerRef = useRef(null);
 
-  // Focus input when search opens
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
       searchInputRef.current.focus();
     }
   }, [isOpen]);
 
-  // Close search on escape key
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
-
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
@@ -41,24 +34,19 @@ const UniversalSearch = ({ isOpen, onClose }) => {
   const handleResultClick = useCallback((result) => {
     onClose();
     if (result.type === 'movie') {
-      // Navigate to movie details page
       navigate(`/movies/${result.movieData._id}`);
     } else if (result.type === 'theatre') {
       navigate(`/theatres`);
     }
   }, [onClose, navigate]);
 
-  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!searchResults.length) return;
-
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex(prev => 
-            prev < searchResults.length - 1 ? prev + 1 : prev
-          );
+          setSelectedIndex(prev => prev < searchResults.length - 1 ? prev + 1 : prev);
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -66,18 +54,14 @@ const UniversalSearch = ({ isOpen, onClose }) => {
           break;
         case 'Enter':
           e.preventDefault();
-          if (selectedIndex >= 0) {
-            handleResultClick(searchResults[selectedIndex]);
-          }
+          if (selectedIndex >= 0) handleResultClick(searchResults[selectedIndex]);
           break;
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [searchResults, selectedIndex, handleResultClick]);
 
-  // Search functionality
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -86,9 +70,7 @@ const UniversalSearch = ({ isOpen, onClose }) => {
 
     const searchTimeout = setTimeout(async () => {
       setIsSearching(true);
-      
       try {
-        // Search movies only (no shows)
         const movieShowResponse = await axios.get(`/api/search/movies?q=${encodeURIComponent(searchQuery)}`)
           .catch(() => ({ data: { success: false, movies: [], shows: [] } }));
         
@@ -103,7 +85,6 @@ const UniversalSearch = ({ isOpen, onClose }) => {
             movieData: movie.movieData
           }));
 
-        // Search theatres
         const theatreResponse = await axios.get(`/api/search/theatres?q=${encodeURIComponent(searchQuery)}`)
           .catch(() => ({ data: { success: false, theatres: [] } }));
         
@@ -118,9 +99,7 @@ const UniversalSearch = ({ isOpen, onClose }) => {
             theatreData: theatre
           }));
 
-        // Combine results (movies and theatres only, no shows)
-        const combinedResults = [...movieResults, ...theatreResults];
-        setSearchResults(combinedResults);
+        setSearchResults([...movieResults, ...theatreResults]);
         setSelectedIndex(-1);
       } catch (error) {
         console.error('Search error:', error);
@@ -133,98 +112,84 @@ const UniversalSearch = ({ isOpen, onClose }) => {
     return () => clearTimeout(searchTimeout);
   }, [searchQuery, shows, axios, imageBaseURL]);
 
-  const getGenreName = (genreId) => {
-    const genreMap = {
-      28: 'Action',
-      12: 'Adventure',
-      16: 'Animation',
-      35: 'Comedy',
-      80: 'Crime',
-      99: 'Documentary',
-      18: 'Drama',
-      10751: 'Family',
-      14: 'Fantasy',
-      36: 'History',
-      27: 'Horror',
-      10402: 'Music',
-      9648: 'Mystery',
-      10749: 'Romance',
-      878: 'Science Fiction',
-      10770: 'TV Movie',
-      53: 'Thriller',
-      10752: 'War',
-      37: 'Western'
-    };
-    return genreMap[genreId] || '';
-  };
-
   const handleOverlayClick = (e) => {
-    if (e.target === searchContainerRef.current) {
-      onClose();
-    }
+    if (e.target === searchContainerRef.current) onClose();
   };
 
   if (!isOpen) return null;
 
-    return (
-      <div 
-        ref={searchContainerRef}
-        className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4"
-        onClick={handleOverlayClick}
+  return (
+    <div
+      ref={searchContainerRef}
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 px-3 sm:px-4"
+      onClick={handleOverlayClick}
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 backdrop-blur-lg"
+        style={{ backgroundColor: "var(--overlay)" }}
+      />
+
+      {/* Search Container */}
+      <div
+        className="relative w-full max-w-2xl max-h-[80vh] rounded-2xl overflow-hidden animate-fadeIn"
+        style={{
+          backgroundColor: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 24px 64px var(--shadow-color)",
+        }}
       >
-        {/* Backdrop */}
-        <div className={`absolute inset-0 bg-black/80 backdrop-blur-lg`} />
-      
-        {/* Search Container */}
-        <div className="glass-card shadow-2xl border border-white/10 relative w-full max-w-2xl max-h-[80vh] rounded-2xl overflow-hidden animate-fade-in">
         {/* Search Input */}
-        <div className={`flex items-center gap-3 p-4 border-b ${
-            isDark ? 'border-white/20' : 'border-gray-200'
-          }`}>
-          <Search className={`w-5 h-5 ${isDark ? 'text-white/60' : 'text-gray-500'}`} />
+        <div
+          className="flex items-center gap-3 px-4 sm:px-5 py-3.5 sm:py-4"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
+          <Search className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
           <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search movies and theatres..."
-              className="flex-1 bg-transparent outline-none text-lg movie-title placeholder-movie-meta"
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search movies and theatres..."
+            className="flex-1 bg-transparent outline-none text-base sm:text-lg"
+            style={{ color: "var(--text-primary)" }}
           />
           <button
-              onClick={onClose}
-              className="btn-secondary p-2 rounded-full transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            onClick={onClose}
+            className="p-1.5 sm:p-2 rounded-lg transition-all hover:bg-[var(--bg-elevated)]"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
         </div>
 
         {/* Search Results */}
         <div className="overflow-y-auto max-h-[60vh]">
-            {isSearching && (
-              <div className="flex items-center justify-center p-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-2 border-accent border-t-transparent" />
-              </div>
-            )}
+          {isSearching && (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-accent border-t-transparent" />
+            </div>
+          )}
 
           {!isSearching && searchResults.length === 0 && searchQuery && (
-            <div className="text-center p-8">
-              <Search className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-white/40' : 'text-gray-400'}`} />
-              <p className={`text-lg ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
+            <div className="text-center p-6 sm:p-8">
+              <Search className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4" style={{ color: "var(--text-muted)" }} />
+              <p className="text-base sm:text-lg" style={{ color: "var(--text-secondary)" }}>
                 No results found for "{searchQuery}"
               </p>
-              <p className={`text-sm mt-2 ${isDark ? 'text-white/40' : 'text-gray-500'}`}>
+              <p className="text-xs sm:text-sm mt-1.5 sm:mt-2" style={{ color: "var(--text-muted)" }}>
                 Try searching with different keywords
               </p>
             </div>
           )}
 
           {!searchQuery && (
-            <div className="text-center p-8">
-              <Search className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-white/40' : 'text-gray-400'}`} />
-              <p className={`text-lg ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
+            <div className="text-center p-6 sm:p-8">
+              <Search className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4" style={{ color: "var(--text-muted)" }} />
+              <p className="text-base sm:text-lg" style={{ color: "var(--text-secondary)" }}>
                 Search for movies and theatres
               </p>
-              <p className={`text-sm mt-2 ${isDark ? 'text-white/40' : 'text-gray-500'}`}>
+              <p className="text-xs sm:text-sm mt-1.5 sm:mt-2" style={{ color: "var(--text-muted)" }}>
                 Start typing to see results
               </p>
             </div>
@@ -234,46 +199,52 @@ const UniversalSearch = ({ isOpen, onClose }) => {
             <div className="py-2">
               {searchResults.map((result, index) => (
                 <button
-                    key={`${result.type}-${result.id}`}
-                    onClick={() => handleResultClick(result)}
-                    className={`w-full flex items-center gap-4 p-4 text-left transition-all duration-200 rounded-xl ${
-                      index === selectedIndex
-                        ? 'bg-accent/10 shadow-md scale-[1.01]'
-                        : 'hover:bg-accent/5 hover:shadow-sm'
-                    }`}
+                  key={`${result.type}-${result.id}`}
+                  onClick={() => handleResultClick(result)}
+                  className="w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5 text-left transition-all duration-200"
+                  style={{
+                    backgroundColor: index === selectedIndex ? "var(--bg-elevated)" : "transparent",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-elevated)"; }}
+                  onMouseLeave={(e) => {
+                    if (index !== selectedIndex) e.currentTarget.style.backgroundColor = "transparent";
+                  }}
                 >
                   {/* Icon */}
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                      result.type === 'movie'
-                        ? 'bg-accent/20 text-accent'
-                        : 'bg-blue-500/20 text-blue-400'
-                    }`}>
+                  <div
+                    className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center"
+                    style={{
+                      backgroundColor: result.type === 'movie' ? "var(--color-accent-soft)" : "rgba(59, 130, 246, 0.12)",
+                    }}
+                  >
                     {result.type === 'movie' ? (
-                      <Film className="w-5 h-5" />
+                      <Film className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
                     ) : (
-                      <MapPin className="w-5 h-5" />
+                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                     )}
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate movie-title">
-                        {result.title}
-                      </h3>
+                    <h3 className="text-sm sm:text-base font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                      {result.title}
+                    </h3>
                     {result.subtitle && (
-                        <p className="text-sm truncate movie-meta">
-                          {result.subtitle}
-                        </p>
+                      <p className="text-xs sm:text-sm truncate" style={{ color: "var(--text-muted)" }}>
+                        {result.subtitle}
+                      </p>
                     )}
                   </div>
 
                   {/* Type Badge */}
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      result.type === 'movie'
-                        ? 'bg-accent/20 text-accent' 
-                        : 'bg-blue-500/20 text-blue-400'
-                    }`}>
-                      {result.type === 'movie' ? 'Movie' : 'Theatre'}
+                  <div
+                    className="px-2 py-1 rounded-lg text-[10px] sm:text-xs font-medium flex-shrink-0"
+                    style={{
+                      backgroundColor: result.type === 'movie' ? "var(--color-accent-soft)" : "rgba(59, 130, 246, 0.12)",
+                      color: result.type === 'movie' ? "var(--color-accent)" : "#60a5fa",
+                    }}
+                  >
+                    {result.type === 'movie' ? 'Movie' : 'Theatre'}
                   </div>
                 </button>
               ))}
@@ -282,16 +253,16 @@ const UniversalSearch = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className={`px-4 py-3 border-t text-xs ${
-          isDark 
-            ? 'border-white/20 text-white/40' 
-            : 'border-gray-200 text-gray-500'
-        }`}>
+        <div
+          className="px-4 sm:px-5 py-2.5 sm:py-3 text-[10px] sm:text-xs"
+          style={{
+            borderTop: "1px solid var(--border)",
+            color: "var(--text-muted)",
+          }}
+        >
           <div className="flex items-center justify-between">
-            <span>Press Enter to select • Esc to close</span>
-            <div className="flex items-center gap-4">
-              <span>↑↓ Navigate</span>
-            </div>
+            <span>Press Enter to select -- Esc to close</span>
+            <span className="hidden sm:inline">Use arrow keys to navigate</span>
           </div>
         </div>
       </div>

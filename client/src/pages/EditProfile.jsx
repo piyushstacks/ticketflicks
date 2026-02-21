@@ -3,7 +3,7 @@ import { useAuthContext } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
-import { UserIcon, MailIcon, PhoneIcon } from "lucide-react";
+import { UserIcon, MailIcon, PhoneIcon, ArrowLeft, Save } from "lucide-react";
 import axios from "axios";
 
 const EditProfile = () => {
@@ -38,8 +38,8 @@ const EditProfile = () => {
       const response = await axios.put("/api/user/profile", updateData, { headers: getAuthHeaders() });
       if (response.data.success) {
         toast.success("Profile updated successfully!");
-        saveAuth(response.data.user, token, true); // Update user in AuthContext and storage
-        navigate("/profile"); // Navigate to a profile view page or home
+        saveAuth(response.data.user, token, true);
+        navigate("/profile");
       } else {
         toast.error(response.data.message || "Failed to update profile.");
       }
@@ -56,78 +56,134 @@ const EditProfile = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold text-white mb-6 text-center">Edit Profile</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-gray-300 text-sm font-bold mb-2">
-              Name
-            </label>
-            <div className="relative">
-              <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="pl-10 pr-4 py-2 w-full bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Your Name"
-                required
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="email" className="block text-gray-300 text-sm font-bold mb-2">
-              Email
-            </label>
-            <div className="relative">
-              <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="pl-10 pr-4 py-2 w-full bg-gray-700 text-gray-400 rounded-md focus:outline-none cursor-not-allowed"
-                placeholder="Your Email"
-                required
-                readOnly
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="phone" className="block text-gray-300 text-sm font-bold mb-2">
-              Phone
-            </label>
-            <div className="relative">
-              <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="pl-10 pr-4 py-2 w-full bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Your Phone Number"
-              />
-            </div>
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors duration-300"
-            disabled={loading}
-          >
-            {loading ? "Updating..." : "Update Profile"}
-          </button>
-        </form>
+    <div
+      className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-20 pt-24"
+      style={{ backgroundColor: "var(--bg-primary)" }}
+    >
+      <div className="w-full max-w-md">
+        {/* Back button */}
         <button
-          onClick={() => navigate(-1)} // Go back to previous page
-          className="mt-4 w-full text-gray-400 py-2 px-4 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors duration-300"
+          onClick={() => navigate(-1)}
+          className="btn-ghost mb-6 text-sm flex items-center gap-1.5"
         >
-          Cancel
+          <ArrowLeft className="w-4 h-4" />
+          Back
         </button>
+
+        <div className="card p-6 sm:p-8">
+          <h2
+            className="text-xl sm:text-2xl font-bold mb-6 text-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Edit Profile
+          </h2>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Name */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="name"
+                className="text-sm font-medium"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Name
+              </label>
+              <div className="relative">
+                <UserIcon
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                  style={{ color: "var(--text-muted)" }}
+                />
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="input-field pl-10"
+                  placeholder="Your Name"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Email (read-only) */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Email
+              </label>
+              <div className="relative">
+                <MailIcon
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                  style={{ color: "var(--text-muted)" }}
+                />
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  className="input-field pl-10 cursor-not-allowed opacity-60"
+                  placeholder="Your Email"
+                  readOnly
+                />
+              </div>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                Email cannot be changed
+              </p>
+            </div>
+
+            {/* Phone */}
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="phone"
+                className="text-sm font-medium"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Phone
+              </label>
+              <div className="relative">
+                <PhoneIcon
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                  style={{ color: "var(--text-muted)" }}
+                />
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="input-field pl-10"
+                  placeholder="Your Phone Number"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn-primary w-full py-3 mt-2 flex items-center justify-center gap-2 text-sm"
+              disabled={loading}
+            >
+              {loading ? (
+                "Updating..."
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Update Profile
+                </>
+              )}
+            </button>
+          </form>
+
+          <button
+            onClick={() => navigate(-1)}
+            className="btn-secondary w-full mt-3 py-2.5 text-sm"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
