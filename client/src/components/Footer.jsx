@@ -2,106 +2,120 @@ import React from "react";
 import { assets } from "../assets/assets";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { useTheme } from "../context/ThemeContext.jsx";
+import { useAuthContext } from "../context/AuthContext.jsx";
 import toast from "react-hot-toast";
 
 const Footer = () => {
   const { user } = useAppContext();
-  const { isDark } = useTheme();
   const navigate = useNavigate();
 
   return (
-    <footer className={`px-6 pt-8 md:px-16 lg:px-36 mt-40 w-full ${
-      isDark ? 'text-gray-300' : 'text-gray-700 bg-gray-50'
-    }`}>
-      <div className={`flex flex-col md:flex-row justify-between w-full gap-10 border-b pb-14 ${
-        isDark ? 'border-gray-500' : 'border-gray-300'
-      }`}>
-        <div className="md:max-w-96">
-          <img 
-            className={`w-36 h-auto transition-all duration-300 ${
-              isDark ? '' : 'filter brightness-0 contrast-100'
-            }`} 
-            src={assets.logo} 
-            alt="logo" 
-          />
-          <p className="mt-6 text-sm">
-            TicketFlicks is an online movie ticket booking platform.
-            <br />
-            <span>
-              {" "}
-              Created By{" "}
-              <span className="font-bold underline">
+    <footer
+      className="mt-24 w-full"
+      style={{ backgroundColor: "var(--bg-secondary)", borderTop: "1px solid var(--border)" }}
+    >
+      <div className="px-4 sm:px-6 md:px-12 lg:px-20 xl:px-36 py-12">
+        <div className="flex flex-col md:flex-row justify-between gap-10">
+          {/* Brand */}
+          <div className="md:max-w-sm">
+            <img
+              className="w-32 h-auto dark:invert-0"
+              src={assets.logo}
+              alt="TicketFlicks"
+              style={{ filter: "var(--logo-filter, none)" }}
+            />
+            <p className="mt-4 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              TicketFlicks is an online movie ticket booking platform.
+              <br />
+              Created by{" "}
+              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
                 Team Group 20 - SXCA
               </span>
-            </span>{" "}
-          </p>
-          {/* <div className="flex items-center gap-2 mt-4">
-            <img
-              src={assets.googlePlay}
-              alt="google play"
-              className="h-9 w-auto"
-            />
-            <img src={assets.appStore} alt="app store" className="h-9 w-auto" />
-          </div> */}
-        </div>
-        <div className="flex-1 flex items-start md:justify-end gap-20 md:gap-40">
-          <div>
-            <h2 className={`font-semibold mb-5 ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>Company</h2>
-            <ul className="text-sm space-y-2">
-              <li>
-                <Link
-                  onClick={() => {
-                    scrollTo(0, 0);
-                  }}
-                  to="/"
-                  className={isDark ? '' : 'text-gray-700 hover:text-primary'}
-                >
-                  Home
-                </Link>
-              </li>
-              <li>
-                <button
-                  onClick={() => {
-                    if (user) {
-                      scrollTo(0, 0);
-                      navigate("/feedback");
-                    } else {
-                      toast.error("You need to login/signup first");
-                    }
-                  }}
-                  className={`cursor-pointer whitespace-nowrap ${
-                    isDark ? '' : 'text-gray-700 hover:text-primary'
-                  }`}
-                >
-                  <span className="max-md:hidden">Give</span> Feedback
-                </button>
-              </li>
-            </ul>
+            </p>
           </div>
-          <div>
-            <h2 className={`font-semibold mb-5 ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>Get in touch</h2>
-            <div className="text-sm space-y-2">
-              <p className={isDark ? '' : 'text-gray-700'}>+91 9724176300 </p>
-              <a
-                href="mailto:ticketflicks@gmail.com"
-                className="text-primary underline"
-              >
-                ticketflicks@gmail.com
-              </a>
+
+          {/* Links */}
+          <div className="flex gap-16 md:gap-24">
+            <div>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "var(--text-primary)" }}>
+                Company
+              </h3>
+              <ul className="text-sm flex flex-col gap-2.5">
+                <li>
+                  <Link
+                    onClick={() => scrollTo(0, 0)}
+                    to="/"
+                    className="transition-colors duration-200 hover:text-accent"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    onClick={() => scrollTo(0, 0)}
+                    to="/movies"
+                    className="transition-colors duration-200 hover:text-accent"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Movies
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    onClick={() => scrollTo(0, 0)}
+                    to="/theatres"
+                    className="transition-colors duration-200 hover:text-accent"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Theatres
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      if (user) {
+                        scrollTo(0, 0);
+                        navigate("/feedback");
+                      } else {
+                        toast.error("You need to login/signup first");
+                      }
+                    }}
+                    className="cursor-pointer transition-colors duration-200 hover:text-accent"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    Feedback
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm mb-4" style={{ color: "var(--text-primary)" }}>
+                Contact
+              </h3>
+              <div className="text-sm flex flex-col gap-2.5">
+                <p style={{ color: "var(--text-secondary)" }}>+91 9724176300</p>
+                <a
+                  href="mailto:ticketflicks@gmail.com"
+                  className="text-accent hover:underline"
+                >
+                  ticketflicks@gmail.com
+                </a>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <p className={`pt-4 text-center text-sm pb-5 ${
-        isDark ? '' : 'text-gray-600'
-      }`}>
-        Copyright {new Date().getFullYear()} © TicketFlicks. All Right Reserved.
-      </p>
+
+      {/* Bottom bar */}
+      <div
+        className="px-4 sm:px-6 md:px-12 lg:px-20 xl:px-36 py-4"
+        style={{ borderTop: "1px solid var(--border)" }}
+      >
+        <p className="text-center text-xs" style={{ color: "var(--text-muted)" }}>
+          Copyright {new Date().getFullYear()} TicketFlicks. All rights reserved.
+        </p>
+      </div>
     </footer>
   );
 };

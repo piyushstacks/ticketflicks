@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { assets } from "../assets/assets";
-import { MenuIcon, XIcon, UserIcon, MoonIcon, SunIcon, Search } from "lucide-react";
+import { MenuIcon, XIcon, UserIcon, MoonIcon, SunIcon, Search, LogOut, Ticket, Heart, MessageSquare, Settings, LayoutDashboard } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
@@ -11,304 +11,303 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { user, logout } = useAuthContext();
   const { toggleTheme, isDark } = useTheme();
-
   const navigate = useNavigate();
+  const location = useLocation();
   const { favoriteMovies } = useAppContext();
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsOpen(false);
+    setIsProfileOpen(false);
+  }, [location.pathname]);
+
+  const navLinks = [
+    { to: "/", label: "Home" },
+    { to: "/movies", label: "Movies" },
+    { to: "/theatres", label: "Theatres" },
+    { to: "/upcoming-movies", label: "Upcoming" },
+  ];
+
+  const isActiveLink = (path) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <div className={`fixed top-0 left-0 z-50 w-full flex items-center justify-between px-6 md:px-16 xl:px-36 py-4 glass-card card-hover backdrop-blur-lg shadow-lg border-b border-white/10 transition-all duration-300 ${isDark ? '' : ''}`}
-      style={{ minHeight: 72 }}>
-      <Link
-        to="/"
-        onClick={() => {
-          window.scrollTo(0, 0);
+    <>
+      <nav
+        className={`fixed top-0 left-0 z-50 w-full transition-all duration-300 ${
+          scrolled
+            ? "backdrop-blur-xl shadow-lg"
+            : "backdrop-blur-sm"
+        }`}
+        style={{
+          backgroundColor: scrolled
+            ? `color-mix(in srgb, var(--bg-primary) 85%, transparent)`
+            : `color-mix(in srgb, var(--bg-primary) 60%, transparent)`,
+          borderBottom: `1px solid ${scrolled ? "var(--border)" : "transparent"}`,
         }}
-        className="max-md:flex-1"
-      > 
-        <img 
-          src={assets.logo} 
-          alt="Logo" 
-          className={`w-36 h-auto transition-all duration-300 ${
-            isDark ? '' : 'filter brightness-0 contrast-100'
-          }`} 
-        />
-      </Link>
-
-      <div
-          className={`max-md:absolute max-md:top-0 max-md:left-0 max-md:font-medium max-md:text-lg z-10 flex flex-col md:flex-row items-center max-md:justify-center gap-8 min-md:px-8 py-3 max-md:h-screen min-md:rounded-full glass-card backdrop-blur-lg transition-all duration-300 ${isOpen ? "max-md:w-full" : "max-md:w-0"} overflow-hidden`}
       >
-        <XIcon
-          className={`md:hidden absolute top-6 right-6 w-6 h-6 cursor-pointer transition-colors ${
-            isDark ? 'text-white' : 'text-gray-800'
-          }`}
-          onClick={() => {
-            setIsOpen(!isOpen);
-          }}
-        />
-
-        <Link
-            onClick={() => {
-              scrollTo(0, 0);
-              setIsOpen(false);
-            }}
+        <div className="flex items-center justify-between px-4 sm:px-6 md:px-12 lg:px-20 xl:px-36 py-3">
+          {/* Logo */}
+          <Link
             to="/"
-            className="font-semibold text-lg movie-title transition-all duration-200 hover:text-accent"
-        >
-          Home
-        </Link>
-        <Link
-            onClick={() => {
-              scrollTo(0, 0);
-              setIsOpen(false);
-            }}
-            to="/movies"
-            className="font-medium text-base movie-meta transition-all duration-200 hover:text-accent"
-        >
-          Movies
-        </Link>
-        <Link
-            onClick={() => {
-              scrollTo(0, 0);
-              setIsOpen(false);
-            }}
-            to="/theatres"
-            className="font-medium text-base movie-meta transition-all duration-200 hover:text-accent"
-        >
-          Theatres
-        </Link>
-        <Link
-            onClick={() => {
-              scrollTo(0, 0);
-              setIsOpen(false);
-            }}
-            to="/upcoming-movies"
-            className="font-medium text-base movie-meta transition-all duration-200 hover:text-accent"
-        >
-          Upcoming
-        </Link>
-        {favoriteMovies.length > 0 && (
-            <Link
-              onClick={() => {
-                scrollTo(0, 0);
-                setIsOpen(false);
-              }}
-              to="/favorite"
-              className="font-medium text-base movie-meta transition-all duration-200 hover:text-accent"
-            >
-              Favorites
-            </Link>
-        )}
-      </div>
-
-      <div className="flex items-center gap-4">
-        {/* Search Button */}
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            className="btn-secondary p-2 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent"
-            title="Search movies, shows, and theatres"
+            onClick={() => window.scrollTo(0, 0)}
+            className="flex-shrink-0"
           >
-            <Search className="w-5 h-5" />
-          </button>
-
-        {!user ? (
-          <button
-            onClick={() => navigate("/login")}
-            className="px-6 py-2 md:px-8 md:py-2 transition duration-200 rounded-full font-semibold cursor-pointer bg-primary hover:bg-primary-dull text-white shadow-md hover:shadow-lg"
-          >
-            Login
-          </button>
-        ) : (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsProfileOpen((prev) => !prev)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition duration-200 ${
-                isDark 
-                  ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20' 
-                  : 'bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200'
+            <img
+              src={assets.logo}
+              alt="TicketFlicks"
+              className={`w-32 h-auto transition-all duration-300 ${
+                isDark ? "" : "filter brightness-0 contrast-100"
               }`}
-            >
-              <span className="text-sm font-medium">
-                {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="w-5 h-5" />}
-              </span>
-            </button>
+            />
+          </Link>
 
-            {isProfileOpen && (
-              <div className={`absolute right-0 mt-3 w-56 rounded-2xl shadow-lg backdrop-blur-xl py-2 text-sm transition duration-200 ${
-                isDark 
-                  ? 'bg-black/90 border border-white/10 text-white' 
-                  : 'bg-white border border-gray-200 text-gray-800 shadow-md'
-              }`}>
-                <div className={`px-4 py-3 border-b ${
-                  isDark ? 'border-white/10' : 'border-gray-200'
-                }`}>
-                  <p className="font-semibold truncate">
-                    {user.name || "Account"}
-                  </p>
-                  <p className={`text-xs truncate mt-1 ${
-                    isDark ? 'text-white/60' : 'text-gray-600'
-                  }`}>
-                    {user.email}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigate("/my-bookings");
-                    setIsProfileOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2.5 transition duration-200 hover:bg-opacity-80 ${
-                    isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  My Bookings
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigate("/profile");
-                    setIsProfileOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2.5 transition duration-200 ${
-                    isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  My Profile
-                </button>
-
-                {favoriteMovies.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate("/favorite");
-                      setIsProfileOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 transition duration-200 ${
-                      isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    Favorites
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigate("/feedback");
-                    setIsProfileOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2.5 transition duration-200 ${
-                    isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  Feedback
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigate("/edit-profile");
-                    setIsProfileOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2.5 transition duration-200 ${
-                    isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  Edit Profile
-                </button>
-
-                <div className={`border-t mt-2 pt-2 ${
-                  isDark ? 'border-white/10' : 'border-gray-200'
-                }`}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      toggleTheme();
-                    }}
-                    className={`w-full text-left px-4 py-2.5 transition duration-200 flex items-center gap-2 ${
-                      isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    {isDark ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
-                    {isDark ? 'Light Mode' : 'Dark Mode'}
-                  </button>
-                </div>
-
-                {user.role === "admin" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate("/admin");
-                      setIsProfileOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 transition duration-200 border-t ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
-                    Admin Dashboard
-                  </button>
-                )}
-
-                {user.role === "manager" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate("/manager");
-                      setIsProfileOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 transition duration-200 border-t ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
-                    Manager Dashboard
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    logout();
-                    setIsProfileOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2.5 transition duration-200 border-t font-medium ${
-                    isDark 
-                      ? 'text-red-400 border-white/10 hover:bg-white/10' 
-                      : 'text-red-600 border-gray-200 hover:bg-red-50'
-                  }`}
-                >
-                  Logout
-                </button>
-              </div>
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => window.scrollTo(0, 0)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isActiveLink(link.to)
+                    ? "text-accent bg-[var(--color-accent-soft)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {favoriteMovies.length > 0 && (
+              <Link
+                to="/favorite"
+                onClick={() => window.scrollTo(0, 0)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isActiveLink("/favorite")
+                    ? "text-accent bg-[var(--color-accent-soft)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                }`}
+              >
+                Favorites
+              </Link>
             )}
           </div>
-        )}
 
-        {/* Mobile Menu Toggle */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={`md:hidden p-2 rounded-lg transition duration-200 ${
-            isDark 
-              ? 'text-white hover:bg-white/10' 
-              : 'text-gray-800 hover:bg-gray-100'
-          }`}
-        >
-          <MenuIcon className="w-6 h-6" />
-        </button>
-      </div>
+          {/* Right Actions */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all duration-200"
+              title="Search"
+              aria-label="Search movies, shows, and theatres"
+            >
+              <Search className="w-[18px] h-[18px]" />
+            </button>
+
+            {/* Theme Toggle - Always visible */}
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all duration-200"
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label="Toggle theme"
+            >
+              {isDark ? <SunIcon className="w-[18px] h-[18px]" /> : <MoonIcon className="w-[18px] h-[18px]" />}
+            </button>
+
+            {/* Auth / Profile */}
+            {!user ? (
+              <button
+                onClick={() => navigate("/login")}
+                className="btn-primary ml-1 px-5 py-2 text-sm"
+              >
+                Login
+              </button>
+            ) : (
+              <div className="relative" ref={profileRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileOpen((prev) => !prev)}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 text-sm font-semibold ml-1"
+                  style={{
+                    backgroundColor: isProfileOpen ? "var(--color-accent)" : "var(--bg-elevated)",
+                    color: isProfileOpen ? "#fff" : "var(--text-primary)",
+                    border: `1px solid ${isProfileOpen ? "var(--color-accent)" : "var(--border)"}`,
+                  }}
+                >
+                  {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon className="w-4 h-4" />}
+                </button>
+
+                {isProfileOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-60 rounded-xl overflow-hidden animate-slideDown"
+                    style={{
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      boxShadow: "0 16px 48px var(--shadow-color)",
+                    }}
+                  >
+                    {/* User info */}
+                    <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                      <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>
+                        {user.name || "Account"}
+                      </p>
+                      <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {user.email}
+                      </p>
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="py-1">
+                      <ProfileMenuItem icon={<Ticket className="w-4 h-4" />} label="My Bookings" onClick={() => navigate("/my-bookings")} />
+                      <ProfileMenuItem icon={<UserIcon className="w-4 h-4" />} label="My Profile" onClick={() => navigate("/profile")} />
+                      {favoriteMovies.length > 0 && (
+                        <ProfileMenuItem icon={<Heart className="w-4 h-4" />} label="Favorites" onClick={() => navigate("/favorite")} />
+                      )}
+                      <ProfileMenuItem icon={<MessageSquare className="w-4 h-4" />} label="Feedback" onClick={() => navigate("/feedback")} />
+                      <ProfileMenuItem icon={<Settings className="w-4 h-4" />} label="Edit Profile" onClick={() => navigate("/edit-profile")} />
+                    </div>
+
+                    {/* Admin / Manager */}
+                    {(user.role === "admin" || user.role === "manager") && (
+                      <div style={{ borderTop: "1px solid var(--border)" }} className="py-1">
+                        <ProfileMenuItem
+                          icon={<LayoutDashboard className="w-4 h-4" />}
+                          label={user.role === "admin" ? "Admin Dashboard" : "Manager Dashboard"}
+                          onClick={() => navigate(user.role === "admin" ? "/admin" : "/manager")}
+                        />
+                      </div>
+                    )}
+
+                    {/* Logout */}
+                    <div style={{ borderTop: "1px solid var(--border)" }} className="py-1">
+                      <button
+                        type="button"
+                        onClick={() => { logout(); setIsProfileOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-3 transition-all duration-200 text-red-500 hover:bg-red-500/10"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="md:hidden p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all duration-200 ml-1"
+              aria-label="Toggle navigation menu"
+            >
+              <MenuIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      {isOpen && (
+        <div className="fixed inset-0 z-[60] md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 backdrop-blur-sm"
+            style={{ backgroundColor: "var(--overlay)" }}
+            onClick={() => setIsOpen(false)}
+          />
+          {/* Panel */}
+          <div
+            className="absolute top-0 right-0 h-full w-72 animate-fadeIn"
+            style={{
+              backgroundColor: "var(--bg-card)",
+              borderLeft: "1px solid var(--border)",
+            }}
+          >
+            <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid var(--border)" }}>
+              <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Menu</span>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition-all"
+                aria-label="Close menu"
+              >
+                <XIcon className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
+              </button>
+            </div>
+
+            <div className="flex flex-col p-3 gap-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => { window.scrollTo(0, 0); setIsOpen(false); }}
+                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink(link.to)
+                      ? "text-accent bg-[var(--color-accent-soft)]"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {favoriteMovies.length > 0 && (
+                <Link
+                  to="/favorite"
+                  onClick={() => { window.scrollTo(0, 0); setIsOpen(false); }}
+                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActiveLink("/favorite")
+                      ? "text-accent bg-[var(--color-accent-soft)]"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]"
+                  }`}
+                >
+                  Favorites
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search Modal */}
       {isSearchOpen && (
-        <UniversalSearch
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-        />
+        <UniversalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       )}
-    </div>
+    </>
   );
 };
+
+const ProfileMenuItem = ({ icon, label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 transition-all duration-200 hover:bg-[var(--bg-elevated)]"
+    style={{ color: "var(--text-secondary)" }}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
+);
 
 export default Navbar;

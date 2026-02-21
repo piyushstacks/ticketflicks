@@ -1,8 +1,9 @@
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 const Loading = () => {
-  const { nextUrl } = useParams(); // nextUrl = "my-bookings"
+  const { nextUrl } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,8 +15,14 @@ const Loading = () => {
   }, [nextUrl, navigate]);
 
   return (
-    <div className="flex justify-center items-center h-[90vh]">
-      <div className="animate-spin rounded-full h-14 w-14 border-2 border-t-primary"></div>
+    <div className="flex flex-col items-center justify-center h-[80vh] gap-4 animate-fadeIn">
+      <Loader2
+        className="w-10 h-10 animate-spin"
+        style={{ color: "var(--color-accent)" }}
+      />
+      <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+        Loading...
+      </p>
     </div>
   );
 };

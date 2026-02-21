@@ -72,30 +72,30 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-20 bg-gradient-to-br from-black via-[#050816] to-black">
+    <div className="min-h-screen flex items-center justify-center px-4 py-20 pt-24" style={{ backgroundColor: "var(--bg-primary)" }}>
       <div className="w-full max-w-4xl flex flex-col md:flex-row gap-10 md:gap-16 items-center">
-        <div className="text-white max-md:text-center md:flex-1 space-y-4">
-          <h1 className="text-3xl md:text-4xl font-semibold">
+        <div className="max-md:text-center md:flex-1 space-y-4">
+          <h1 className="text-3xl md:text-4xl font-semibold" style={{ color: "var(--text-primary)" }}>
             Welcome back
           </h1>
-          <p className="text-white/70">
+          <p style={{ color: "var(--text-secondary)" }}>
             Sign in to manage bookings, save your favorites, and enjoy a
             seamless TicketFlicks experience.
           </p>
         </div>
 
-        <div className="md:flex-1 max-w-md w-full rounded-3xl bg-gradient-to-br from-primary/40 via-white/5 to-black/40 border border-white/10 backdrop-blur-xl p-8 shadow-2xl">
-          <h2 className="text-white text-2xl font-semibold mb-8 text-center">
+        <div className="md:flex-1 max-w-md w-full rounded-2xl p-8" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
+          <h2 className="text-2xl font-semibold mb-8 text-center" style={{ color: "var(--text-primary)" }}>
             Login
           </h2>
 
-          <form className="space-y-6 text-white" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-sm text-white/80 font-medium">Email Address</label>
+              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Email Address</label>
               <div className="relative group">
                 <input
                   type="email"
-                  className="w-full px-4 py-3 pr-10 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80 transition-all duration-200 hover:bg-white/10"
+                  className="input-field pr-10"
                   value={email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="Enter your email address"
@@ -104,19 +104,19 @@ const Login = () => {
                   autoComplete="email"
                   title="Enter your registered email address"
                 />
-                <UserIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200" />
+                <UserIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
               </div>
               {errors.email && (
-                <p className="text-xs text-red-400 mt-1 animate-pulse">{errors.email}</p>
+                <p className="text-xs text-red-500 mt-1">{errors.email}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-white/80 font-medium">Password</label>
+              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Password</label>
               <div className="relative group">
                 <input
                   type={showPassword ? "text" : "password"}
-                  className="w-full px-4 py-3 pr-20 bg-white/5 rounded-full text-white border border-white/15 focus:outline-none focus:border-primary/80 transition-all duration-200 hover:bg-white/10"
+                  className="input-field pr-16"
                   value={password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   placeholder="Enter your password"
@@ -125,49 +125,44 @@ const Login = () => {
                   autoComplete="current-password"
                   title="Enter your account password"
                 />
-                <LockIcon className="absolute right-10 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200" />
+                <LockIcon className="absolute right-9 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white focus:outline-none transition-colors duration-200 hover:scale-110 active:scale-95"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors duration-200"
+                  style={{ color: "var(--text-muted)" }}
                   title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? (
-                    <EyeOffIcon className="w-4 h-4" />
-                  ) : (
-                    <EyeIcon className="w-4 h-4" />
-                  )}
+                  {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-red-400 mt-1 animate-pulse">{errors.password}</p>
+                <p className="text-xs text-red-500 mt-1">{errors.password}</p>
               )}
             </div>
 
-            <div className="flex items-center justify-between text-sm text-white/80">
-              <label className="flex items-center gap-2 cursor-pointer group">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="accent-primary w-4 h-4 rounded border-white/20 focus:ring-2 focus:ring-primary/50 transition-all duration-200"
+                  className="accent-accent w-3.5 h-3.5 rounded"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <span className="group-hover:text-primary transition-colors duration-200">Remember me</span>
+                <span>Remember me</span>
               </label>
-              <div className="flex gap-4">
+              <div className="flex gap-3 text-xs">
                 <button
                   type="button"
-                  className="text-primary hover:underline hover:underline-offset-4 transition-all duration-200 hover:scale-105 active:scale-95"
+                  className="text-accent hover:underline"
                   onClick={() => setShowChangePasswordModal(true)}
-                  title="Change your password"
                 >
-                  Change password?
+                  Change password
                 </button>
                 <button
                   type="button"
-                  className="text-primary hover:underline hover:underline-offset-4 transition-all duration-200 hover:scale-105 active:scale-95"
+                  className="text-accent hover:underline"
                   onClick={() => navigate("/forgot-password")}
-                  title="Reset your password"
                 >
                   Forgot password?
                 </button>
@@ -177,19 +172,15 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 text-base bg-white text-black font-medium rounded-full hover:bg-white/90 active:scale-95 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-white/20"
-              title={loading ? "Please wait while we log you in" : "Click to sign in to your account"}
+              className="btn-primary w-full py-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-white/80">
-            Don&apos;t have an account?{" "}
-            <Link
-              to="/signup"
-              className="text-primary font-medium hover:text-primary-dull"
-            >
+          <p className="mt-6 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+            {"Don't have an account? "}
+            <Link to="/signup" className="text-accent font-medium hover:underline">
               Register
             </Link>
           </p>
