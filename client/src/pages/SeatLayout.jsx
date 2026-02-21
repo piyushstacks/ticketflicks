@@ -10,6 +10,8 @@ import {
   AlertCircle,
   CheckCircle,
   Info,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import isoTimeFormat from "../lib/isoTimeFormat";
 import BlurCircle from "../components/BlurCircle";
@@ -28,6 +30,7 @@ const SeatLayout = () => {
   const [show, setShow] = useState(null);
   const [occupiedSeats, setOccupiedSeats] = useState(new Set());
   const [lockedSeats, setLockedSeats] = useState(new Set());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [seatsLoading, setSeatsLoading] = useState(false);
   const [seatLayout, setSeatLayout] = useState(null);
@@ -654,9 +657,29 @@ const SeatLayout = () => {
     <div className="flex flex-col lg:flex-row px-4 sm:px-6 md:px-8 lg:px-16 xl:px-36 py-20 sm:py-24 md:py-28 gap-6 lg:gap-8" style={{ backgroundColor: "var(--bg-primary)" }}>
       {/* Sidebar - Show Info & Timing */}
       <div className="w-full lg:w-72 xl:w-80 flex-shrink-0">
-        <div className="card p-5 sm:p-6 sticky top-24">
-          {/* Movie Info */}
-          <div className="mb-5">
+        <div className="card p-5 sm:p-6 lg:sticky lg:top-24">
+          {/* Mobile toggle header */}
+          <button
+            className="flex items-center justify-between w-full lg:hidden mb-4"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <div>
+              <h2 className="text-base font-bold text-left" style={{ color: "var(--text-primary)" }}>
+                {show.movie?.title || "Movie"}
+              </h2>
+              <p className="text-xs text-left" style={{ color: "var(--text-secondary)" }}>
+                {show.theatre?.name || "Theatre"} -- {show.screen?.name || `Screen ${show.screen?.screenNumber}`}
+              </p>
+            </div>
+            {sidebarOpen ? (
+              <ChevronUp className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+            ) : (
+              <ChevronDown className="w-5 h-5 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+            )}
+          </button>
+
+          {/* Desktop always visible movie info */}
+          <div className="hidden lg:block mb-5">
             <h2 className="text-base sm:text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>
               {show.movie?.title || "Movie"}
             </h2>
@@ -665,6 +688,9 @@ const SeatLayout = () => {
               {show.screen?.name || `Screen ${show.screen?.screenNumber}`}
             </p>
           </div>
+
+          {/* Collapsible content on mobile, always visible on desktop */}
+          <div className={`${sidebarOpen ? "block" : "hidden"} lg:block`}>
 
           {/* Screen Type Badge */}
           <div
@@ -744,6 +770,7 @@ const SeatLayout = () => {
               </div>
             </div>
           )}
+          </div>{/* end collapsible */}
         </div>
       </div>
 
@@ -954,7 +981,7 @@ const SeatLayout = () => {
         </div>
 
         {/* Last Refresh Info */}
-        <p className="text-xs mt-6" style={{ color: "var(--text-muted)" }}>
+        <p className="text-xs mt-6 mb-24 lg:mb-0" style={{ color: "var(--text-muted)" }}>
           Seat availability auto-refreshes every 30 seconds
           {lastRefresh && (
             <span>
@@ -963,6 +990,32 @@ const SeatLayout = () => {
           )}
         </p>
       </div>
+
+      {/* Mobile fixed bottom bar */}
+      {selectedSeats.size > 0 && (
+        <div
+          className="fixed bottom-0 left-0 right-0 z-40 lg:hidden px-4 py-3 flex items-center justify-between"
+          style={{
+            backgroundColor: "var(--bg-card)",
+            borderTop: "1px solid var(--border)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {selectedSeats.size} seat{selectedSeats.size > 1 ? "s" : ""} selected
+            </p>
+            <p className="text-lg font-bold text-accent">{'₹'}{totalPrice}</p>
+          </div>
+          <button
+            onClick={bookTickets}
+            disabled={bookingLoading || !selectedTime}
+            className="btn-primary px-6 py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {bookingLoading ? "Processing..." : "Pay Now"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

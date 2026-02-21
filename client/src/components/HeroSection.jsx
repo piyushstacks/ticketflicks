@@ -7,19 +7,19 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="relative flex flex-col items-start justify-center h-screen bg-[url('/backgroundImage.png')] bg-cover bg-center overflow-hidden">
+    <div className="relative flex flex-col items-start justify-center min-h-screen bg-[url('/backgroundImage.png')] bg-cover bg-center overflow-hidden">
       {/* Gradient overlay - always dark for text legibility */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-      <div className="relative z-10 px-4 sm:px-6 md:px-12 lg:px-20 xl:px-36 max-w-3xl">
+      <div className="relative z-10 px-4 sm:px-6 md:px-12 lg:px-20 xl:px-36 max-w-3xl pt-24 sm:pt-0">
         <img
           src={assets.marvelLogo}
           alt="Marvel Logo"
-          className="h-9 lg:h-11 mt-20 opacity-90"
+          className="h-8 sm:h-9 lg:h-11 opacity-90"
         />
 
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mt-4 text-white tracking-tight text-balance leading-tight">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mt-4 text-white tracking-tight text-balance leading-tight">
           Thunderbolts
         </h1>
 
@@ -37,7 +37,7 @@ const HeroSection = () => {
           </div>
         </div>
 
-        <p className="max-w-lg mt-5 text-white/70 text-sm sm:text-base leading-relaxed">
+        <p className="max-w-lg mt-4 sm:mt-5 text-white/70 text-sm leading-relaxed">
           After finding themselves ensnared in a death trap, an unconventional team of antiheroes must go on a dangerous mission that will force them to confront the darkest corners of their pasts.
         </p>
 

@@ -28,14 +28,15 @@ const MovieCard = ({ movie }) => {
           className="aspect-[2/3] w-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
         />
-        {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
+        {/* Overlay on hover / always visible on touch */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               navigate(`/select-show/${movie._id}`);
               scrollTo(0, 0);
             }}
-            className="btn-primary px-6 py-2 text-sm translate-y-2 group-hover:translate-y-0 transition-transform duration-300"
+            className="btn-primary px-6 py-2 text-sm translate-y-0 sm:translate-y-2 sm:group-hover:translate-y-0 transition-transform duration-300"
           >
             Book Now
           </button>
