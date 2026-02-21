@@ -44,8 +44,6 @@ html:not(.dark) body {
     letter-spacing: 0.3px;
 }
 
-}
-
 html:not(.dark) .bg-gray-100 {
     background-color: #f3f4f6;
 }
@@ -267,173 +265,164 @@ html:not(.dark) select:focus {
     outline: none;
 }
 
-        --color-accent: #ff2e63;
-        --color-accent-amber: #ffc107;
-        --color-glass: rgba(30, 30, 30, 0.6);
-        --color-glass-light: rgba(255,255,255,0.7);
-        --color-dark-bg: #0a0a0f;
-        --color-dark-gradient: linear-gradient(135deg, #18181c 0%, #23232a 100%);
-        --color-light-bg: #f7f7fa;
-        --color-light-gradient: linear-gradient(135deg, #f7f7fa 0%, #e3e3e8 100%);
-        --color-card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-        --color-card-shadow-light: 0 8px 32px 0 rgba(200, 200, 255, 0.08);
-        --color-glass-blur: 16px;
 html:not(.dark) input::placeholder,
 html:not(.dark) textarea::placeholder {
     color: #9ca3af;
 }
 
 html:not(.dark) input:disabled,
-        box-sizing: border-box;
 html:not(.dark) textarea:disabled,
 html:not(.dark) select:disabled {
     background-color: #f3f4f6;
-        color: #e5e5e5;
-        background: var(--color-dark-gradient);
-        min-height: 100vh;
-        letter-spacing: 0.2px;
-        font-size: 16px;
-        transition: background 0.3s;
+    color: #9ca3af;
+}
+
+/* ===== GLASSMORPHISM CARD ===== */
+.glass-card {
+    background: var(--color-glass);
+    backdrop-filter: blur(var(--color-glass-blur));
+    box-shadow: var(--color-card-shadow);
+    border-radius: 1.2rem;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+html:not(.dark) .glass-card {
+    background: var(--color-glass-light);
+    box-shadow: var(--color-card-shadow-light);
+    border: 1px solid rgba(30,30,30,0.08);
 }
 
 /* ===== SHADOWS - SOFT & ELEGANT ===== */
 html:not(.dark) .shadow-sm {
-        color: #e5e5e5;
-        background: var(--color-dark-gradient);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
 
 html:not(.dark) .shadow {
-    /* Glassmorphism card */
-    .glass-card {
-        background: var(--color-glass);
-        backdrop-filter: blur(var(--color-glass-blur));
-        box-shadow: var(--color-card-shadow);
-        border-radius: 1.2rem;
-        border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    html:not(.dark) .glass-card {
-        background: var(--color-glass-light);
-        box-shadow: var(--color-card-shadow-light);
-        border: 1px solid rgba(30,30,30,0.08);
-    }
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 html:not(.dark) .shadow-md {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.04);
-        color: #23232a;
-        background: var(--color-light-gradient);
-        font-weight: 400;
-        letter-spacing: 0.2px;
-        min-height: 100vh;
-        font-size: 16px;
-        transition: background 0.3s;
 }
 
 html:not(.dark) .shadow-xl {
     box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
 }
 
-    /* Accent CTA styles */
-    .btn-primary {
-        background: var(--color-accent);
-        color: #fff;
-        font-weight: 600;
-        border-radius: 999px;
-        box-shadow: 0 2px 8px 0 rgba(255,46,99,0.12);
-        transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
-    }
-    .btn-primary:hover {
-        background: #d63854;
-        box-shadow: 0 4px 16px 0 rgba(255,46,99,0.18);
-        transform: translateY(-2px) scale(1.03);
-    }
-    .btn-secondary {
-        background: var(--color-accent-amber);
-        color: #23232a;
-        font-weight: 500;
-        border-radius: 999px;
-        box-shadow: 0 2px 8px 0 rgba(255,193,7,0.10);
-        transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
-    }
-    .btn-secondary:hover {
-        background: #ffb300;
-        box-shadow: 0 4px 16px 0 rgba(255,193,7,0.18);
-        transform: translateY(-2px) scale(1.03);
-    }
-
-    /* Typography for movie titles, show timings, pricing */
-    .movie-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        color: #fff;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.18);
-    }
-    html:not(.dark) .movie-title {
-        color: #23232a;
-        text-shadow: 0 2px 8px rgba(200,200,255,0.08);
-    }
-    .movie-meta {
-        font-size: 0.95rem;
-        color: #bdbdbd;
-        font-weight: 500;
-    }
-    html:not(.dark) .movie-meta {
-        color: #6b6b6b;
-    }
-    .movie-price {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--color-accent-amber);
-    }
-    .show-timing {
-        font-size: 1rem;
-        color: #fff;
-        border-radius: 0.5rem;
-        transition: background 0.2s;
-    }
-    html:not(.dark) .seat-available {
-        background: #e5e7eb;
-        color: #23232a;
-    }
-    .seat-unavailable {
-        background: #bdbdbd;
-        color: #fff;
-        border-radius: 0.5rem;
-        opacity: 0.6;
-    }
-
-    /* Micro-interactions */
-    .card-hover {
-        transition: box-shadow 0.2s, transform 0.2s;
-        box-shadow: var(--color-card-shadow);
-    }
-    .card-hover:hover {
-        box-shadow: 0 12px 32px 0 rgba(31,38,135,0.22);
-        transform: translateY(-4px) scale(1.04);
-    }
-    .glass-card.card-hover:hover {
-        box-shadow: 0 16px 40px 0 rgba(31,38,135,0.28);
-    }
-
-    /* Responsive grid and spacing */
-    .movie-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 2rem;
-        margin: 2rem 0;
-    }
-    .movie-card {
-        padding: 1.2rem;
-        border-radius: 1.2rem;
-        min-width: 260px;
-        max-width: 340px;
-        margin: auto;
-        background: none;
-    }
 html:not(.dark) .shadow-2xl {
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15), 0 12px 14px rgba(0, 0, 0, 0.05);
+}
+
+/* ===== ACCENT CTA STYLES ===== */
+.btn-primary {
+    background: var(--color-accent);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px 0 rgba(255,46,99,0.12);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.btn-primary:hover {
+    background: #d63854;
+    box-shadow: 0 4px 16px 0 rgba(255,46,99,0.18);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.btn-secondary {
+    background: var(--color-accent-amber);
+    color: #23232a;
+    font-weight: 500;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px 0 rgba(255,193,7,0.10);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #ffb300;
+    box-shadow: 0 4px 16px 0 rgba(255,193,7,0.18);
+    transform: translateY(-2px) scale(1.03);
+}
+
+/* ===== TYPOGRAPHY FOR MOVIES ===== */
+.movie-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+html:not(.dark) .movie-title {
+    color: #23232a;
+    text-shadow: 0 2px 8px rgba(200,200,255,0.08);
+}
+
+.movie-meta {
+    font-size: 0.95rem;
+    color: #bdbdbd;
+    font-weight: 500;
+}
+
+html:not(.dark) .movie-meta {
+    color: #6b6b6b;
+}
+
+.movie-price {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-accent-amber);
+}
+
+.show-timing {
+    font-size: 1rem;
+    color: #fff;
+    border-radius: 0.5rem;
+    transition: background 0.2s;
+}
+
+html:not(.dark) .seat-available {
+    background: #e5e7eb;
+    color: #23232a;
+}
+
+.seat-unavailable {
+    background: #bdbdbd;
+    color: #fff;
+    border-radius: 0.5rem;
+    opacity: 0.6;
+}
+
+/* ===== MICRO-INTERACTIONS ===== */
+.card-hover {
+    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: var(--color-card-shadow);
+}
+
+.card-hover:hover {
+    box-shadow: 0 12px 32px 0 rgba(31,38,135,0.22);
+    transform: translateY(-4px) scale(1.04);
+}
+
+.glass-card.card-hover:hover {
+    box-shadow: 0 16px 40px 0 rgba(31,38,135,0.28);
+}
+
+/* ===== RESPONSIVE GRID AND SPACING ===== */
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.movie-card {
+    padding: 1.2rem;
+    border-radius: 1.2rem;
+    min-width: 260px;
+    max-width: 340px;
+    margin: auto;
+    background: none;
 }
 
 /* ===== THEME TRANSITIONS ===== */
@@ -451,10 +440,10 @@ input::-webkit-inner-spin-button {
 }
 
 ::-webkit-calendar-picker-indicator {
-    filter: invert(0); /* Changed for better visibility in light mode */
+    filter: invert(0);
 }
 
-/* Twitter Embed Styles */
+/* ===== TWITTER EMBED STYLES ===== */
 .twitter-embed-container {
     width: 100%;
     max-width: 100%;
@@ -478,26 +467,25 @@ input::-webkit-inner-spin-button {
     margin: 0 auto !important;
 }
 
-/* Ensure Twitter iframes are responsive */
 .twitter-embed iframe {
     max-width: 100% !important;
     border-radius: 12px;
 }
 
-/* Animation for pricing customization toggle */
+/* ===== ANIMATIONS ===== */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
+    animation: fadeIn 0.3s ease-out forwards;
 }
 
 /* ===== HOVER & INTERACTIVE STATES - LIGHT MODE ===== */
