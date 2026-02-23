@@ -1,0 +1,57 @@
+[dotenv@17.2.3] injecting env (18) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+[MIGRATE] Script starting...
+[MIGRATE] Imports completed
+[MIGRATE] Checking if should run migration...
+[MIGRATE] import.meta.url: file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/scripts/migrateToNewSchema.js
+[MIGRATE] process.argv[1]: /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/scripts/migrateToNewSchema.js
+[MIGRATE] 🚀 Starting database migration...
+[MIGRATE] Connecting to: mongodb+srv://piyushbhagchandani64:08P5NdHDb5F2CHc4@cluster99.57yjjst.mongodb.net
+[MIGRATE] ✅ Connected to MongoDB
+[MIGRATE] Starting User migration...
+[MIGRATE] ✅ Migrated 0 new users, total in idMaps: 5
+[MIGRATE] Starting Theater migration...
+[MIGRATE] ⚠️ Skipping theater PVR Cinemas - Downtown - no manager found
+[MIGRATE] ⚠️ Skipping theater IMAX Theater - Central - no manager found
+[MIGRATE] ⚠️ Skipping theater Cineplex - Westside - no manager found
+[MIGRATE] ⚠️ Skipping theater Carnival Cinemas - Eastside - no manager found
+[MIGRATE] ⚠️ Skipping theater PVR Cinema - no manager found
+[MIGRATE] ⚠️ Skipping theater INOX - no manager found
+[MIGRATE] ⚠️ Skipping theater Cinepolis - no manager found
+[MIGRATE] ⚠️ Skipping theater PVR ACROPOLIS - no manager found
+[MIGRATE] ⚠️ Skipping theater Banana Connplex - no manager found
+[MIGRATE] ⚠️ Skipping theater Test Theatre - no manager found
+[MIGRATE] ✅ Migrated 0 theaters
+[MIGRATE] Starting Metadata migration (Genres, Languages, Cast)...
+[MIGRATE] ✅ Migrated 10 genres, 1 languages, 17 cast members
+[MIGRATE] Starting Movie migration...
+[MIGRATE] ✅ Migrated 0 movies
+[MIGRATE] Starting Screen migration...
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 2 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 2 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 2 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 2 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ✅ Migrated 0 screens
+[MIGRATE] Starting Seat Category migration...
+[MIGRATE] ✅ Migrated 2 seat categories
+[MIGRATE] Starting Seat migration...
+[MIGRATE] ✅ Migrated 0 seat entries
+[MIGRATE] Starting Show migration...
+[MIGRATE] ⚠️ Skipping show - missing refs: movie=true, theater=false, screen=false
+[MIGRATE] ✅ Migrated 0 shows
+[MIGRATE] Starting Booking migration...
+[MIGRATE] ✅ Migrated 0 bookings
+[MIGRATE] 
+🎉 Migration completed successfully!
+[MIGRATE] 
+Summary of ID mappings:
+[MIGRATE]   Users: 5
+[MIGRATE]   Theaters: 0
+[MIGRATE]   Movies: 10
+[MIGRATE]   Screens: 0
+[MIGRATE]   Shows: 0
+[MIGRATE] Disconnected from MongoDB

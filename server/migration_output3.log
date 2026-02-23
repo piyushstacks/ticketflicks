@@ -1,0 +1,64 @@
+[dotenv@17.2.3] injecting env (18) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[MIGRATE] Script starting...
+[MIGRATE] Imports completed
+[MIGRATE] Checking if should run migration...
+[MIGRATE] import.meta.url: file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/scripts/migrateToNewSchema.js
+[MIGRATE] process.argv[1]: /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/scripts/migrateToNewSchema.js
+[MIGRATE] 🚀 Starting database migration...
+[MIGRATE] Connecting to: mongodb+srv://piyushbhagchandani64:08P5NdHDb5F2CHc4@cluster99.57yjjst.mongodb.net
+[MIGRATE] ✅ Connected to MongoDB
+[MIGRATE] Starting User migration...
+[MIGRATE ERROR] Failed to migrate user manager@ticketflicks.com E11000 duplicate key error collection: test.users index: clerkUserId_1 dup key: { clerkUserId: null }
+[MIGRATE ERROR] Failed to migrate user admin@test.com E11000 duplicate key error collection: test.users index: clerkUserId_1 dup key: { clerkUserId: null }
+[MIGRATE ERROR] Failed to migrate user 23bca046@sxca.edu.in UserNew validation failed: role: `pending_manager` is not a valid enum value for path `role`.
+[MIGRATE ERROR] Failed to migrate user 23bca054@sxca.edu.in UserNew validation failed: role: `pending_manager` is not a valid enum value for path `role`.
+[MIGRATE ERROR] Failed to migrate user testmanager@example.com E11000 duplicate key error collection: test.users index: clerkUserId_1 dup key: { clerkUserId: null }
+[MIGRATE] ✅ Migrated 0 users
+[MIGRATE] Starting Theater migration...
+[MIGRATE] ⚠️ Skipping theater PVR Cinemas - Downtown - no manager found
+[MIGRATE] ⚠️ Skipping theater IMAX Theater - Central - no manager found
+[MIGRATE] ⚠️ Skipping theater Cineplex - Westside - no manager found
+[MIGRATE] ⚠️ Skipping theater Carnival Cinemas - Eastside - no manager found
+[MIGRATE] ⚠️ Skipping theater PVR Cinema - no manager found
+[MIGRATE] ⚠️ Skipping theater INOX - no manager found
+[MIGRATE] ⚠️ Skipping theater Cinepolis - no manager found
+[MIGRATE] ⚠️ Skipping theater PVR ACROPOLIS - no manager found
+[MIGRATE] ⚠️ Skipping theater Banana Connplex - no manager found
+[MIGRATE] ⚠️ Skipping theater Test Theatre - no manager found
+[MIGRATE] ✅ Migrated 0 theaters
+[MIGRATE] Starting Metadata migration (Genres, Languages, Cast)...
+[MIGRATE] ✅ Migrated 10 genres, 1 languages, 17 cast members
+[MIGRATE] Starting Movie migration...
+[MIGRATE ERROR] Failed to migrate movie Test Movie - Auto Assignment E11000 duplicate key error collection: test.movies index: title_1 dup key: { title: "Test Movie - Auto Assignment" }
+[MIGRATE ERROR] Failed to migrate movie Test Movie - Auto Assignment E11000 duplicate key error collection: test.movies index: title_1 dup key: { title: "Test Movie - Auto Assignment" }
+[MIGRATE] ✅ Migrated 8 movies
+[MIGRATE] Starting Screen migration...
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 2 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 2 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 2 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 2 - no theater found
+[MIGRATE] ⚠️ Skipping screen Screen 1 - no theater found
+[MIGRATE] ✅ Migrated 0 screens
+[MIGRATE] Starting Seat Category migration...
+[MIGRATE] ✅ Migrated 2 seat categories
+[MIGRATE] Starting Seat migration...
+[MIGRATE] ✅ Migrated 0 seat entries
+[MIGRATE] Starting Show migration...
+[MIGRATE] ⚠️ Skipping show - missing refs: movie=true, theater=false, screen=false
+[MIGRATE] ✅ Migrated 0 shows
+[MIGRATE] Starting Booking migration...
+[MIGRATE] ✅ Migrated 0 bookings
+[MIGRATE] 
+🎉 Migration completed successfully!
+[MIGRATE] 
+Summary of ID mappings:
+[MIGRATE]   Users: 0
+[MIGRATE]   Theaters: 0
+[MIGRATE]   Movies: 8
+[MIGRATE]   Screens: 0
+[MIGRATE]   Shows: 0
+[MIGRATE] Disconnected from MongoDB

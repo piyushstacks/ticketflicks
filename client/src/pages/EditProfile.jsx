@@ -24,7 +24,10 @@ const EditProfile = () => {
   }, [user]);
 
   const isDirty = useMemo(() => {
-    return formData.name !== (user?.name || "") || formData.phone !== (user?.phone || "");
+    return (
+      formData.name.trim() !== (user?.name || "") || 
+      formData.phone.trim() !== (user?.phone || "")
+    );
   }, [formData, user]);
 
   const handleChange = (e) => {
@@ -37,14 +40,22 @@ const EditProfile = () => {
     
     setLoading(true);
     try {
-      const { email, ...updateData } = formData;
+      const updateData = {
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+      };
+
       const response = await axios.put("/api/user/profile", updateData, { 
         headers: getAuthHeaders() 
       });
 
       if (response.data.success) {
         toast.success("Profile updated!");
-        saveAuth(response.data.user, token, true);
+        
+        // This will now work because we added it to AuthContext value
+        const updatedUser = response.data.user || { ...user, ...updateData };
+        saveAuth(updatedUser, token, true);
+        
         navigate("/profile");
       }
     } catch (error) {
@@ -60,23 +71,25 @@ const EditProfile = () => {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ backgroundColor: "var(--bg-primary)" }}>
       <div className="w-full max-w-md">
         
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 mb-6 text-sm opacity-80 hover:opacity-100 transition-opacity" style={{ color: "var(--text-secondary)" }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Profile
+        <button 
+          onClick={() => navigate(-1)} 
+          className="flex items-center gap-2 mb-6 text-sm opacity-80 hover:opacity-100 transition-all" 
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
         <div className="card p-6 sm:p-8 shadow-2xl border border-[var(--border-color)]">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Edit Profile</h2>
-            <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>Update your personal information</p>
-          </div>
+          <h2 className="text-2xl font-bold text-center mb-8" style={{ color: "var(--text-primary)" }}>Edit Profile</h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            {/* FULL NAME */}
+            {/* NAME FIELD */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Full Name</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 z-10 pointer-events-none">
+                {/* Fixed Icon Container */}
+                <div className="absolute left-0 pl-4 flex items-center pointer-events-none">
                   <UserIcon className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                 </div>
                 <input
@@ -84,37 +97,36 @@ const EditProfile = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  // ADDED: Explicit padding-left (3.5rem) to clear the icon
-                  className="input-field w-full py-3 pr-4 outline-none transition-all"
-                  style={{ paddingLeft: "3.5rem" }} 
+                  className="input-field w-full py-3 pr-4 transition-all"
+                  style={{ paddingLeft: "3.5rem" }} // Force padding regardless of global CSS
                   placeholder="Enter name"
                   required
                 />
               </div>
             </div>
 
-            {/* EMAIL */}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Email Address</label>
+            {/* EMAIL FIELD */}
+            <div className="flex flex-col gap-2 opacity-60">
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Email (Read-only)</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 z-10 opacity-50">
+                <div className="absolute left-0 pl-4 flex items-center">
                   <MailIcon className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                 </div>
                 <input
                   type="email"
                   value={formData.email}
                   readOnly
-                  className="input-field w-full py-3 pr-4 cursor-not-allowed opacity-60"
+                  className="input-field w-full py-3 pr-4 cursor-not-allowed"
                   style={{ paddingLeft: "3.5rem" }}
                 />
               </div>
             </div>
 
-            {/* PHONE */}
+            {/* PHONE FIELD */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Phone Number</label>
               <div className="relative flex items-center">
-                <div className="absolute left-4 z-10 pointer-events-none">
+                <div className="absolute left-0 pl-4 flex items-center pointer-events-none">
                   <PhoneIcon className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                 </div>
                 <input
@@ -122,27 +134,20 @@ const EditProfile = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input-field w-full py-3 pr-4 outline-none transition-all"
+                  className="input-field w-full py-3 pr-4 transition-all"
                   style={{ paddingLeft: "3.5rem" }}
                   placeholder="Phone number"
                 />
               </div>
             </div>
 
-            {/* BUTTONS */}
-            <div className="pt-4 space-y-4">
-              <button
-                type="submit"
-                disabled={loading || !isDirty}
-                className={`btn-primary w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${(!isDirty || loading) ? 'opacity-40 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99]'}`}
-              >
-                {loading ? "Saving..." : <><Save className="w-5 h-5" /> Save Changes</>}
-              </button>
-              
-              <button type="button" onClick={() => navigate(-1)} className="w-full text-center text-sm font-medium py-2 transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
-                Discard changes
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading || !isDirty}
+              className={`btn-primary w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${(!isDirty || loading) ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:brightness-110 active:scale-[0.98]'}`}
+            >
+              {loading ? "Updating..." : <><Save className="w-5 h-5" /> Save Changes</>}
+            </button>
           </form>
         </div>
       </div>
