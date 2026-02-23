@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import Booking from "../models/Booking.js";
 import User from "../models/User.js";
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 
 dotenv.config();
 
@@ -52,7 +52,7 @@ const migrateBookingIds = async () => {
           // Check if it's a valid ObjectId string
           if (mongoose.Types.ObjectId.isValid(booking.show)) {
             // Verify show exists
-            const showExists = await Show.findById(booking.show);
+            const showExists = await ShowTbls.findById(booking.show);
             if (showExists) {
               updates.show = new mongoose.Types.ObjectId(booking.show);
               needsUpdate = true;

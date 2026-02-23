@@ -1,6 +1,6 @@
 import axios from "axios";
 import Movie from "../models/Movie.js";
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 import ScreenTbl from "../models/ScreenTbl.js";
 import Theatre from "../models/Theatre.js";
 import { inngest } from "../inngest/index.js";
@@ -176,7 +176,7 @@ export const addShow = async (req, res) => {
     });
 
     if (showsToCreate.length > 0) {
-      await Show.insertMany(showsToCreate);
+      await ShowTbls.insertMany(showsToCreate);
     }
 
     // Trigger inngest event
@@ -201,7 +201,7 @@ export const fetchShows = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const shows = await Show.find({
+    const shows = await ShowTbls.find({
       showDateTime: { $gte: today },
       isActive: true,
     })
@@ -233,7 +233,7 @@ export const fetchShowsByMovie = async (req, res) => {
   try {
     const { movieId } = req.params;
 
-    const shows = await Show.find({
+    const shows = await ShowTbls.find({
       movie: movieId,
       showDateTime: { $gte: new Date() },
     })
@@ -311,7 +311,7 @@ export const fetchShow = async (req, res) => {
   try {
     const { showId } = req.params;
 
-    const show = await Show.findById(showId)
+    const show = await ShowTbls.findById(showId)
       .populate("movie")
       .populate("theatre")
       .populate("screen");
@@ -349,7 +349,7 @@ export const fetchShowByMovieId = async (req, res) => {
       return res.json({ success: true, movie, dateTime: {} });
     }
 
-    const shows = await Show.find({
+    const shows = await ShowTbls.find({
       movie: movieId,
       showDateTime: { $gte: new Date() },
     })
@@ -386,7 +386,7 @@ export const getAvailableMoviesForCustomers = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const moviesWithShows = await Show.find({
+    const moviesWithShows = await ShowTbls.find({
       showDateTime: { $gte: today },
       isActive: true,
     })
@@ -414,7 +414,7 @@ export const getAllActiveMovies = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const movieIdsWithShows = await Show.find({
+    const movieIdsWithShows = await ShowTbls.find({
       showDateTime: { $gte: today },
       isActive: true,
     }).distinct("movie");
@@ -436,7 +436,7 @@ export const getAllActiveMovies = async (req, res) => {
 // Debug API to get all shows regardless of date (for troubleshooting)
 export const getAllShowsDebug = async (req, res) => {
   try {
-    const shows = await Show.find({ isActive: true })
+    const shows = await ShowTbls.find({ isActive: true })
       .populate("movie")
       .populate("theatre")
       .populate("screen")
@@ -488,7 +488,7 @@ export const searchMoviesAndShows = async (req, res) => {
     ).limit(10);
 
     // Search for shows that have matching movies
-    const shows = await Show.find({
+    const shows = await ShowTbls.find({
       isActive: true,
       showDateTime: { $gte: new Date() },
     })

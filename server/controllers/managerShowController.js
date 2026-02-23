@@ -1,4 +1,4 @@
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 import ScreenTbl from "../models/ScreenTbl.js";
 import Movie from "../models/Movie.js";
 import Theatre from "../models/Theatre.js";
@@ -147,7 +147,7 @@ export const addShow = async (req, res) => {
     }
 
     // Check if show already exists for this time slot
-    const existingShow = await Show.findOne({
+    const existingShow = await ShowTbls.findOne({
       movie,
       screen,
       showDateTime: new Date(`${showStartDate} ${showTime}`),
@@ -173,7 +173,7 @@ export const addShow = async (req, res) => {
     });
 
     // Create the show with correct structure from ScreenTbl
-    const show = await Show.create({
+    const show = await ShowTbls.create({
       movie,
       theatre: theatreId,
       screen: screen,
@@ -259,7 +259,7 @@ export const getTheatreShows = async (req, res) => {
     console.log("Final query:", query);
     console.log("Manager theatre ID:", theatreId);
     
-    const shows = await Show.find(query)
+    const shows = await ShowTbls.find(query)
       .populate("movie", "_id title poster_path overview")
       .populate("screen", "_id screenNumber name")
       .sort({ showDateTime: -1 });
@@ -301,7 +301,7 @@ export const editShow = async (req, res) => {
     const updates = req.body;
 
     // Ensure show belongs to manager's theatre
-    const show = await Show.findOne({
+    const show = await ShowTbls.findOne({
       _id: showId,
       theatre: theatreId,
     });
@@ -313,7 +313,7 @@ export const editShow = async (req, res) => {
       });
     }
 
-    const updatedShow = await Show.findByIdAndUpdate(showId, updates, {
+    const updatedShow = await ShowTbls.findByIdAndUpdate(showId, updates, {
       new: true,
     }).populate("movie screen");
 
@@ -342,7 +342,7 @@ export const deleteShow = async (req, res) => {
     const theatreId = manager.managedTheatreId;
     const { showId } = req.params;
 
-    const show = await Show.findOne({
+    const show = await ShowTbls.findOne({
       _id: showId,
       theatre: theatreId,
     });
@@ -354,7 +354,7 @@ export const deleteShow = async (req, res) => {
       });
     }
 
-    await Show.findByIdAndDelete(showId);
+    await ShowTbls.findByIdAndDelete(showId);
 
     res.json({
       success: true,
@@ -379,13 +379,13 @@ export const dashboardManagerData = async (req, res) => {
 
     const theatreId = manager.managedTheatreId;
 
-    const activeShows = await Show.countDocuments({
+    const activeShows = await ShowTbls.countDocuments({
       theatre: theatreId,
       showDateTime: { $gte: new Date() },
       isActive: true,
     });
 
-    const totalShows = await Show.countDocuments({
+    const totalShows = await ShowTbls.countDocuments({
       theatre: theatreId,
     });
 
@@ -421,7 +421,7 @@ export const toggleShowStatus = async (req, res) => {
     const { showId } = req.params;
     const { isActive } = req.body;
 
-    const show = await Show.findById(showId);
+    const show = await ShowTbls.findById(showId);
     if (!show) {
       return res.json({ success: false, message: "Show not found" });
     }
@@ -459,7 +459,7 @@ export const repeatShowsForNextWeek = async (req, res) => {
     const { currentWeekStart, currentWeekEnd, nextWeekStart, nextWeekEnd } = req.body;
 
     // Get current week shows
-    const currentShows = await Show.find({
+    const currentShows = await ShowTbls.find({
       theatre: manager.managedTheatreId,
       startDate: { $gte: new Date(currentWeekStart) },
       endDate: { $lte: new Date(currentWeekEnd) },
@@ -470,7 +470,7 @@ export const repeatShowsForNextWeek = async (req, res) => {
 
     for (const show of currentShows) {
       // Check if show already exists for next week
-      const existingShow = await Show.findOne({
+      const existingShow = await ShowTbls.findOne({
         theatre: manager.managedTheatreId,
         movie: show.movie._id,
         screen: show.screen._id,
@@ -482,7 +482,7 @@ export const repeatShowsForNextWeek = async (req, res) => {
 
       if (!existingShow) {
         // Create new show for next week
-        await Show.create({
+        await ShowTbls.create({
           theatre: manager.managedTheatreId,
           movie: show.movie._id,
           screen: show.screen._id,

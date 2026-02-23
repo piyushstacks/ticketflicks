@@ -3,7 +3,7 @@ import User from "./models/User.js";
 import Theatre from "./models/Theatre.js";
 import ScreenTbl from "./models/ScreenTbl.js";
 import Movie from "./models/Movie.js";
-import Show from "./models/Show.js";
+import ShowTbls from "./models/show_tbls.js";
 import dotenv from "dotenv";
 
 dotenv.config();

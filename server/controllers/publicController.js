@@ -1,4 +1,4 @@
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 import Movie from "../models/Movie.js";
 import Theatre from "../models/Theatre.js";
 import ScreenTbl from "../models/ScreenTbl.js";
@@ -45,7 +45,7 @@ export const getShowsByTheatre = async (req, res) => {
     // Get all shows for this theatre – only for active (non-disabled) movies
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-    const shows = await Show.find({
+    const shows = await ShowTbls.find({
       theatre: theatreId,
       isActive: true,
       showDateTime: { $gte: startOfToday }
@@ -103,7 +103,7 @@ export const getShowsByMovie = async (req, res) => {
     // Get all shows for this movie (only from approved theatres)
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-    const shows = await Show.find({
+    const shows = await ShowTbls.find({
       movie: movieId,
       isActive: true,
       showDateTime: { $gte: startOfToday }

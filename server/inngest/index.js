@@ -1,7 +1,7 @@
 import { Inngest } from "inngest";
 import User from "../models/User.js";
 import Booking from "../models/Booking.js";
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 import sendEmail from "../configs/nodeMailer.js";
 import Movie from "../models/Movie.js";
 const { fromZonedTime } = await import("date-fns-tz");
@@ -70,7 +70,7 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
 
       // If booking still exists and payment is not made, release seats and delete booking
       if (booking && !booking.isPaid) {
-        const show = await Show.findById(booking.show);
+        const show = await ShowTbls.findById(booking.show);
 
         // This check is important in case the show was deleted for some reason
         if (show && Array.isArray(show.seatTiers)) {
@@ -170,7 +170,7 @@ const sendShowReminders = inngest.createFunction(
 
     //Prepare reminder Tasks
     const reminderTasks = await step.run("prepare-reminder-tasks", async () => {
-      const shows = await Show.find({
+      const shows = await ShowTbls.find({
         showDateTime: { $gte: windowStart, $lte: in8Hours },
       }).populate("movie");
 
@@ -321,7 +321,7 @@ const addDailyMovieShows = inngest.createFunction(
         )}:00:00`;
         const showTimeUtc = fromZonedTime(dateTimeString, timeZone);
 
-        const exists = await Show.findOne({
+        const exists = await ShowTbls.findOne({
           movie: movie._id,
           showDateTime: showTimeUtc,
         });
@@ -339,7 +339,7 @@ const addDailyMovieShows = inngest.createFunction(
 
     if (showsToCreate.length > 0) {
       await step.run("create-new-shows", async () => {
-        await Show.insertMany(showsToCreate);
+        await ShowTbls.insertMany(showsToCreate);
       });
       addedCount = showsToCreate.length;
     }

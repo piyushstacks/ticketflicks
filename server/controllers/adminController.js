@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { inngest } from "../inngest/index.js";
 import Booking from "../models/Booking.js";
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 import User from "../models/User.js";
 import Theatre from "../models/Theatre.js";
 import ScreenTbl from "../models/ScreenTbl.js";
@@ -23,7 +23,7 @@ export const isAdmin = async (req, res) => {
 export const fetchDashboardData = async (req, res) => {
   try {
     const bookings = await Booking.find({ isPaid: true });
-    const activeShows = await Show.find({
+    const activeShows = await ShowTbls.find({
       showDateTime: { $gte: new Date() },
     }).populate("movie");
 
@@ -170,7 +170,7 @@ export const approveTheatre = async (req, res) => {
 //API to get all shows
 export const fetchAllShows = async (req, res) => {
   try {
-    const shows = await Show.find({ showDateTime: { $gte: new Date() } })
+    const shows = await ShowTbls.find({ showDateTime: { $gte: new Date() } })
       .populate("movie")
       .populate("theatre")
       .populate("screen")
@@ -578,7 +578,7 @@ export const getAllShows = async (req, res) => {
       });
     }
 
-    const shows = await Show.find({})
+    const shows = await ShowTbls.find({})
       .populate("movie", "title poster_path overview genres")
       .populate("theatre", "name location city")
       .populate("screen", "screenNumber name seatLayout seatTiers isActive")
@@ -633,7 +633,7 @@ export const deleteShow = async (req, res) => {
       });
     }
 
-    const show = await Show.findByIdAndDelete(id);
+    const show = await ShowTbls.findByIdAndDelete(id);
     if (!show) {
       return res.status(404).json({
         success: false,
@@ -659,7 +659,7 @@ export const deleteShow = async (req, res) => {
 export const toggleShowStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const show = await Show.findById(id);
+    const show = await ShowTbls.findById(id);
 
     if (!show) {
       return res.status(404).json({

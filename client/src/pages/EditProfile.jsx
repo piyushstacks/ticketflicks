@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuthContext } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -9,11 +9,8 @@ import axios from "axios";
 const EditProfile = () => {
   const { user, getAuthHeaders, saveAuth, token } = useAuthContext();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-  });
+  
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -26,163 +23,127 @@ const EditProfile = () => {
     }
   }, [user]);
 
+  const isDirty = useMemo(() => {
+    return formData.name !== (user?.name || "") || formData.phone !== (user?.phone || "");
+  }, [formData, user]);
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isDirty) return;
+    
     setLoading(true);
     try {
       const { email, ...updateData } = formData;
-      const response = await axios.put("/api/user/profile", updateData, { headers: getAuthHeaders() });
+      const response = await axios.put("/api/user/profile", updateData, { 
+        headers: getAuthHeaders() 
+      });
+
       if (response.data.success) {
-        toast.success("Profile updated successfully!");
+        toast.success("Profile updated!");
         saveAuth(response.data.user, token, true);
         navigate("/profile");
-      } else {
-        toast.error(response.data.message || "Failed to update profile.");
       }
     } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("An error occurred while updating profile.");
+      toast.error(error.response?.data?.message || "Update failed");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!user) {
-    return <Loading />;
-  }
+  if (!user) return <Loading />;
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-20 pt-24"
-      style={{ backgroundColor: "var(--bg-primary)" }}
-    >
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ backgroundColor: "var(--bg-primary)" }}>
       <div className="w-full max-w-md">
-        {/* Back button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="btn-ghost mb-6 text-sm flex items-center gap-1.5"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
+        
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 mb-6 text-sm opacity-80 hover:opacity-100 transition-opacity" style={{ color: "var(--text-secondary)" }}>
+          <ArrowLeft className="w-4 h-4" /> Back to Profile
         </button>
 
-        <div className="card p-6 sm:p-8">
-          <h2
-            className="text-xl sm:text-2xl font-bold mb-6 text-center"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Edit Profile
-          </h2>
+        <div className="card p-6 sm:p-8 shadow-2xl border border-[var(--border-color)]">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Edit Profile</h2>
+            <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>Update your personal information</p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Name */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="name"
-                className="text-sm font-medium"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Name
-              </label>
-              <div className="relative">
-                <UserIcon
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                  style={{ color: "var(--text-muted)" }}
-                />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* FULL NAME */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Full Name</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-4 z-10 pointer-events-none">
+                  <UserIcon className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+                </div>
                 <input
                   type="text"
-                  id="name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="input-field pl-10"
-                  placeholder="Your Name"
+                  // ADDED: Explicit padding-left (3.5rem) to clear the icon
+                  className="input-field w-full py-3 pr-4 outline-none transition-all"
+                  style={{ paddingLeft: "3.5rem" }} 
+                  placeholder="Enter name"
                   required
                 />
               </div>
             </div>
 
-            {/* Email (read-only) */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Email
-              </label>
-              <div className="relative">
-                <MailIcon
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                  style={{ color: "var(--text-muted)" }}
-                />
+            {/* EMAIL */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Email Address</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-4 z-10 opacity-50">
+                  <MailIcon className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+                </div>
                 <input
                   type="email"
-                  id="email"
-                  name="email"
                   value={formData.email}
-                  className="input-field pl-10 cursor-not-allowed opacity-60"
-                  placeholder="Your Email"
                   readOnly
+                  className="input-field w-full py-3 pr-4 cursor-not-allowed opacity-60"
+                  style={{ paddingLeft: "3.5rem" }}
                 />
               </div>
-              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                Email cannot be changed
-              </p>
             </div>
 
-            {/* Phone */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="phone"
-                className="text-sm font-medium"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Phone
-              </label>
-              <div className="relative">
-                <PhoneIcon
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-                  style={{ color: "var(--text-muted)" }}
-                />
+            {/* PHONE */}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Phone Number</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-4 z-10 pointer-events-none">
+                  <PhoneIcon className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+                </div>
                 <input
                   type="tel"
-                  id="phone"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input-field pl-10"
-                  placeholder="Your Phone Number"
+                  className="input-field w-full py-3 pr-4 outline-none transition-all"
+                  style={{ paddingLeft: "3.5rem" }}
+                  placeholder="Phone number"
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="btn-primary w-full py-3 mt-2 flex items-center justify-center gap-2 text-sm"
-              disabled={loading}
-            >
-              {loading ? (
-                "Updating..."
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Update Profile
-                </>
-              )}
-            </button>
+            {/* BUTTONS */}
+            <div className="pt-4 space-y-4">
+              <button
+                type="submit"
+                disabled={loading || !isDirty}
+                className={`btn-primary w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${(!isDirty || loading) ? 'opacity-40 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99]'}`}
+              >
+                {loading ? "Saving..." : <><Save className="w-5 h-5" /> Save Changes</>}
+              </button>
+              
+              <button type="button" onClick={() => navigate(-1)} className="w-full text-center text-sm font-medium py-2 transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
+                Discard changes
+              </button>
+            </div>
           </form>
-
-          <button
-            onClick={() => navigate(-1)}
-            className="btn-secondary w-full mt-3 py-2.5 text-sm"
-          >
-            Cancel
-          </button>
         </div>
       </div>
     </div>

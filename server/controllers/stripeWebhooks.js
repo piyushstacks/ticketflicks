@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import Booking from "../models/Booking.js";
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 import { inngest } from "../inngest/index.js";
 
 export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, session) {
@@ -14,7 +14,7 @@ export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, ses
   
   console.log(`Processing payment for booking ${bookingId}`);
 
-  const showData = await Show.findById(booking.show);
+  const showData = await ShowTbls.findById(booking.show);
   if (showData && showData.seatTiers) {
     for (const seat of booking.bookedSeats) {
       const tierIndex = showData.seatTiers.findIndex(

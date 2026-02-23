@@ -1,4 +1,4 @@
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 import ScreenTbl from "../models/ScreenTbl.js";
 import Movie from "../models/Movie.js";
 import Theatre from "../models/Theatre.js";
@@ -29,7 +29,7 @@ export const dashboardManagerData = async (req, res) => {
       await User.findByIdAndUpdate(manager._id, { managedTheatreId: theatreId });
     }
 
-    const activeShows = await Show.countDocuments({
+    const activeShows = await ShowTbls.countDocuments({
       theatre: theatreId,
       showDateTime: { $gte: new Date() },
     });
@@ -115,7 +115,7 @@ export const addShow = async (req, res) => {
       basePrice = Math.min(...seatTiers.map(t => t.price));
     }
 
-    const show = await Show.create({
+    const show = await ShowTbls.create({
       movie: movieId,
       theatre: theatreId,
       screen: screenId,
@@ -145,7 +145,7 @@ export const editShow = async (req, res) => {
     const { showId } = req.params;
     const { movieId, screenId, showDateTime, seatTiers, basePrice: providedBasePrice } = req.body;
 
-    const show = await Show.findById(showId);
+    const show = await ShowTbls.findById(showId);
     if (!show || show.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Invalid show or not authorized" });
     }
@@ -163,7 +163,7 @@ export const editShow = async (req, res) => {
     }
     if (providedBasePrice) updateData.basePrice = providedBasePrice;
 
-    const updatedShow = await Show.findByIdAndUpdate(showId, updateData, { new: true })
+    const updatedShow = await ShowTbls.findByIdAndUpdate(showId, updateData, { new: true })
       .populate("movie")
       .populate("screen");
 
@@ -185,12 +185,12 @@ export const deleteShow = async (req, res) => {
     const theatreId = manager.managedTheatreId;
     const { showId } = req.params;
 
-    const show = await Show.findById(showId);
+    const show = await ShowTbls.findById(showId);
     if (!show || show.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Invalid show or not authorized" });
     }
 
-    await Show.findByIdAndDelete(showId);
+    await ShowTbls.findByIdAndDelete(showId);
 
     res.json({ success: true, message: "Show deleted successfully" });
   } catch (error) {
@@ -588,7 +588,7 @@ export const toggleMovieStatus = async (req, res) => {
       });
 
       // Also disable all future shows for this movie at this theatre
-      await Show.updateMany(
+      await ShowTbls.updateMany(
         {
           movie: movieId,
           theatre: theatreId,

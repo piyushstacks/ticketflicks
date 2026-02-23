@@ -5,10 +5,12 @@ import { Calendar, MapPin, Users, Trash2, Loader } from "lucide-react";
 import BlurCircle from "../components/BlurCircle";
 
 const MyBookings = () => {
-  const { axios, getToken, user } = useAppContext();
+  const { axios, getToken, user, loading: appLoading } = useAppContext();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelingId, setCancelingId] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const fetchMyBookings = async () => {
     try {
@@ -58,6 +60,68 @@ const MyBookings = () => {
       fetchMyBookings();
     }
   }, [user]);
+
+  // Handle payment confirmation when returning from Stripe
+  useEffect(() => {
+    const confirmPaymentIfNeeded = async () => {
+      // Don't proceed if app is still loading auth
+      if (appLoading) {
+        return;
+      }
+
+      // Check for URL params first
+      const params = new URLSearchParams(window.location.search);
+      const payment = params.get("payment");
+      const sessionId = params.get("session_id");
+
+      if (payment !== "success" || !sessionId) {
+        setAuthChecked(true);
+        return;
+      }
+
+      // We have payment success params - ensure auth is loaded
+      if (!user) {
+        // Check storage directly
+        const stored = localStorage.getItem("auth") || sessionStorage.getItem("auth");
+        if (stored && retryCount < 10) { // Max 10 retries (5 seconds)
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 500);
+          return;
+        }
+
+        setAuthChecked(true);
+        return;
+      }
+
+      try {
+        const token = await getToken();
+        await axios.post(
+          "/api/booking/confirm-stripe",
+          { sessionId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success("Payment confirmed successfully!");
+      } catch (error) {
+        console.error("[MyBookings] Payment confirmation error:", error);
+        toast.error("Payment received, but booking confirmation is still processing.");
+      } finally {
+        params.delete("payment");
+        params.delete("session_id");
+        const next = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          window.location.pathname + (next ? `?${next}` : "")
+        );
+        setAuthChecked(true);
+        setRetryCount(0);
+        fetchMyBookings();
+      }
+    };
+
+    confirmPaymentIfNeeded();
+  }, [user, appLoading, retryCount]);
 
   if (loading) {
     return (
@@ -233,23 +297,35 @@ const MyBookings = () => {
                     </div>
 
                     {!booking.isPaid && (
-                      <button
-                        onClick={() => handleCancelBooking(booking._id)}
-                        disabled={cancelingId === booking._id}
-                        className="flex items-center justify-center gap-2 px-6 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/50 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {cancelingId === booking._id ? (
-                          <>
-                            <Loader className="w-4 h-4 animate-spin" />
-                            Canceling...
-                          </>
-                        ) : (
-                          <>
-                            <Trash2 className="w-4 h-4" />
-                            Cancel Booking
-                          </>
+                      <div className="flex flex-wrap gap-3">
+                        {booking.paymentLink && (
+                          <a
+                            href={booking.paymentLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 px-6 py-2 bg-primary hover:bg-primary-dull text-white rounded-lg font-semibold transition"
+                          >
+                            Pay Now
+                          </a>
                         )}
-                      </button>
+                        <button
+                          onClick={() => handleCancelBooking(booking._id)}
+                          disabled={cancelingId === booking._id}
+                          className="flex items-center justify-center gap-2 px-6 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/50 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {cancelingId === booking._id ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Canceling...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="w-4 h-4" />
+                              Cancel Booking
+                            </>
+                          )}
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

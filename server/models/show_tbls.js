@@ -40,6 +40,6 @@ const showSchema = mongoose.Schema(
   { minimize: false, timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );
 
-const Show = mongoose.model("Show", showSchema, "show_tbls");
+const ShowTbls = mongoose.model("ShowTbls", showSchema, "show_tbls");
 
-export default Show;
+export default ShowTbls;

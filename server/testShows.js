@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Show from './models/Show.js';
+import ShowTbls from './models/show_tbls.js';
 import Movie from './models/Movie.js';
 
 dotenv.config();
@@ -13,22 +13,22 @@ const testShows = async () => {
     console.log('Connected to MongoDB Cloud');
 
     // Check total shows
-    const totalShows = await Show.countDocuments();
+    const totalShows = await ShowTbls.countDocuments();
     console.log('Total shows:', totalShows);
 
     // Check shows with future dates
-    const futureShows = await Show.countDocuments({ 
+    const futureShows = await ShowTbls.countDocuments({ 
       showDateTime: { $gte: new Date() } 
     });
     console.log('Future shows:', futureShows);
 
     // Check all shows with populated movies
-    const shows = await Show.find({})
+    const show = await ShowTbls.find({})
       .populate('movie')
       .limit(5);
     
     console.log('Sample shows:');
-    shows.forEach((show, index) => {
+    show.forEach((show, index) => {
       console.log(`Show ${index + 1}:`);
       console.log('  ID:', show._id);
       console.log('  DateTime:', show.showDateTime);

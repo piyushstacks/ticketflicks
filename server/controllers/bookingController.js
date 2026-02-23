@@ -1,6 +1,6 @@
 import { inngest } from "../inngest/index.js";
 import Booking from "../models/Booking.js";
-import Show from "../models/Show.js";
+import ShowTbls from "../models/show_tbls.js";
 import User from "../models/User.js";
 import Stripe from "stripe";
 import { markSeatsAndCompleteBooking } from "./stripeWebhooks.js";
@@ -103,7 +103,7 @@ const getTierInfoForSeat = (show, seatNumber) => {
 
 const fetchSeatsAvailablity = async (showId, selectedSeats) => {
   try {
-    const showData = await Show.findById(showId);
+    const showData = await ShowTbls.findById(showId);
 
     if (!showData) return false;
 
@@ -221,7 +221,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    const showData = await Show.findById(showId)
+    const showData = await ShowTbls.findById(showId)
       .populate("movie")
       .populate("theatre")
       .populate("screen");
@@ -445,7 +445,7 @@ export const createBooking = async (req, res) => {
 export const fetchOccupiedSeats = async (req, res) => {
   try {
     const { showId } = req.params;
-    const showData = await Show.findById(showId);
+    const showData = await ShowTbls.findById(showId);
 
     if (!showData) {
       return res.json({ success: false, message: "Show not found" });
