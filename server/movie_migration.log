@@ -1,0 +1,37 @@
+[dotenv@17.2.3] injecting env (18) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+[MOVIE-MIGRATE] 🚀 Starting Movie-only migration...
+[MOVIE-MIGRATE] Connecting to: mongodb+srv://piyushbhagchandani64:08P5NdHDb5F2CHc4@cluster99.57yjjst.mongodb.net
+[MOVIE-MIGRATE] ✅ Connected to MongoDB
+[MOVIE-MIGRATE] Starting Movie migration...
+[MOVIE-MIGRATE] Cleared existing movies from new collection
+[MOVIE-MIGRATE] Ensuring default metadata exists...
+[MOVIE-MIGRATE] Created genre: Drama
+[MOVIE-MIGRATE] Created genre: Romance
+[MOVIE-MIGRATE] Created genre: Sci-Fi
+[MOVIE-MIGRATE] Created language: Hindi
+[MOVIE-MIGRATE] Created language: Tamil
+[MOVIE-MIGRATE] Created language: Telugu
+[MOVIE-MIGRATE] Created language: Malayalam
+[MOVIE-MIGRATE] Created language: Kannada
+[MOVIE-MIGRATE] Created language: Marathi
+[MOVIE-MIGRATE] Created cast: Unknown Actor
+[MOVIE-MIGRATE] Default metadata ready
+[MOVIE-MIGRATE] Found 10 movies in old collection
+[MOVIE-MIGRATE] ✅ Migrated: In the Lost Lands
+[MOVIE-MIGRATE] ✅ Migrated: Until Dawn
+[MOVIE-MIGRATE] ✅ Migrated: Lilo & Stitch
+[MOVIE-MIGRATE] ✅ Migrated: Havoc
+[MOVIE-MIGRATE] ✅ Migrated: A Minecraft Movie
+[MOVIE-MIGRATE] ✅ Migrated: Mission: Impossible - The Final Reckoning
+[MOVIE-MIGRATE] ✅ Migrated: Thunderbolts*
+[MOVIE-MIGRATE] ✅ Migrated: Test Movie - Auto Assignment
+[MOVIE-MIGRATE ERROR] Failed to migrate: Test Movie - Auto Assignment E11000 duplicate key error collection: test.movies_new index: title_1 dup key: { title: "Test Movie - Auto Assignment" }
+[MOVIE-MIGRATE ERROR] Failed to migrate: Test Movie - Auto Assignment E11000 duplicate key error collection: test.movies_new index: title_1 dup key: { title: "Test Movie - Auto Assignment" }
+[MOVIE-MIGRATE] 
+🎉 Movie Migration Complete!
+[MOVIE-MIGRATE] ✅ Success: 8
+[MOVIE-MIGRATE] ❌ Errors: 2
+[MOVIE-MIGRATE] 📊 Total processed: 10
+[MOVIE-MIGRATE] 
+✅ Migration completed successfully!
+[MOVIE-MIGRATE] Disconnected from MongoDB

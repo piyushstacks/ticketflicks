@@ -274,3 +274,111 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// OTP-based signup - request OTP (10 min expiry for signup)
+const SIGNUP_OTP_TTL_MS = 10 * 60 * 1000;
+
+export const requestSignupOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    // Check if email already registered
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "Email already registered" });
+    }
+
+    // Delete any existing OTPs for this email
+    await Otp.deleteMany({ email: email.toLowerCase(), purpose: "signup" });
+
+    const otp = ("000000" + Math.floor(Math.random() * 999999)).slice(-6);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[dev-otp] signup OTP for ${email.toLowerCase()}: ${otp}`);
+    }
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + SIGNUP_OTP_TTL_MS);
+
+    await Otp.create({ email: email.toLowerCase(), otpHash, purpose: "signup", expiresAt });
+
+    const subject = "Your email verification code";
+    const body = `<p>Your verification code is <strong>${otp}</strong>. It expires in 10 minutes.</p>`;
+    try {
+      await sendEmail({ to: email, subject, body });
+    } catch (err) {
+      console.error("[requestSignupOtp][sendEmail]", err);
+    }
+
+    res.json({ success: true, message: "Verification code sent to your email" });
+  } catch (error) {
+    console.error("[requestSignupOtp]", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Complete signup with OTP
+export const completeSignupWithOtp = async (req, res) => {
+  try {
+    const { email, otp, name, phone, password } = req.body;
+
+    if (!email || !otp || !name || !phone || !password) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ success: false, message: passwordValidation.message });
+    }
+
+    // Verify OTP
+    const otpDoc = await Otp.findOne({
+      email: email.toLowerCase(),
+      purpose: "signup",
+      expiresAt: { $gte: new Date() }
+    }).sort({ createdAt: -1 });
+
+    if (!otpDoc) return res.status(400).json({ success: false, message: "OTP not found or expired" });
+
+    const match = await bcrypt.compare(otp, otpDoc.otpHash);
+    if (!match) return res.status(400).json({ success: false, message: "Invalid OTP" });
+
+    // Check if email already registered (race condition check)
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "Email already registered" });
+    }
+
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      phone,
+      password_hash,
+      role: "customer",
+      last_login: new Date(),
+    });
+
+    // Delete OTP after successful signup
+    await Otp.deleteMany({ email: email.toLowerCase(), purpose: "signup" });
+
+    const token = createToken(user);
+
+    res.json({
+      success: true,
+      message: "Signup successful",
+      token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("[completeSignupWithOtp]", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

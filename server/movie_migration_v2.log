@@ -1,0 +1,27 @@
+[dotenv@17.2.3] injecting env (18) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[MOVIE-MIGRATE] 🚀 Starting Movie-only migration...
+[MOVIE-MIGRATE] Connecting to: mongodb+srv://piyushbhagchandani64:08P5NdHDb5F2CHc4@cluster99.57yjjst.mongodb.net
+[MOVIE-MIGRATE] ✅ Connected to MongoDB
+[MOVIE-MIGRATE] Starting Movie migration...
+[MOVIE-MIGRATE] Cleared existing movies from new collection
+[MOVIE-MIGRATE] Ensuring default metadata exists...
+[MOVIE-MIGRATE] Default metadata ready
+[MOVIE-MIGRATE] Found 10 movies in old collection
+[MOVIE-MIGRATE] ✅ Migrated: In the Lost Lands
+[MOVIE-MIGRATE] ✅ Migrated: Until Dawn
+[MOVIE-MIGRATE] ✅ Migrated: Lilo & Stitch
+[MOVIE-MIGRATE] ✅ Migrated: Havoc
+[MOVIE-MIGRATE] ✅ Migrated: A Minecraft Movie
+[MOVIE-MIGRATE] ✅ Migrated: Mission: Impossible - The Final Reckoning
+[MOVIE-MIGRATE] ✅ Migrated: Thunderbolts*
+[MOVIE-MIGRATE] ✅ Migrated: Test Movie - Auto Assignment
+[MOVIE-MIGRATE] ⚠️ Skipping duplicate: Test Movie - Auto Assignment
+[MOVIE-MIGRATE] ⚠️ Skipping duplicate: Test Movie - Auto Assignment
+[MOVIE-MIGRATE] 
+🎉 Movie Migration Complete!
+[MOVIE-MIGRATE] ✅ Success: 8
+[MOVIE-MIGRATE] ❌ Errors: 0
+[MOVIE-MIGRATE] 📊 Total processed: 8
+[MOVIE-MIGRATE] 
+✅ Migration completed successfully!
+[MOVIE-MIGRATE] Disconnected from MongoDB

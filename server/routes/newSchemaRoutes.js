@@ -16,12 +16,15 @@ const router = express.Router();
 // ========== SHOW ROUTES ==========
 router.post("/shows", showController.addShow);
 router.get("/shows", showController.fetchShows);
+router.get("/shows/all", showController.fetchShows); // Frontend expects /all endpoint
 router.get("/shows/:showId", showController.fetchShow);
 router.get("/shows/movie/:movieId", showController.fetchShowsByMovie);
 router.put("/shows/:showId", showController.updateShow);
 router.delete("/shows/:showId", showController.deleteShow);
 router.patch("/shows/:showId/status", showController.toggleShowStatus);
 router.get("/movies/available", showController.getAvailableMovies);
+router.get("/upcoming-movies", movieController.getAllMovies); // Frontend expects this
+router.get("/trailer/:id", movieController.getMovie); // Frontend expects this
 
 // ========== BOOKING ROUTES ==========
 router.post("/bookings", bookingController.createBooking);

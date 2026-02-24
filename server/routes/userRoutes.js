@@ -14,6 +14,8 @@ import {
   resetPasswordWithOtp,
   changePassword,
   resendForgotOtp,
+  requestSignupOtp,
+  completeSignupWithOtp,
 } from "../controllers/authController.js";
 import { otpRateLimiter } from "../middleware/otpRateLimiter.js";
 
@@ -25,9 +27,9 @@ const userRouter = express.Router();
 userRouter.post("/signup", signup); // Direct signup (kept for compatibility)
 userRouter.post("/login", login); // Direct password-based login (no OTP)
 
-// New OTP-based signup flow - REMOVED (functions not implemented)
-// userRouter.post("/signup/request-otp", forgotPasswordRateLimiter, requestSignupOtp);
-// userRouter.post("/signup/complete", completeSignupWithOtp);
+// New OTP-based signup flow
+userRouter.post("/signup/request-otp", forgotPasswordRateLimiter, requestSignupOtp);
+userRouter.post("/signup/complete", completeSignupWithOtp);
 
 // Forgot password OTP flow (2-min expiry, resend deletes old OTP)
 userRouter.post("/forgot-password", forgotPasswordRateLimiter, forgotPasswordRequest);
