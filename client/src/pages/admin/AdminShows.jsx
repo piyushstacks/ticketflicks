@@ -14,7 +14,7 @@ const AdminShows = () => {
   const fetchShows = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/admin/all-shows", {
+      const { data } = await axios.get("/api/show/shows", {
         headers: getAuthHeaders(),
       });
 
@@ -33,7 +33,7 @@ const AdminShows = () => {
 
   const fetchTheatres = async () => {
     try {
-      const { data } = await axios.get("/api/admin/theatres", {
+      const { data } = await axios.get("/api/theatre/theaters", {
         headers: getAuthHeaders(),
       });
 
@@ -52,7 +52,7 @@ const AdminShows = () => {
 
   const handleToggleStatus = async (showId) => {
     try {
-      const { data } = await axios.put(`/api/admin/shows/${showId}/toggle-status`, {}, {
+      const { data } = await axios.patch(`/api/show/shows/${showId}/status`, {}, {
         headers: getAuthHeaders(),
       });
       if (data.success) {
@@ -71,7 +71,7 @@ const AdminShows = () => {
     if (!window.confirm("Are you sure you want to delete this show? This action cannot be undone.")) return;
     
     try {
-      const { data } = await axios.delete(`/api/admin/shows/${showId}`, {
+      const { data } = await axios.delete(`/api/show/shows/${showId}`, {
         headers: getAuthHeaders(),
       });
       if (data.success) {

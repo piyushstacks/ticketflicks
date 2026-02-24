@@ -45,7 +45,7 @@ const AdminMovies = () => {
   const fetchMovies = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/admin/movies", {
+      const { data } = await axios.get("/api/show/movies", {
         headers: getAuthHeaders(),
       });
 
@@ -233,12 +233,12 @@ const AdminMovies = () => {
 
       if (editingId) {
         response = await axios.put(
-          `/api/admin/movies/${editingId}`,
+          `/api/show/movies/${editingId}`,
           submitData,
           { headers: getAuthHeaders() },
         );
       } else {
-        response = await axios.post("/api/admin/movies/create", submitData, {
+        response = await axios.post("/api/show/movies", submitData, {
           headers: getAuthHeaders(),
         });
       }
@@ -315,8 +315,8 @@ const AdminMovies = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/admin/movies/${movieId}/deactivate`,
-        {},
+        `/api/show/movies/${movieId}`,
+        { isActive: false },
         { headers: getAuthHeaders() },
       );
 
@@ -342,8 +342,8 @@ const AdminMovies = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/admin/movies/${movieId}/activate`,
-        {},
+        `/api/show/movies/${movieId}`,
+        { isActive: true },
         { headers: getAuthHeaders() },
       );
 

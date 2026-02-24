@@ -18,7 +18,8 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const { data } = await axios.get("/api/admin/dashboard-admin", {
+      // Fetch theatres from new schema endpoint
+      const { data } = await axios.get("/api/theatre/theaters", {
         headers: getAuthHeaders(),
       });
 

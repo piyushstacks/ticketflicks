@@ -115,8 +115,15 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const getAuthHeaders = () =>
-    token ? { Authorization: `Bearer ${token}` } : {};
+  const completeTheatreRegistration = async (payload) => {
+    const { data } = await axios.post("/api/theatre/register", payload);
+    return data;
+  };
+
+  const requestTheatreRegistrationOtp = async (payload) => {
+    const { data } = await axios.post("/api/theatre/request-otp", payload);
+    return data;
+  };
 
   const value = {
     user,
@@ -128,6 +135,8 @@ export const AuthProvider = ({ children }) => {
     requestSignupOtp,
     completeSignupWithOtp,
     logout,
+    requestTheatreRegistrationOtp,
+    completeTheatreRegistration,
     getAuthHeaders,
     getTheatresByManager,
     forgotPassword,

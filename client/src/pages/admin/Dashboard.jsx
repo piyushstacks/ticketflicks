@@ -62,57 +62,32 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Try new endpoint first
-      const { data } = await axios.get("/api/admin/dashboard-admin", {
-        headers: getAuthHeaders(),
-      });
-
-      if (data.success) {
-        // New endpoint returns different structure, merge with existing data
-        setDashboardData(prev => ({
-          ...prev,
-          totalTheatres: data.data.totalTheatres || 0,
-          activeUsers: data.data.activeUsers || 0,
-          totalRevenue: data.data.totalRevenue || 0,
-          totalBookings: data.data.totalBookings || 0,
-        }));
-        
-        // Fetch active shows separately
-        try {
-          const showsResponse = await axios.get("/api/admin/all-shows", {
-            headers: getAuthHeaders(),
-          });
-          if (showsResponse.data.success) {
-            setDashboardData(prev => ({
-              ...prev,
-              activeShows: showsResponse.data.shows || [],
-            }));
-          }
-        } catch (showsError) {
-          console.error("Error fetching active shows:", showsError);
-        }
-      } else {
-        // Fallback to old endpoint
-        const fallbackData = await axios.get("/api/admin/dashboard", {
+      // Dashboard stats not implemented in new schema yet - using placeholder
+      setDashboardData(prev => ({
+        ...prev,
+        totalTheatres: 0,
+        activeUsers: 0,
+        totalRevenue: 0,
+        totalBookings: 0,
+      }));
+      
+      // Fetch active shows separately
+      try {
+        const showsResponse = await axios.get("/api/show/shows", {
           headers: getAuthHeaders(),
         });
-        if (fallbackData.data.success) {
-          setDashboardData(fallbackData.data.dashboardData);
+        if (showsResponse.data.success) {
+          setDashboardData(prev => ({
+            ...prev,
+            activeShows: showsResponse.data.shows || [],
+          }));
         }
+      } catch (showsError) {
+        console.error("Error fetching active shows:", showsError);
       }
     } catch (error) {
       console.error("Error fetching dashboard:", error);
-      // Try fallback endpoint
-      try {
-        const fallbackData = await axios.get("/api/admin/dashboard", {
-          headers: getAuthHeaders(),
-        });
-        if (fallbackData.data.success) {
-          setDashboardData(fallbackData.data.dashboardData);
-        }
-      } catch (err) {
-        toast.error("Failed to load dashboard data");
-      }
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
