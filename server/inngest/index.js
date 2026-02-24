@@ -1,9 +1,9 @@
 import { Inngest } from "inngest";
-import User from "../models/User.js";
-import Booking from "../models/Booking.js";
-import ShowTbls from "../models/show_tbls.js";
+import User from "../models/User_new.js";
+import Booking from "../models/Booking_new.js";
+import ShowTbls from "../models/Show_new.js";
 import sendEmail from "../configs/nodeMailer.js";
-import Movie from "../models/Movie.js";
+import Movie from "../models/Movie_new.js";
 const { fromZonedTime } = await import("date-fns-tz");
 
 export const inngest = new Inngest({ id: "movie-ticking-booking" });

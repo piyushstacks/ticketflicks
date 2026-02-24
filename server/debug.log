@@ -1,3 +1,155 @@
-[dotenv@17.2.3] injecting env (18) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
-[MIGRATE] Script starting...
-[MIGRATE] Imports completed
+Database connected
+Server listening at http://localhost:3000
+[nodeMailer] Gmail transporter verified (smtp.gmail.com:587)
+[2026-02-24T17:05:02.045Z] GET /api/show/movies/available
+Headers: { host: 'localhost:3000', 'user-agent': 'curl/8.7.1', accept: '*/*' }
+[DEBUG] Movie model collection: movies_new
+[DEBUG] Movie model name: MovieNew
+[getAvailableMovies] showMovieIds: 0
+[getAvailableMovies] No shows found, returning all movies
+[getAvailableMovies] Total movies in DB: 0
+[getAvailableMovies] Retrieved movies: 0
+[2026-02-24T17:05:02.628Z] OPTIONS /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:05:02.631Z] POST /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '33',
+  'sec-ch-ua-platform': '"macOS"',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[dev-otp] signup OTP for utsavs12356@gmail.com: 440683
+[nodeMailer] message sent, id: <6c5ff5df-97f2-6560-f5d6-510b2b9ca31a@gmail.com>
+[2026-02-24T17:05:22.763Z] OPTIONS /api/user/users/signup/complete
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:05:22.765Z] POST /api/user/users/signup/complete
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '112',
+  'sec-ch-ua-platform': '"macOS"',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:05:23.001Z] OPTIONS /api/admin/is-admin
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'GET',
+  'access-control-request-headers': 'authorization',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:05:23.003Z] GET /api/admin/is-admin
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'sec-ch-ua-platform': '"macOS"',
+  authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWRkYTUyNTIwMDFjNDNlMTI4ZDE5YyIsInJvbGUiOiJjdXN0b21lciIsImlhdCI6MTc3MTk1MjcyMiwiZXhwIjoxNzcyNTU3NTIyfQ.ajQt-kwH0atOzzBhry9iFtQ9sSeNHQn9h871t_adPN4',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:05:23.007Z] OPTIONS /api/user/favorites
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'GET',
+  'access-control-request-headers': 'authorization',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:05:23.008Z] GET /api/user/favorites
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'sec-ch-ua-platform': '"macOS"',
+  authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWRkYTUyNTIwMDFjNDNlMTI4ZDE5YyIsInJvbGUiOiJjdXN0b21lciIsImlhdCI6MTc3MTk1MjcyMiwiZXhwIjoxNzcyNTU3NTIyfQ.ajQt-kwH0atOzzBhry9iFtQ9sSeNHQn9h871t_adPN4',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}

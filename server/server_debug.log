@@ -1,0 +1,434 @@
+Database connected
+Server listening at http://localhost:3000
+[nodeMailer] Gmail transporter verified (smtp.gmail.com:587)
+[2026-02-24T17:02:20.141Z] GET /api/show/movies/available
+Headers: { host: 'localhost:3000', 'user-agent': 'curl/8.7.1', accept: '*/*' }
+[getAvailableMovies] showMovieIds: 0
+[getAvailableMovies] No shows found, returning all movies
+[getAvailableMovies] Total movies in DB: 0
+[getAvailableMovies] Retrieved movies: 0
+[2026-02-24T17:02:57.495Z] OPTIONS /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:02:57.499Z] POST /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '33',
+  'sec-ch-ua-platform': '"macOS"',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[dev-otp] signup OTP for utsavs12356@gmail.com: 244800
+[requestSignupOtp] Error: Otp validation failed: purpose: `signup` is not a valid enum value for path `purpose`.
+    at ValidationError.inspect (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:1148:19)
+    at inspect (node:internal/util/inspect:409:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2897:40)
+    at formatWithOptions (node:internal/util/inspect:2759:10)
+    at console.value (node:internal/console/constructor:377:14)
+    at console.error (node:internal/console/constructor:444:61)
+    at requestSignupOtp (file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/controllers/userController_new.js:233:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errors: {
+    purpose: ValidatorError: `signup` is not a valid enum value for path `purpose`.
+        at validate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1443:13)
+        at SchemaType.doValidate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1427:7)
+        at /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/document.js:3124:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'enum',
+      path: 'purpose',
+      value: 'signup',
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    }
+  },
+  _message: 'Otp validation failed'
+}
+[2026-02-24T17:03:23.196Z] OPTIONS /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:03:23.198Z] POST /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '33',
+  'sec-ch-ua-platform': '"macOS"',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[dev-otp] signup OTP for utsavs12356@gmail.com: 623766
+[requestSignupOtp] Error: Otp validation failed: purpose: `signup` is not a valid enum value for path `purpose`.
+    at ValidationError.inspect (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:1148:19)
+    at inspect (node:internal/util/inspect:409:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2897:40)
+    at formatWithOptions (node:internal/util/inspect:2759:10)
+    at console.value (node:internal/console/constructor:377:14)
+    at console.error (node:internal/console/constructor:444:61)
+    at requestSignupOtp (file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/controllers/userController_new.js:233:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errors: {
+    purpose: ValidatorError: `signup` is not a valid enum value for path `purpose`.
+        at validate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1443:13)
+        at SchemaType.doValidate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1427:7)
+        at /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/document.js:3124:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'enum',
+      path: 'purpose',
+      value: 'signup',
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    }
+  },
+  _message: 'Otp validation failed'
+}
+[2026-02-24T17:03:24.077Z] POST /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '33',
+  'sec-ch-ua-platform': '"macOS"',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[dev-otp] signup OTP for utsavs12356@gmail.com: 397213
+[requestSignupOtp] Error: Otp validation failed: purpose: `signup` is not a valid enum value for path `purpose`.
+    at ValidationError.inspect (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:1148:19)
+    at inspect (node:internal/util/inspect:409:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2897:40)
+    at formatWithOptions (node:internal/util/inspect:2759:10)
+    at console.value (node:internal/console/constructor:377:14)
+    at console.error (node:internal/console/constructor:444:61)
+    at requestSignupOtp (file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/controllers/userController_new.js:233:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errors: {
+    purpose: ValidatorError: `signup` is not a valid enum value for path `purpose`.
+        at validate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1443:13)
+        at SchemaType.doValidate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1427:7)
+        at /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/document.js:3124:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'enum',
+      path: 'purpose',
+      value: 'signup',
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    }
+  },
+  _message: 'Otp validation failed'
+}
+[2026-02-24T17:03:30.796Z] OPTIONS /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:03:30.797Z] POST /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '33',
+  'sec-ch-ua-platform': '"macOS"',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[dev-otp] signup OTP for utsavs12356@gmail.com: 030098
+[requestSignupOtp] Error: Otp validation failed: purpose: `signup` is not a valid enum value for path `purpose`.
+    at ValidationError.inspect (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:1148:19)
+    at inspect (node:internal/util/inspect:409:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2897:40)
+    at formatWithOptions (node:internal/util/inspect:2759:10)
+    at console.value (node:internal/console/constructor:377:14)
+    at console.error (node:internal/console/constructor:444:61)
+    at requestSignupOtp (file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/controllers/userController_new.js:233:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errors: {
+    purpose: ValidatorError: `signup` is not a valid enum value for path `purpose`.
+        at validate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1443:13)
+        at SchemaType.doValidate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1427:7)
+        at /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/document.js:3124:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'enum',
+      path: 'purpose',
+      value: 'signup',
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    }
+  },
+  _message: 'Otp validation failed'
+}
+[2026-02-24T17:03:45.216Z] OPTIONS /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:03:45.220Z] POST /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '33',
+  'sec-ch-ua-platform': '"iOS"',
+  'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?1',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[dev-otp] signup OTP for utsavs12356@gmail.com: 302076
+[requestSignupOtp] Error: Otp validation failed: purpose: `signup` is not a valid enum value for path `purpose`.
+    at ValidationError.inspect (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:1148:19)
+    at inspect (node:internal/util/inspect:409:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2897:40)
+    at formatWithOptions (node:internal/util/inspect:2759:10)
+    at console.value (node:internal/console/constructor:377:14)
+    at console.error (node:internal/console/constructor:444:61)
+    at requestSignupOtp (file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/controllers/userController_new.js:233:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errors: {
+    purpose: ValidatorError: `signup` is not a valid enum value for path `purpose`.
+        at validate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1443:13)
+        at SchemaType.doValidate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1427:7)
+        at /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/document.js:3124:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'enum',
+      path: 'purpose',
+      value: 'signup',
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    }
+  },
+  _message: 'Otp validation failed'
+}
+[2026-02-24T17:03:57.519Z] OPTIONS /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:03:57.521Z] POST /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '33',
+  'sec-ch-ua-platform': '"iOS"',
+  'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?1',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[dev-otp] signup OTP for utsavs12356@gmail.com: 499796
+[requestSignupOtp] Error: Otp validation failed: purpose: `signup` is not a valid enum value for path `purpose`.
+    at ValidationError.inspect (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:1148:19)
+    at inspect (node:internal/util/inspect:409:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2897:40)
+    at formatWithOptions (node:internal/util/inspect:2759:10)
+    at console.value (node:internal/console/constructor:377:14)
+    at console.error (node:internal/console/constructor:444:61)
+    at requestSignupOtp (file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/controllers/userController_new.js:233:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errors: {
+    purpose: ValidatorError: `signup` is not a valid enum value for path `purpose`.
+        at validate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1443:13)
+        at SchemaType.doValidate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1427:7)
+        at /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/document.js:3124:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'enum',
+      path: 'purpose',
+      value: 'signup',
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    }
+  },
+  _message: 'Otp validation failed'
+}
+[2026-02-24T17:04:35.293Z] OPTIONS /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:04:35.294Z] POST /api/user/users/signup/request-otp
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '33',
+  'sec-ch-ua-platform': '"macOS"',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[dev-otp] signup OTP for utsavs12356@gmail.com: 135347
+[requestSignupOtp] Error: Otp validation failed: purpose: `signup` is not a valid enum value for path `purpose`.
+    at ValidationError.inspect (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/error/validation.js:52:26)
+    at formatValue (node:internal/util/inspect:1148:19)
+    at inspect (node:internal/util/inspect:409:10)
+    at formatWithOptionsInternal (node:internal/util/inspect:2897:40)
+    at formatWithOptions (node:internal/util/inspect:2759:10)
+    at console.value (node:internal/console/constructor:377:14)
+    at console.error (node:internal/console/constructor:444:61)
+    at requestSignupOtp (file:///Users/piyushbhagchandani/SDP/SEM%206%20/CODE/movieproj/sdp-dump-2/server/controllers/userController_new.js:233:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  errors: {
+    purpose: ValidatorError: `signup` is not a valid enum value for path `purpose`.
+        at validate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1443:13)
+        at SchemaType.doValidate (/Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/schemaType.js:1427:7)
+        at /Users/piyushbhagchandani/SDP/SEM 6 /CODE/movieproj/sdp-dump-2/server/node_modules/mongoose/lib/document.js:3124:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: [Object],
+      kind: 'enum',
+      path: 'purpose',
+      value: 'signup',
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    }
+  },
+  _message: 'Otp validation failed'
+}

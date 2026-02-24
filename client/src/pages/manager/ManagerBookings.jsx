@@ -14,7 +14,7 @@ const ManagerBookings = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/manager/bookings", {
+      const { data } = await axios.get("/api/booking/bookings", {
         headers: getAuthHeaders(),
       });
 

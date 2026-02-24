@@ -79,7 +79,7 @@ const ManagerShows = () => {
         return;
       }
       
-      const { data } = await axios.get("/api/manager/shows", {
+      const { data } = await axios.get("/api/show/shows", {
         headers: authHeaders,
       });
 
@@ -130,7 +130,7 @@ const ManagerShows = () => {
         return;
       }
       
-      const { data } = await axios.get("/api/manager/movies/available", {
+      const { data } = await axios.get("/api/show/movies/available", {
         headers: authHeaders,
       });
 
@@ -160,7 +160,7 @@ const ManagerShows = () => {
         return;
       }
       
-      const { data } = await axios.get("/api/manager/screens", {
+      const { data } = await axios.get("/api/theatre/screens", {
         headers: authHeaders,
       });
 
@@ -336,7 +336,7 @@ const ManagerShows = () => {
       if (editingId) {
         console.log("Editing existing show:", editingId);
         response = await axios.put(
-          `/api/manager/shows/${editingId}`,
+          `/api/show/shows/${editingId}`,
           formData,
           { headers: getAuthHeaders() }
         );
@@ -370,7 +370,7 @@ const ManagerShows = () => {
         console.log("API endpoint:", "/api/manager/shows/add");
         
         response = await axios.post(
-          "/api/manager/shows/add",
+          "/api/show/shows",
           showData,
           { headers: getAuthHeaders() }
         );
@@ -458,7 +458,7 @@ const ManagerShows = () => {
     if (!window.confirm(confirmMessage)) return;
 
     try {
-      const { data } = await axios.patch(`/api/manager/shows/${showId}/toggle`, {
+      const { data } = await axios.patch(`/api/show/shows/${showId}/status`, {
         isActive: !currentStatus
       }, {
         headers: getAuthHeaders()
@@ -480,7 +480,7 @@ const ManagerShows = () => {
     if (!window.confirm("Are you sure you want to delete this show?")) return;
 
     try {
-      const { data } = await axios.delete(`/api/manager/shows/${showId}`, {
+      const { data } = await axios.delete(`/api/show/shows/${showId}`, {
         headers: getAuthHeaders(),
       });
 
@@ -511,7 +511,7 @@ const ManagerShows = () => {
       newEndDate.setDate(newEndDate.getDate() + 7);
 
       const { data } = await axios.put(
-        `/api/manager/shows/${showId}`,
+        `/api/show/shows/${showId}`,
         { endDate: newEndDate.toISOString().split('T')[0] },
         { headers: getAuthHeaders() }
       );
@@ -536,7 +536,7 @@ const ManagerShows = () => {
       const currentWeek = getCurrentWeekDates();
       const nextWeek = getNextWeekDates();
       
-      const { data } = await axios.post("/api/manager/shows/repeat-week", {
+      const { data } = await axios.post("/api/show/shows/repeat-week", {
         currentWeekStart: currentWeek.start,
         currentWeekEnd: currentWeek.end,
         nextWeekStart: nextWeek.start,

@@ -1,7 +1,7 @@
-import ShowTbls from "../models/show_tbls.js";
-import Movie from "../models/Movie.js";
-import Theatre from "../models/Theatre.js";
-import ScreenTbl from "../models/ScreenTbl.js";
+import ShowTbls from "../models/Show_new.js";
+import Movie from "../models/Movie_new.js";
+import Theatre from "../models/Theater_new.js";
+import ScreenTbl from "../models/Screen_new.js";
 import youtubeService from "../services/youtubeService.js";
 
 // Fetch and update movie trailer from YouTube

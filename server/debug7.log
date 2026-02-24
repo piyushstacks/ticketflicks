@@ -1,0 +1,14 @@
+Database connected
+Server listening at http://localhost:3000
+[nodeMailer] Gmail transporter verified (smtp.gmail.com:587)
+[2026-02-24T17:09:57.959Z] GET /api/show/movies/available
+Headers: { host: 'localhost:3000', 'user-agent': 'curl/8.7.1', accept: '*/*' }
+[DEBUG] Mongoose connection state: 1
+[DEBUG] Movie model collection: movies_new
+[DEBUG] Movie model name: MovieNew
+[DEBUG] Mongoose model count: 0
+[DEBUG] Mongoose filtered count: 0
+[getAvailableMovies] showMovieIds: 0
+[getAvailableMovies] No shows found, returning all movies
+[getAvailableMovies] Total movies in DB: 0
+[getAvailableMovies] Retrieved movies: 0

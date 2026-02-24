@@ -34,15 +34,19 @@ const ManagerDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const { data } = await axios.get("/api/manager/dashboard", {
-        headers: getAuthHeaders(),
+      // Dashboard endpoint not implemented in new schema yet
+      // For now, return empty data
+      setDashboardData({
+        activeShows: 0,
+        todayBookings: 0,
+        monthRevenue: 0,
+        screens: 0
       });
-
-      if (data.success) {
-        setDashboardData(data.data);
-      } else {
-        toast.error(data.message || "Failed to load dashboard");
-      }
+      
+      // TODO: Implement dashboard aggregation from shows/bookings
+      // const { data } = await axios.get("/api/show/shows", {
+      //   headers: getAuthHeaders(),
+      // });
     } catch (error) {
       console.error("Error fetching dashboard:", error);
       toast.error("Failed to load dashboard data");

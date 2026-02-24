@@ -13,7 +13,7 @@ const ManagerMovies = () => {
   const fetchMovies = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/manager/movies/available", {
+      const { data } = await axios.get("/api/show/movies/available", {
         headers: getAuthHeaders(),
       });
 
@@ -39,7 +39,7 @@ const ManagerMovies = () => {
     if (!window.confirm(confirmMessage)) return;
 
     try {
-      const { data } = await axios.patch(`/api/manager/movies/${movieId}/toggle`, {
+      const { data } = await axios.patch(`/api/show/movies/${movieId}`, {
         isActive: action === 'enable'
       }, {
         headers: getAuthHeaders()

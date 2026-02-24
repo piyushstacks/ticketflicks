@@ -29,7 +29,7 @@ const AdminTheatres = () => {
   const fetchScreens = async (theatreId) => {
     try {
       setScreensLoading(true);
-      const { data } = await axios.get(`/api/admin/theatres/${theatreId}/screens`, {
+      const { data } = await axios.get(`/api/theatre/screens/theater/${theatreId}`, {
         headers: getAuthHeaders(),
       });
 
@@ -55,13 +55,13 @@ const AdminTheatres = () => {
     try {
       setLoading(true);
       
-      // Fetch pending theatres
-      const pendingResponse = await axios.get("/api/admin/theatres/pending", {
+      // Fetch all theatres (pending filter applied client-side or server-side)
+      const pendingResponse = await axios.get("/api/theatre/theaters", {
         headers: getAuthHeaders(),
       });
 
-      // Fetch approved and disabled theatres
-      const approvedResponse = await axios.get("/api/admin/theatres", {
+      // Fetch approved theatres
+      const approvedResponse = await axios.get("/api/theatre/theaters", {
         headers: getAuthHeaders(),
       });
 
@@ -113,7 +113,7 @@ const AdminTheatres = () => {
       }
 
       const response = await axios.put(
-        `/api/admin/theatres/${editingId}`,
+        `/api/theatre/theaters/${editingId}`,
         formData,
         { headers: getAuthHeaders() }
       );
@@ -163,8 +163,8 @@ const AdminTheatres = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/admin/theatres/${theatreId}/disable`,
-        {},
+        `/api/theatre/theaters/${theatreId}`,
+        { status: 'inactive' },
         { headers: getAuthHeaders() }
       );
 
@@ -185,8 +185,8 @@ const AdminTheatres = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/admin/theatres/${theatreId}/enable`,
-        {},
+        `/api/theatre/theaters/${theatreId}`,
+        { status: 'active' },
         { headers: getAuthHeaders() }
       );
 
@@ -204,9 +204,10 @@ const AdminTheatres = () => {
 
   const handleApproveTheatre = async (theatreId, action) => {
     try {
+      // Approve/decline theatre - using update endpoint
       const { data } = await axios.put(
-        `/api/admin/theatres/${theatreId}/approve`,
-        { action },
+        `/api/theatre/theaters/${theatreId}`,
+        { approval_status: action === "approve" ? "approved" : "declined" },
         { headers: getAuthHeaders() }
       );
 

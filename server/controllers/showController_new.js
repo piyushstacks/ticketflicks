@@ -1,4 +1,5 @@
 import axios from "axios";
+import mongoose from "mongoose";
 import Movie from "../models/Movie_new.js";
 import Show from "../models/Show_new.js";
 import Screen from "../models/Screen_new.js";
@@ -225,22 +226,62 @@ export const toggleShowStatus = async (req, res) => {
 };
 
 // API to get available movies for customers
+// Returns movies with active shows, or all movies if no shows exist
 export const getAvailableMovies = async (req, res) => {
   try {
+    // Dynamic import Movie model
+    const { default: Movie } = await import("../models/Movie_new.js");
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // DEBUG: Check which collection Movie model uses
+    console.log("[DEBUG] Mongoose connection state:", mongoose.connection.readyState);
+    console.log("[DEBUG] Database name:", mongoose.connection.db?.databaseName || "unknown");
+    console.log("[DEBUG] Connection host:", mongoose.connection.host || "unknown");
+    console.log("[DEBUG] Movie model collection:", Movie.collection?.collectionName || "unknown");
+    console.log("[DEBUG] Movie model name:", Movie.modelName || "unknown");
+
+    // Test query
+    const modelCount = await Movie.countDocuments();
+    console.log("[DEBUG] Mongoose model count:", modelCount);
+    const modelCountFiltered = await Movie.countDocuments({ isDeleted: { $ne: true } });
+    console.log("[DEBUG] Mongoose filtered count:", modelCountFiltered);
+    
+    // Native driver test
+    const nativeCount = await mongoose.connection.db.collection('movies_new').countDocuments();
+    console.log("[DEBUG] Native driver count:", nativeCount);
 
     const showMovieIds = await Show.find({
       show_date: { $gte: today },
       isActive: true,
     }).distinct("movie_id");
 
-    const movies = await Movie.find({
-      _id: { $in: showMovieIds },
-      isDeleted: { $ne: true },
-    }).select("title overview poster_path backdrop_path release_date duration_min");
+    let movies;
+    let source;
 
-    res.json({ success: true, movies, count: movies.length });
+    console.log("[getAvailableMovies] showMovieIds:", showMovieIds.length);
+
+    if (showMovieIds.length > 0) {
+      // Return movies that have active shows
+      movies = await Movie.find({
+        _id: { $in: showMovieIds },
+        isDeleted: { $ne: true },
+      }).select("title overview poster_path backdrop_path release_date duration_min");
+      source = "shows";
+    } else {
+      // No shows exist yet - return all movies so they display on website
+      console.log("[getAvailableMovies] No shows found, returning all movies");
+      const allMoviesCount = await Movie.countDocuments({ isDeleted: { $ne: true } });
+      console.log("[getAvailableMovies] Total movies in DB:", allMoviesCount);
+      movies = await Movie.find({
+        isDeleted: { $ne: true },
+      }).select("title overview poster_path backdrop_path release_date duration_min");
+      console.log("[getAvailableMovies] Retrieved movies:", movies.length);
+      source = "all_movies";
+    }
+
+    res.json({ success: true, movies, count: movies.length, source });
   } catch (error) {
     console.error("[getAvailableMovies]", error);
     res.json({ success: false, message: error.message });

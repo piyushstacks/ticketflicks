@@ -1,4 +1,5 @@
 import express from "express";
+import { protectUser } from "../middleware/protectUser.js";
 
 // New Controllers
 import showController from "../controllers/showController_new.js";
@@ -6,7 +7,19 @@ import bookingController from "../controllers/bookingController_new.js";
 import theaterController from "../controllers/theaterController_new.js";
 import screenController from "../controllers/screenController_new.js";
 import movieController from "../controllers/movieController_new.js";
-import userController from "../controllers/userController_new.js";
+import {
+  registerUser,
+  loginUser,
+  getUserProfile,
+  updateUser,
+  getAllUsers,
+  deleteUser,
+  requestSignupOtp,
+  completeSignupWithOtp,
+  checkIsAdmin,
+  getUserFavorites,
+  updateUserFavorites,
+} from "../controllers/userController_new.js";
 import seatController from "../controllers/seatController_new.js";
 import metadataController from "../controllers/metadataController_new.js";
 import reviewPaymentController from "../controllers/reviewPaymentController_new.js";
@@ -63,12 +76,19 @@ router.get("/movies/tmdb/now-playing", movieController.fetchNowPlayingFromTMDB);
 router.post("/movies/tmdb/import/:tmdbId", movieController.importMovieFromTMDB);
 
 // ========== USER ROUTES ==========
-router.post("/users/register", userController.registerUser);
-router.post("/users/login", userController.loginUser);
-router.get("/users/:userId", userController.getUserProfile);
-router.put("/users/:userId", userController.updateUser);
-router.get("/users", userController.getAllUsers);
-router.delete("/users/:userId", userController.deleteUser);
+// Specific routes FIRST (before parameterized routes)
+router.post("/users/register", registerUser);
+router.post("/users/login", loginUser);
+router.post("/users/signup/request-otp", requestSignupOtp);
+router.post("/users/signup/complete", completeSignupWithOtp);
+router.get("/users/is-admin", protectUser, checkIsAdmin);
+router.get("/users/favorites", protectUser, getUserFavorites);
+router.post("/users/update-favorite", protectUser, updateUserFavorites);
+router.get("/users", getAllUsers);
+// Parameterized routes LAST
+router.get("/users/:userId", getUserProfile);
+router.put("/users/:userId", updateUser);
+router.delete("/users/:userId", deleteUser);
 
 // ========== SEAT ROUTES ==========
 router.post("/seat-categories", seatController.createSeatCategory);

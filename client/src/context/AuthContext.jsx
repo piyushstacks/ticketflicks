@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (payload, options = {}) => {
     const { remember = true } = options;
     // Direct password-based login (no OTP required)
-    const { data } = await axios.post("/api/user/login", payload);
+    const { data } = await axios.post("/api/user/users/login", payload);
     if (data.success) {
       saveAuth(data.user, data.token, remember);
     }
@@ -58,24 +58,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   const forgotPassword = async (payload) => {
-    const { data } = await axios.post("/api/user/forgot-password", payload);
+    const { data } = await axios.post("/api/user/users/forgot-password", payload);
     return data;
   };
 
   const resetPassword = async (payload) => {
-    const { data } = await axios.post("/api/user/reset-password", payload);
+    const { data } = await axios.post("/api/user/users/reset-password", payload);
     return data;
   };
 
   const changePassword = async (payload) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const { data } = await axios.post("/api/user/change-password", payload, { headers });
+    const { data } = await axios.post("/api/user/users/change-password", payload, { headers });
     return data;
   };
 
   const getTheatresByManager = async (managerId) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const { data } = await axios.get(`/api/theatre/manager/${managerId}`, { headers });
+    const { data } = await axios.get(`/api/theatre/theaters/manager/${managerId}`, { headers });
     return data;
   };
 
@@ -86,12 +86,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const resendForgot = async (payload) => {
-    const { data } = await axios.post("/api/user/forgot-password/resend", payload);
+    const { data } = await axios.post("/api/user/users/forgot-password/resend", payload);
     return data;
   };
 
   const signup = async (payload) => {
-    const { data } = await axios.post("/api/user/signup", payload);
+    const { data } = await axios.post("/api/user/users/register", payload);
     if (data.success) {
       saveAuth(data.user, data.token, true);
     }
@@ -100,6 +100,19 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     saveAuth(null, null);
+  };
+
+  const requestSignupOtp = async (payload) => {
+    const { data } = await axios.post("/api/user/users/signup/request-otp", payload);
+    return data;
+  };
+
+  const completeSignupWithOtp = async (payload) => {
+    const { data } = await axios.post("/api/user/users/signup/complete", payload);
+    if (data.success) {
+      saveAuth(data.user, data.token, true);
+    }
+    return data;
   };
 
   const getAuthHeaders = () =>
@@ -112,7 +125,8 @@ export const AuthProvider = ({ children }) => {
     login,
     saveAuth,
     verifyOtp,
-    signup,
+    requestSignupOtp,
+    completeSignupWithOtp,
     logout,
     getAuthHeaders,
     getTheatresByManager,

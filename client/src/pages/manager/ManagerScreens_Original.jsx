@@ -19,7 +19,7 @@ const ManagerScreens = () => {
     try {
       setLoading(true);
       // This endpoint needs to be created
-      const { data } = await axios.get("/api/manager/screens", {
+      const { data } = await axios.get("/api/theatre/screens", {
         headers: getAuthHeaders(),
       });
 
@@ -58,7 +58,7 @@ const ManagerScreens = () => {
       let response;
       if (editingId) {
         response = await axios.put(
-          `/api/manager/screens/${editingId}`,
+          `/api/theatre/screens/${editingId}`,
           {
             screenNumber: formData.screenNumber,
             seatLayout: { totalSeats: parseInt(formData.totalSeats) },
@@ -67,7 +67,7 @@ const ManagerScreens = () => {
         );
       } else {
         response = await axios.post(
-          "/api/manager/screens/add",
+          "/api/theatre/screens",
           {
             screenNumber: formData.screenNumber,
             seatLayout: { totalSeats: parseInt(formData.totalSeats) },
@@ -96,7 +96,7 @@ const ManagerScreens = () => {
     if (!window.confirm("Are you sure you want to delete this screen?")) return;
 
     try {
-      const { data } = await axios.delete(`/api/manager/screens/${screenId}`, {
+      const { data } = await axios.delete(`/api/theatre/screens/${screenId}`, {
         headers: getAuthHeaders(),
       });
 

@@ -56,9 +56,11 @@ const MovieCard = ({ movie }) => {
       <div className="p-4 flex flex-col gap-1 flex-1">
         <h3 className="movie-title truncate">{movie.title}</h3>
         <p className="movie-meta">
-          {movie.genres.slice(0, 2).map((genre) => genre.name).join(" / ")}
+          {movie.genres?.slice(0, 2).map((genre) => genre.name).join(" / ") || 
+           movie.genre_ids?.slice(0, 2).join(" / ") || 
+           "Action / Drama"}
           <span className="mx-1.5">-</span>
-          {timeFormat(movie.runtime)}
+          {timeFormat(movie.runtime || movie.duration_min)}
         </p>
       </div>
     </div>
