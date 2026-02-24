@@ -23,8 +23,27 @@ import {
 import seatController from "../controllers/seatController_new.js";
 import metadataController from "../controllers/metadataController_new.js";
 import reviewPaymentController from "../controllers/reviewPaymentController_new.js";
+import {
+  searchMovies,
+  searchTheatres,
+  searchMoviesAndShows,
+} from "../controllers/searchController_new.js";
+
+import {
+  requestTheatreRegistrationOtp,
+  registerTheatre,
+} from "../controllers/theatreController.js";
 
 const router = express.Router();
+
+// ========== THEATER REGISTRATION (Public) ==========
+router.post("/request-otp", requestTheatreRegistrationOtp);
+router.post("/register", registerTheatre);
+
+// ========== SEARCH ROUTES ==========
+router.get("/movies", searchMovies);
+router.get("/theatres", searchTheatres);
+router.get("/all", searchMoviesAndShows);
 
 // ========== SHOW ROUTES ==========
 router.post("/shows", showController.addShow);

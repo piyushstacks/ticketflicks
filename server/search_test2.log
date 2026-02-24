@@ -1,0 +1,203 @@
+Database connected
+Server listening at http://localhost:3000
+[nodeMailer] Gmail transporter verified (smtp.gmail.com:587)
+[2026-02-24T17:31:03.118Z] GET /api/search/movies?q=minecraft
+Headers: { host: 'localhost:3000', 'user-agent': 'curl/8.7.1', accept: '*/*' }
+[2026-02-24T17:31:10.831Z] GET /api/search/theatres?q=pune
+Headers: { host: 'localhost:3000', 'user-agent': 'curl/8.7.1', accept: '*/*' }
+[2026-02-24T17:31:14.028Z] OPTIONS /api/user/users/login
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:31:14.032Z] POST /api/user/users/login
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '51',
+  'sec-ch-ua-platform': '"macOS"',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'content-type': 'application/json',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:31:14.174Z] OPTIONS /api/user/users/is-admin
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'GET',
+  'access-control-request-headers': 'authorization',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:31:14.176Z] OPTIONS /api/user/users/favorites
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'GET',
+  'access-control-request-headers': 'authorization',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:31:14.180Z] GET /api/user/users/favorites
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'sec-ch-ua-platform': '"macOS"',
+  authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWRlMDAyY2Y1ZGJlNTY0OGNiOGIwMSIsInJvbGUiOiJjdXN0b21lciIsImlhdCI6MTc3MTk1NDI3NCwiZXhwIjoxNzcyNTU5MDc0fQ.pRiYsydoBK4DAf0mcnIWDwjHC6RBNqb45gcmIS8snZg',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8',
+  'if-none-match': 'W/"1c-MPNkxx6nvwRX//m4eoaOkWn+s/M"'
+}
+[2026-02-24T17:31:14.187Z] GET /api/user/users/is-admin
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'sec-ch-ua-platform': '"macOS"',
+  authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWRlMDAyY2Y1ZGJlNTY0OGNiOGIwMSIsInJvbGUiOiJjdXN0b21lciIsImlhdCI6MTc3MTk1NDI3NCwiZXhwIjoxNzcyNTU5MDc0fQ.pRiYsydoBK4DAf0mcnIWDwjHC6RBNqb45gcmIS8snZg',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8',
+  'if-none-match': 'W/"20-YxWuOSSoJM106vk5Y9771Zi0zcU"'
+}
+[2026-02-24T17:31:16.931Z] GET /api/search/theatres?q=test
+Headers: { host: 'localhost:3000', 'user-agent': 'curl/8.7.1', accept: '*/*' }
+[2026-02-24T17:31:21.823Z] OPTIONS /api/user/submit-feedback
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'POST',
+  'access-control-request-headers': 'authorization,content-type',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:31:21.824Z] POST /api/user/submit-feedback
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'content-length': '25',
+  'sec-ch-ua-platform': '"macOS"',
+  authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWRlMDAyY2Y1ZGJlNTY0OGNiOGIwMSIsInJvbGUiOiJjdXN0b21lciIsImlhdCI6MTc3MTk1NDI3NCwiZXhwIjoxNzcyNTU5MDc0fQ.pRiYsydoBK4DAf0mcnIWDwjHC6RBNqb45gcmIS8snZg',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  'sec-ch-ua-mobile': '?0',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  dnt: '1',
+  'content-type': 'application/json',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:31:27.189Z] OPTIONS /api/booking/my-bookings
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  accept: '*/*',
+  'access-control-request-method': 'GET',
+  'access-control-request-headers': 'authorization',
+  origin: 'http://localhost:5173',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8'
+}
+[2026-02-24T17:31:27.192Z] GET /api/booking/my-bookings
+Headers: {
+  host: 'localhost:3000',
+  connection: 'keep-alive',
+  'sec-ch-ua-platform': '"macOS"',
+  authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWRlMDAyY2Y1ZGJlNTY0OGNiOGIwMSIsInJvbGUiOiJjdXN0b21lciIsImlhdCI6MTc3MTk1NDI3NCwiZXhwIjoxNzcyNTU5MDc0fQ.pRiYsydoBK4DAf0mcnIWDwjHC6RBNqb45gcmIS8snZg',
+  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'sec-ch-ua': '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"',
+  dnt: '1',
+  'sec-ch-ua-mobile': '?0',
+  origin: 'http://localhost:5173',
+  'sec-fetch-site': 'same-site',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-dest': 'empty',
+  referer: 'http://localhost:5173/',
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'accept-language': 'en-US,en;q=0.9,fr;q=0.8',
+  'if-none-match': 'W/"db65-WH1KRkBCx6zFq3zV8dist47Wkgg"'
+}
+[2026-02-24T17:31:34.602Z] POST /api/theatre/request-otp
+Headers: {
+  host: 'localhost:3000',
+  'user-agent': 'curl/8.7.1',
+  accept: '*/*',
+  'content-type': 'application/json',
+  'content-length': '28'
+}
+=== THEATRE REGISTRATION OTP REQUEST ===
+Request body: { email: 'test@example.com' }
+Email from request: test@example.com
+Normalized email: test@example.com
+ERROR: Email already registered

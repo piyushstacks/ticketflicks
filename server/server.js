@@ -55,6 +55,7 @@ app.use("/api/user", newSchemaRouter);  // Users
 app.use("/api/theatre", newSchemaRouter);  // Theaters, Screens
 app.use("/api/admin", newSchemaRouter);  // Admin operations
 app.use("/api/manager", newSchemaRouter);  // Manager operations
+app.use("/api/search", newSchemaRouter);  // Search
 
 // Also mount at /api/v2 for backward compatibility during transition
 app.use("/api/v2", newSchemaRouter);

@@ -73,6 +73,10 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const getAuthHeaders = () => {
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const getTheatresByManager = async (managerId) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const { data } = await axios.get(`/api/theatre/theaters/manager/${managerId}`, { headers });
