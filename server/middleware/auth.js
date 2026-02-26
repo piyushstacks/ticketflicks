@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import UserNew from "../models/User_new.js";
 
 export const protectAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization || "";
@@ -41,7 +42,8 @@ export const protectManager = async (req, res, next) => {
     console.log("protectManager: decoded:", decoded);
     
     // Check if user exists and has manager role
-    const user = await User.findById(decoded.id);
+    // Login in the frontend uses the new schema user collection, so we support both.
+    const user = (await User.findById(decoded.id)) || (await UserNew.findById(decoded.id));
     console.log("protectManager: user found:", !!user);
     console.log("protectManager: user role:", user?.role);
     if (!user || user.role !== "manager") {
@@ -74,7 +76,8 @@ export const protectAdminOnly = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Check if user exists and has admin role
-    const user = await User.findById(decoded.id);
+    // Login in the frontend uses the new schema user collection, so we support both.
+    const user = (await User.findById(decoded.id)) || (await UserNew.findById(decoded.id));
     if (!user || user.role !== "admin") {
       return res.json({ success: false, message: "not authorized - admin role required" });
     }

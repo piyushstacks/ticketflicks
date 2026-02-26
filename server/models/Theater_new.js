@@ -20,6 +20,15 @@ const theaterSchema = new mongoose.Schema({
     type: String, 
     trim: true 
   },
+  approval_status: { 
+    type: String, 
+    enum: ["pending", "approved", "declined"], 
+    default: "pending" 
+  },
+  disabled: { 
+    type: Boolean, 
+    default: false 
+  },
   isDeleted: { 
     type: Boolean, 
     default: false 

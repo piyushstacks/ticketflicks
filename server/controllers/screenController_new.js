@@ -142,6 +142,31 @@ export const deleteScreen = async (req, res) => {
   }
 };
 
+// Update screen status (enable/disable)
+export const updateScreenStatus = async (req, res) => {
+  try {
+    const { screenId } = req.params;
+    const { status } = req.body;
+
+    const screen = await Screen.findById(screenId);
+    if (!screen) {
+      return res.json({ success: false, message: "Screen not found" });
+    }
+
+    screen.status = status;
+    await screen.save();
+
+    res.json({
+      success: true,
+      message: "Screen status updated successfully",
+      screen,
+    });
+  } catch (error) {
+    console.error("[updateScreenStatus]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export default {
   createScreen,
   getAllScreens,
@@ -149,4 +174,5 @@ export default {
   getScreen,
   updateScreen,
   deleteScreen,
+  updateScreenStatus,
 };

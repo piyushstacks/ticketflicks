@@ -1,5 +1,5 @@
 import Theatre from "../models/Theatre.js";
-import User from "../models/User.js";
+import User from "../models/User_new.js";
 import Otp from "../models/Otp.js";
 import ScreenTbl from "../models/ScreenTbl.js";
 import bcryptjs from "bcryptjs";
@@ -84,7 +84,11 @@ export const requestTheatreRegistrationOtp = async (req, res) => {
     }
 
     console.log("SUCCESS: OTP sent successfully");
-    res.json({ success: true, message: "OTP sent to your email" });
+    const responseBody = { success: true, message: "OTP sent to your email" };
+    if (process.env.NODE_ENV !== "production") {
+      responseBody.devOtp = otp;
+    }
+    res.json(responseBody);
   } catch (error) {
     console.error("=== THEATRE OTP REQUEST ERROR ===");
     console.error("Error sending theatre registration OTP:", error);
@@ -150,6 +154,13 @@ export const registerTheatre = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase();
+    const normalizedPhone = (phone || "").replace(/\D/g, "");
+    if (!normalizedPhone || normalizedPhone.length !== 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number must be exactly 10 digits",
+      });
+    }
 
     // Verify OTP
     const otpDoc = await Otp.findOne({ 
@@ -193,7 +204,8 @@ export const registerTheatre = async (req, res) => {
     }
 
     // Validate contact number if provided
-    if (contact_no && !/^\d{10}$/.test(contact_no)) {
+    const normalizedContactNo = (contact_no || "").replace(/\D/g, "");
+    if (normalizedContactNo && normalizedContactNo.length !== 10) {
       return res.status(400).json({
         success: false,
         message: "Contact number must be exactly 10 digits",
@@ -207,7 +219,7 @@ export const registerTheatre = async (req, res) => {
     const newManager = new User({
       name,
       email: normalizedEmail,
-      phone,
+      phone: normalizedPhone,
       password_hash: hashedPassword,
       role: "pending_manager", // Changed from "manager" to prevent login until approved
     });
@@ -218,7 +230,7 @@ export const registerTheatre = async (req, res) => {
     const newTheatre = new Theatre({
       name: theatreName,
       location,
-      contact_no,
+      contact_no: normalizedContactNo,
       email: theatreEmail || '',
       address: address || '',
       city: city || '',

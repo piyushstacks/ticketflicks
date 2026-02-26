@@ -48,7 +48,19 @@ export const createTheater = async (req, res) => {
 // Get all theaters
 export const getAllTheaters = async (req, res) => {
   try {
-    const theaters = await Theater.find({ isDeleted: false })
+    const { status, disabled } = req.query;
+    
+    let filter = { isDeleted: false };
+    
+    if (status) {
+      filter.approval_status = status;
+    }
+    
+    if (disabled !== undefined) {
+      filter.disabled = disabled === 'true';
+    }
+    
+    const theaters = await Theater.find(filter)
       .populate("u_id", "name email")
       .sort({ createdAt: -1 });
 
