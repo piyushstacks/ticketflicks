@@ -1,7 +1,7 @@
-import Theatre from "../models/Theatre.js";
+import Theatre from "../models/Theater_new.js";
 import User from "../models/User_new.js";
 import Otp from "../models/Otp.js";
-import ScreenTbl from "../models/ScreenTbl.js";
+import ScreenTbl from "../models/Screen_new.js";
 import bcryptjs from "bcryptjs";
 import sendEmail from "../configs/nodeMailer.js";
 
@@ -226,18 +226,15 @@ export const registerTheatre = async (req, res) => {
 
     const savedManager = await newManager.save();
 
-    // Create theatre with pending approval status
+    // Create theatre with pending approval status (new schema)
     const newTheatre = new Theatre({
       name: theatreName,
       location,
       contact_no: normalizedContactNo,
-      email: theatreEmail || '',
-      address: address || '',
-      city: city || '',
-      state: state || '',
-      zipCode: zipCode || '',
-      manager_id: savedManager._id,
-      approval_status: 'pending', // Set to pending until admin approval
+      u_id: savedManager._id,
+      approval_status: "pending",
+      disabled: false,
+      isDeleted: false,
     });
 
     const savedTheatre = await newTheatre.save();
@@ -320,56 +317,42 @@ export const registerTheatre = async (req, res) => {
       }
 
       return {
-        name: screenData.name || `Screen ${index + 1}`, // Add name field for Screen model
-        screenNumber: screenData.name || `Screen ${index + 1}`,
-        theatre: savedTheatre._id,
-        seatLayout: {
-          layout: screenData.layout.layout || [], // Add the 2D layout array
-          rows: screenData.layout.rows,
-          seatsPerRow: screenData.layout.seatsPerRow,
-          totalSeats: screenData.layout.totalSeats,
-        },
-        seatTiers: seatTiers,
-        isActive: true,
+        Tid: savedTheatre._id,
+        name: screenData.name || `Screen ${index + 1}`,
+        capacity: Number(screenData.layout.totalSeats || 0),
+        isDeleted: false,
       };
     });
 
     // Validate screen documents before insertion
     for (let i = 0; i < screenDocs.length; i++) {
       const screenDoc = screenDocs[i];
-      if (!screenDoc.seatLayout.layout || screenDoc.seatLayout.layout.length === 0) {
-        throw new Error(`Screen ${i + 1} has invalid seat layout`);
+      if (!screenDoc.Tid) {
+        throw new Error(`Screen ${i + 1} is missing theatre reference`);
       }
-      if (!screenDoc.seatTiers || screenDoc.seatTiers.length === 0) {
-        throw new Error(`Screen ${i + 1} has no seat tiers defined`);
+      if (!screenDoc.name) {
+        throw new Error(`Screen ${i + 1} is missing a name`);
+      }
+      if (!Number.isFinite(screenDoc.capacity) || screenDoc.capacity < 10) {
+        throw new Error(`Screen ${i + 1} has invalid capacity`);
       }
     }
 
-    if (screenDocs.length > 0) {
-      try {
-        console.log("Attempting to insert screen documents:", screenDocs.map(doc => ({
-          name: doc.name,
-          theatre: doc.theatre,
-          layoutRows: doc.seatLayout.rows,
-          layoutCols: doc.seatLayout.seatsPerRow,
-          totalSeats: doc.seatLayout.totalSeats,
-          tierCount: doc.seatTiers.length
-        })));
-        
-        const insertedScreens = await ScreenTbl.insertMany(screenDocs);
-        console.log("Successfully inserted screens:", insertedScreens.length);
-      } catch (screenError) {
-        console.error("Error inserting screens:", screenError);
-        // Clean up created user and theatre if screen insertion fails
-        await User.findByIdAndDelete(savedManager._id);
-        await Theatre.findByIdAndDelete(savedTheatre._id);
-        
-        return res.status(500).json({
-          success: false,
-          message: "Error creating screen configurations",
-          error: screenError.message,
-        });
-      }
+    // Insert Screen documents (new schema)
+    try {
+      const insertedScreens = await ScreenTbl.insertMany(screenDocs);
+      console.log("Successfully inserted screens:", insertedScreens.length);
+    } catch (screenError) {
+      console.error("Error inserting screens:", screenError);
+      // Clean up created user and theatre if screen insertion fails
+      await User.findByIdAndDelete(savedManager._id);
+      await Theatre.findByIdAndDelete(savedTheatre._id);
+
+      return res.status(500).json({
+        success: false,
+        message: "Error creating screen configurations",
+        error: screenError.message,
+      });
     }
 
     // Delete all OTPs for this email after successful registration
@@ -463,10 +446,13 @@ export const registerTheatre = async (req, res) => {
 // Fetch all theatres
 export const fetchAllTheatres = async (req, res) => {
   try {
-    const theatres = await Theatre.find({ 
-      disabled: { $ne: true },
-      approval_status: 'approved' 
-    }).populate("manager_id", "name email phone");
+    const { status, disabled } = req.query;
+
+    const filter = { isDeleted: false };
+    if (status) filter.approval_status = status;
+    if (disabled !== undefined) filter.disabled = disabled === "true";
+
+    const theatres = await Theatre.find(filter).populate("u_id", "name email phone");
     res.status(200).json({
       success: true,
       theatres,
@@ -646,7 +632,7 @@ export const deleteTheatre = async (req, res) => {
 export const getTheatresByManager = async (req, res) => {
   try {
     const { managerId } = req.params;
-    const theatres = await Theatre.find({ manager_id: managerId });
+    const theatres = await Theatre.find({ u_id: managerId, isDeleted: false });
     
     res.status(200).json({
       success: true,
