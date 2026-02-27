@@ -1,17 +1,17 @@
 import mongoose from "mongoose";
 import { inngest } from "../inngest/index.js";
-import BookingNew from "../models/Booking_new.js";
-import ShowNew from "../models/Show_new.js";
-import UserNew from "../models/User_new.js";
-import TheaterNew from "../models/Theater_new.js";
-import ScreenNew from "../models/Screen_new.js";
-import MovieNew from "../models/Movie_new.js";
+import Booking from "../models/Booking.js";
+import Show from "../models/show_tbls.js";
+import User from "../models/User.js";
+import Theatre from "../models/Theatre.js";
+import Screen from "../models/Screen.js";
+import Movie from "../models/Movie.js";
 import bcryptjs from "bcryptjs";
 import sendEmail from "../configs/nodeMailer.js";
 
 export const isAdmin = async (req, res) => {
   try {
-    const user = await UserNew.findById(req.user.id);
+    const user = await User.findById(req.user.id);
     const isAdminUser = user && user.role === "admin";
     res.json({ success: true, isAdmin: isAdminUser });
   } catch (error) {
@@ -22,16 +22,16 @@ export const isAdmin = async (req, res) => {
 //API to get dashboard data
 export const fetchDashboardData = async (req, res) => {
   try {
-    const bookings = await BookingNew.find({ isPaid: true });
-    const activeShows = await ShowNew.find({
-      showDate: { $gte: new Date() },
+    const bookings = await Booking.find({ isPaid: true });
+    const activeShows = await Show.find({
+      show_date: { $gte: new Date() },
     }).populate("movie_id");
 
-    const totalUser = await UserNew.countDocuments();
+    const totalUser = await User.countDocuments();
 
     const dashboardData = {
       totalBookings: bookings.length,
-      totalRevenue: bookings.reduce((acc, booking) => acc + booking.amount, 0),
+      totalRevenue: bookings.reduce((acc, booking) => acc + booking.total_amount, 0),
       activeShows,
       totalUser,
     };
@@ -46,7 +46,7 @@ export const fetchDashboardData = async (req, res) => {
 // Get pending theatre registrations - New
 export const getPendingTheatres = async (req, res) => {
   try {
-    const user = await UserNew.findById(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== "admin") {
       return res.json({
         success: false,
@@ -54,7 +54,7 @@ export const getPendingTheatres = async (req, res) => {
       });
     }
 
-    const pendingTheatres = await TheaterNew.find({ approval_status: "pending" })
+    const pendingTheatres = await Theatre.find({ approval_status: "pending" })
       .populate("manager_id", "name email phone")
       .sort({ createdAt: -1 });
 
@@ -68,7 +68,7 @@ export const getPendingTheatres = async (req, res) => {
 // Approve theatre registration - New
 export const approveTheatre = async (req, res) => {
   try {
-    const user = await UserNew.findById(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== "admin") {
       return res.json({
         success: false,
@@ -83,7 +83,7 @@ export const approveTheatre = async (req, res) => {
       return res.json({ success: false, message: "Invalid action" });
     }
 
-    const theatre = await TheaterNew.findById(theatreId);
+    const theatre = await Theatre.findById(theatreId);
     console.log("[DEBUG] approveTheatre - theatre found:", theatre?._id);
     console.log("[DEBUG] approveTheatre - raw manager_id:", theatre?.manager_id);
     
@@ -94,7 +94,7 @@ export const approveTheatre = async (req, res) => {
     // Look up manager directly instead of populate
     let manager = null;
     if (theatre.manager_id) {
-      manager = await UserNew.findById(theatre.manager_id);
+      manager = await User.findById(theatre.manager_id);
       console.log("[DEBUG] approveTheatre - manager lookup result:", manager?._id, manager?.name);
     }
     
@@ -195,7 +195,7 @@ export const approveTheatre = async (req, res) => {
 //API to get all shows
 export const fetchAllShows = async (req, res) => {
   try {
-    const shows = await ShowNew.find({ show_date: { $gte: new Date() }, isActive: true })
+    const shows = await Show.find({ show_date: { $gte: new Date() }, isActive: true })
       .populate("movie_id")
       .populate("theater_id")
       .populate("screen_id")
@@ -211,7 +211,7 @@ export const fetchAllShows = async (req, res) => {
 //API to get all bookings
 export const fetchAllBookings = async (req, res) => {
   try {
-    const bookings = await BookingNew.find({})
+    const bookings = await Booking.find({})
       .populate({
         path: "show_id",
         populate: [
@@ -233,7 +233,7 @@ export const fetchAllBookings = async (req, res) => {
 //API to get all screens from approved theatres only
 export const fetchAllScreens = async (req, res) => {
   try {
-    const screens = await ScreenNew.find({ isDeleted: false })
+    const screens = await Screen.find({ isDeleted: false })
       .populate({
         path: "Tid",
         match: { approval_status: "approved", disabled: false, isDeleted: false },
@@ -269,7 +269,7 @@ export const fetchAllScreens = async (req, res) => {
 // Admin Dashboard Data - New
 export const dashboardAdminData = async (req, res) => {
   try {
-    const user = await UserNew.findById(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== "admin") {
       return res.json({
         success: false,
@@ -277,9 +277,9 @@ export const dashboardAdminData = async (req, res) => {
       });
     }
 
-    const totalTheatres = await TheaterNew.countDocuments();
-    const activeUsers = await UserNew.countDocuments({ role: "customer" });
-    const paidBookings = await BookingNew.find({ isPaid: true });
+    const totalTheatres = await Theatre.countDocuments();
+    const activeUsers = await User.countDocuments({ role: "customer" });
+    const paidBookings = await Booking.find({ isPaid: true });
     const totalRevenue = paidBookings.reduce(
       (sum, b) => sum + (b.total_amount || 0),
       0,
@@ -288,7 +288,7 @@ export const dashboardAdminData = async (req, res) => {
     res.json({
       success: true,
       data: {
-        totalTheaterNews,
+        totalTheatres,
         activeUsers,
         totalRevenue,
         totalBookings: paidBookings.length,

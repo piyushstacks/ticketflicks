@@ -1,7 +1,7 @@
-import TheaterNew from "../models/Theater_new.js";
-import UserNew from "../models/User_new.js";
+import Theatre from "../models/Theatre.js";
+import User from "../models/User.js";
 import Otp from "../models/Otp.js";
-import ScreenNew from "../models/Screen_new.js";
+import Screen from "../models/Screen.js";
 import bcryptjs from "bcryptjs";
 import sendEmail from "../configs/nodeMailer.js";
 
@@ -40,7 +40,7 @@ export const requestTheatreRegistrationOtp = async (req, res) => {
     console.log("Normalized email:", normalizedEmail);
 
     // Check if email already exists
-    const existingUser = await UserNew.findOne({ email: normalizedEmail });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       console.log("ERROR: Email already registered");
       return res.status(400).json({ success: false, message: "Email already registered" });
@@ -186,7 +186,7 @@ export const registerTheatre = async (req, res) => {
     }
 
     // Check if manager email already exists
-    const existingManager = await UserNew.findOne({ email: normalizedEmail });
+    const existingManager = await User.findOne({ email: normalizedEmail });
     if (existingManager) {
       return res.status(409).json({
         success: false,
@@ -215,8 +215,8 @@ export const registerTheatre = async (req, res) => {
     // Hash password
     const hashedPassword = await bcryptjs.hash(password, 10);
 
-    // Create new manager user (approval is handled via TheaterNew.approval_status)
-    const newManager = new UserNew({
+    // Create new manager user (approval is handled via Theatre.approval_status)
+    const newManager = new User({
       name,
       email: normalizedEmail,
       phone: normalizedPhone,
@@ -226,8 +226,8 @@ export const registerTheatre = async (req, res) => {
 
     const savedManager = await newManager.save();
 
-    // Create theatre with pending approval status (using new schema with manager_id)
-    const newTheatre = new TheaterNew({
+    // Create theatre with pending approval status (using consolidated Theatre schema with manager_id)
+    const newTheatre = new Theatre({
       name: theatreName,
       location,
       contact_no: normalizedContactNo,
@@ -353,7 +353,7 @@ export const registerTheatre = async (req, res) => {
     // Insert Screen documents
     try {
       console.log("[DEBUG] Attempting to insert screens:", JSON.stringify(screenDocs, null, 2));
-      const insertedScreens = await ScreenNew.insertMany(screenDocs);
+      const insertedScreens = await Screen.insertMany(screenDocs);
       console.log("Successfully inserted screens:", insertedScreens.length);
     } catch (screenError) {
       console.error("[DEBUG] Error inserting screens:", screenError);
@@ -363,8 +363,8 @@ export const registerTheatre = async (req, res) => {
         console.error("[DEBUG] Validation errors:", JSON.stringify(screenError.errors, null, 2));
       }
       // Clean up created user and theatre if screen insertion fails
-      await UserNew.findByIdAndDelete(savedManager._id);
-      await TheaterNew.findByIdAndDelete(savedTheatre._id);
+      await User.findByIdAndDelete(savedManager._id);
+      await Theatre.findByIdAndDelete(savedTheatre._id);
 
       return res.status(500).json({
         success: false,
