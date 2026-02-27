@@ -1,38 +1,51 @@
 import mongoose from "mongoose";
 
 const showSchema = new mongoose.Schema({
-  movie_id: { 
+  movie: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "Movie", 
     required: true 
   },
-  theater_id: { 
+  theatre: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "Theatre", 
     required: true 
   },
-  screen_id: { 
+  screen: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: "Screen", 
+    ref: "ScreenTbl", 
     required: true 
   },
-  show_date: { 
+  showDateTime: { 
     type: Date, 
     required: true 
   },
-  show_time: {
+  showTime: {
     type: String
   },
-  start_date: {
+  startDate: {
     type: Date
   },
-  end_date: {
+  endDate: {
     type: Date
   },
-  available_seats: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Seat" 
+  language: {
+    type: String
+  },
+  basePrice: {
+    type: Number
+  },
+  seatTiers: [{
+    tierName: { type: String, required: true },
+    price: { type: Number, required: true },
+    seatsPerRow: { type: Number },
+    rowCount: { type: Number },
+    totalSeats: { type: Number },
+    occupiedSeats: { type: mongoose.Schema.Types.Mixed, default: {} }
   }],
+  totalCapacity: {
+    type: Number
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -40,8 +53,8 @@ const showSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Index for faster queries
-showSchema.index({ theater_id: 1, show_date: 1 });
-showSchema.index({ movie_id: 1, show_date: 1 });
+showSchema.index({ theatre: 1, showDateTime: 1 });
+showSchema.index({ movie: 1, showDateTime: 1 });
 
 const Show = mongoose.model("Show", showSchema, "shows_new");
 

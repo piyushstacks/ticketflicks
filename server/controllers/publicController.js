@@ -1,4 +1,4 @@
-import ShowTbls from "../models/Show_new.js";
+import ShowTbls from "../models/show_tbls.js";
 import Movie from "../models/Movie_new.js";
 import Theatre from "../models/Theater_new.js";
 import ScreenTbl from "../models/Screen_new.js";

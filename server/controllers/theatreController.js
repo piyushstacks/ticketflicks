@@ -673,7 +673,7 @@ export const fetchScreensByTheatre = async (req, res) => {
     
     // Fetch screens from ScreenNew
     const screens = await ScreenNew.find({ Tid: id })
-      .populate("theatre", "name location")
+      .populate("Tid", "name location")
       .sort({ name: 1 });
     
     res.json({ success: true, screens });

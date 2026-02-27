@@ -1,85 +1,66 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
-
-// Validation helpers
-const validateEmail = (email) => {
-  if (!email) return "Email is required";
-  if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-    return "Enter a valid email address";
-  }
-  return "";
-};
-
-const validatePassword = (password) => {
-  if (!password) return "Password is required";
-  if (password.length < 8) return "Password must be at least 8 characters";
-  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
-    return "Password must contain at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character (@$!%*?&)";
-  }
-  return "";
-};
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { composeValidators, email as emailValidator, errorId, matchesField, notSameAs, passwordStrong, required } from "../lib/validation.js";
 
 const ChangePasswordModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({
-    email: "",
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [formData, setFormData] = useState({
-    email: "",
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const formId = "change-password-modal";
+  const schema = useMemo(
+    () => ({
+      email: emailValidator("Email"),
+      currentPassword: required("Current password"),
+      newPassword: composeValidators(
+        passwordStrong("New password"),
+        notSameAs("currentPassword", "New password", "current password")
+      ),
+      confirmPassword: composeValidators(required("Confirm new password"), matchesField("newPassword", "Passwords must match")),
+    }),
+    []
+  );
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear field error on typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const validate = () => {
-    const newErrors = {
-      email: validateEmail(formData.email),
-      currentPassword: formData.currentPassword ? "" : "Current password is required",
-      newPassword: validatePassword(formData.newPassword),
-      confirmPassword: formData.newPassword === formData.confirmPassword ? "" : "New passwords do not match",
-    };
-    setErrors(newErrors);
-    return Object.values(newErrors).every((e) => !e);
-  };
+  const { values, errors, touched, getInputProps, validateForm, reset } = useFormValidation({
+    formId,
+    initialValues: { email: "", currentPassword: "", newPassword: "", confirmPassword: "" },
+    schema,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    const { isValid } = validateForm();
+    if (!isValid) return;
 
     setLoading(true);
     try {
-      console.log("[ChangePasswordModal] Attempting password change for email:", formData.email);
+      console.log("[ChangePasswordModal] Attempting password change for email:", values.email);
       // Use public endpoint (no auth required)
-      const response = await fetch("/api/auth/public/change-password", {
+      const response = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.email,
-          currentPassword: formData.currentPassword,
-          newPassword: formData.newPassword,
-          confirmPassword: formData.confirmPassword,
+          email: values.email,
+          currentPassword: values.currentPassword,
+          newPassword: values.newPassword,
+          confirmPassword: values.confirmPassword,
         }),
       });
-      const result = await response.json();
+      const contentType = response.headers.get("content-type") || "";
+      const rawText = await response.text();
+      const result = rawText && contentType.includes("application/json")
+        ? JSON.parse(rawText)
+        : {
+            success: false,
+            message: rawText || `Request failed (${response.status})`,
+          };
+      if (!response.ok && result.success !== true) {
+        throw new Error(result.message || `Request failed (${response.status})`);
+      }
       console.log("[ChangePasswordModal] API response:", result);
       if (result.success) {
         toast.success("Password changed successfully");
         onClose();
-        setFormData({ email: "", currentPassword: "", newPassword: "", confirmPassword: "" });
-        setErrors({ email: "", currentPassword: "", newPassword: "", confirmPassword: "" });
+        reset({ email: "", currentPassword: "", newPassword: "", confirmPassword: "" });
       } else {
         toast.error(result.message || "Failed to change password");
       }
@@ -120,61 +101,53 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Email</label>
+              <label className="text-sm font-medium" htmlFor={`${formId}-email`} style={{ color: "var(--text-secondary)" }}>Email</label>
               <input
+                {...getInputProps("email")}
                 type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
                 placeholder="you@example.com"
-                className={`input-field ${errors.email ? "border-red-500" : ""}`}
+                className="input-field"
                 required
               />
-              {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+              {touched.email && errors.email && <p id={errorId(formId, "email")} className="field-error-text" role="alert">{errors.email}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Current Password</label>
+              <label className="text-sm font-medium" htmlFor={`${formId}-currentPassword`} style={{ color: "var(--text-secondary)" }}>Current Password</label>
               <input
                 type="password"
-                name="currentPassword"
-                value={formData.currentPassword}
-                onChange={handleChange}
+                {...getInputProps("currentPassword")}
                 placeholder="Enter current password"
-                className={`input-field ${errors.currentPassword ? "border-red-500" : ""}`}
+                className="input-field"
                 required
               />
-              {errors.currentPassword && <p className="text-xs text-red-500">{errors.currentPassword}</p>}
+              {touched.currentPassword && errors.currentPassword && <p id={errorId(formId, "currentPassword")} className="field-error-text" role="alert">{errors.currentPassword}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>New Password</label>
+              <label className="text-sm font-medium" htmlFor={`${formId}-newPassword`} style={{ color: "var(--text-secondary)" }}>New Password</label>
               <input
                 type="password"
-                name="newPassword"
-                value={formData.newPassword}
-                onChange={handleChange}
+                {...getInputProps("newPassword")}
                 placeholder="Enter new password"
-                className={`input-field ${errors.newPassword ? "border-red-500" : ""}`}
+                className="input-field"
                 required
                 minLength={8}
               />
-              {errors.newPassword && <p className="text-xs text-red-500">{errors.newPassword}</p>}
+              {touched.newPassword && errors.newPassword && <p id={errorId(formId, "newPassword")} className="field-error-text" role="alert">{errors.newPassword}</p>}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Confirm New Password</label>
+              <label className="text-sm font-medium" htmlFor={`${formId}-confirmPassword`} style={{ color: "var(--text-secondary)" }}>Confirm New Password</label>
               <input
                 type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
+                {...getInputProps("confirmPassword")}
                 placeholder="Confirm new password"
-                className={`input-field ${errors.confirmPassword ? "border-red-500" : ""}`}
+                className="input-field"
                 required
                 minLength={8}
               />
-              {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
+              {touched.confirmPassword && errors.confirmPassword && <p id={errorId(formId, "confirmPassword")} className="field-error-text" role="alert">{errors.confirmPassword}</p>}
             </div>
 
             <button

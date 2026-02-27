@@ -78,9 +78,8 @@ const Navbar = () => {
             <img
               src={assets.logo}
               alt="TicketFlicks"
-              className={`w-32 h-auto transition-all duration-300 ${
-                isDark ? "" : "filter brightness-0 contrast-100"
-              }`}
+              className="w-32 h-auto transition-all duration-300"
+              style={{ filter: "var(--logo-filter, none)" }}
             />
           </Link>
 

@@ -20,7 +20,7 @@ const Theatres = () => {
   const fetchTheatresWithShows = async () => {
     try {
       setLoading(true)
-      const { data } = await axios.get('/api/theatre/')
+      const { data } = await axios.get('/api/theatre?status=approved&disabled=false')
       if (data && data.success) {
         const theatresList = Array.isArray(data.theatres) ? data.theatres : []
         const theatresWithShowsData = await Promise.all(

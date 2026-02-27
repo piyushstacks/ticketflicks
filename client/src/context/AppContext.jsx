@@ -67,7 +67,7 @@ export const AppProvider = ({ children }) => {
     try {
       console.log("[AppContext] Fetching shows from /api/show/all...");
       // First try to get shows (movies with future showtimes)
-      const { data } = await axios.get("/api/show/all");
+      const { data } = await axios.get("/api/show/shows/all");
       console.log("[AppContext] Shows API response:", data);
       
       if (data.success && data.shows && data.shows.length > 0) {
@@ -76,7 +76,7 @@ export const AppProvider = ({ children }) => {
       } else {
         console.log("[AppContext] No shows found, falling back to movies...");
         // If no shows exist, fall back to getting all active movies
-        const moviesResponse = await axios.get("/api/show/movies");
+        const moviesResponse = await axios.get("/api/show/movies/available");
         console.log("[AppContext] Movies API response:", moviesResponse.data);
         
         if (moviesResponse.data.success && moviesResponse.data.movies) {
@@ -90,7 +90,7 @@ export const AppProvider = ({ children }) => {
       handleError("fetchShows", error);
       // On error, try fallback to movies
       try {
-        const moviesResponse = await axios.get("/api/show/movies");
+        const moviesResponse = await axios.get("/api/show/movies/available");
         if (moviesResponse.data.success && moviesResponse.data.movies) {
           setShows(moviesResponse.data.movies);
         }

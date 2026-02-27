@@ -24,8 +24,8 @@ export const fetchDashboardData = async (req, res) => {
   try {
     const bookings = await Booking.find({ isPaid: true });
     const activeShows = await Show.find({
-      show_date: { $gte: new Date() },
-    }).populate("movie_id");
+      showDateTime: { $gte: new Date() },
+    }).populate("movie");
 
     const totalUser = await User.countDocuments();
 
@@ -195,11 +195,11 @@ export const approveTheatre = async (req, res) => {
 //API to get all shows
 export const fetchAllShows = async (req, res) => {
   try {
-    const shows = await Show.find({ show_date: { $gte: new Date() }, isActive: true })
-      .populate("movie_id")
-      .populate("theater_id")
-      .populate("screen_id")
-      .sort({ show_date: 1 });
+    const shows = await Show.find({ showDateTime: { $gte: new Date() }, isActive: true })
+      .populate("movie")
+      .populate("theatre")
+      .populate("screen")
+      .sort({ showDateTime: 1 });
 
     res.json({ success: true, shows });
   } catch (error) {
@@ -215,9 +215,9 @@ export const fetchAllBookings = async (req, res) => {
       .populate({
         path: "show_id",
         populate: [
-          { path: "movie_id" },
-          { path: "theater_id" },
-          { path: "screen_id" },
+          { path: "movie" },
+          { path: "theatre" },
+          { path: "screen" },
         ],
       })
       .populate("user_id")
@@ -670,10 +670,10 @@ export const getAllShows = async (req, res) => {
       });
     }
 
-    const shows = await ShowNew.find({})
-      .populate("movie_id", "title poster_path overview genres")
-      .populate("theater_id", "name location")
-      .sort({ showDate: -1 });
+    const shows = await Show.find({})
+      .populate("movie", "title poster_path overview genres")
+      .populate("theatre", "name location")
+      .sort({ showDateTime: -1 });
 
     console.log("Found shows for admin:", shows.length);
 
@@ -698,7 +698,7 @@ export const getTheatreScreens = async (req, res) => {
     const { theatreId } = req.params;
 
     const screens = await ScreenNew.find({ Tid: theatreId })
-      .populate("theatre", "name location")
+      .populate("Tid", "name location")
       .sort({ name: 1 });
 
     console.log("Found screens for theatre:", theatreId, screens.length);
@@ -724,7 +724,7 @@ export const deleteShow = async (req, res) => {
       });
     }
 
-    const show = await ShowNew.findByIdAndDelete(id);
+    const show = await Show.findByIdAndDelete(id);
     if (!show) {
       return res.status(404).json({
         success: false,
@@ -750,7 +750,7 @@ export const deleteShow = async (req, res) => {
 export const toggleShowStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const show = await ShowNew.findById(id);
+    const show = await Show.findById(id);
 
     if (!show) {
       return res.status(404).json({

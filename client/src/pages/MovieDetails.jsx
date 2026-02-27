@@ -33,18 +33,31 @@ const MovieDetails = () => {
 
   const getShow = async () => {
     try {
-      const { data } = await axios.get(`/api/show/${id}`);
-      if (data.success) {
-        if (data.movie) {
-          setShow({ movie: data.movie, dateTime: data.dateTime || {} });
-        } else if (data.show) {
-          setShow(data.show);
-        } else {
-          setShow(data);
+      // Route param `id` is a MOVIE id (because route is /movies/:id)
+      // Fetch movie details directly.
+      const { data } = await axios.get(`/api/show/movies/${id}`);
+      if (data?.success && data?.movie) {
+        setShow({ movie: data.movie, dateTime: {} });
+        return;
+      }
+
+      // Fallback: derive movie from any active show for this movie.
+      const fallback = await axios.get(`/api/show/shows/movie/${id}`);
+      if (fallback?.data?.success) {
+        const anyShow = Array.isArray(fallback.data.shows)
+          ? fallback.data.shows[0]
+          : null;
+        const movieFromShow = anyShow?.movie_id || anyShow?.movie;
+        if (movieFromShow) {
+          setShow({ movie: movieFromShow, dateTime: {} });
+          return;
         }
       }
+
+      setShow(null);
     } catch (error) {
       console.error(error);
+      setShow(null);
     }
   };
 
@@ -132,7 +145,10 @@ const MovieDetails = () => {
               Watch Trailer
             </a>
             <button
-              onClick={() => { navigate(`/select-show/${id}`); scrollTo(0, 0); }}
+              onClick={() => {
+                navigate(`/select-show/${id}`);
+                window.scrollTo(0, 0);
+              }}
               className="btn-primary px-8 py-2.5 text-sm"
             >
               Book Tickets
@@ -185,7 +201,10 @@ const MovieDetails = () => {
       </div>
       <div className="flex justify-center mt-12">
         <button
-          onClick={() => { navigate("/movies"); scrollTo(0, 0); }}
+          onClick={() => {
+            navigate("/movies");
+            window.scrollTo(0, 0);
+          }}
           className="btn-secondary px-8 py-2.5 text-sm"
         >
           Show More

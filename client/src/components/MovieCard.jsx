@@ -15,6 +15,10 @@ const MovieCard = ({ movie }) => {
   return (
     <div
       className="card card-hover flex flex-col overflow-hidden group"
+      onClick={() => {
+        navigate(`/movies/${movie._id}`);
+        window.scrollTo(0, 0);
+      }}
     >
       {/* Image */}
       <div className="relative overflow-hidden">
@@ -23,7 +27,7 @@ const MovieCard = ({ movie }) => {
           alt={movie.title}
           onClick={() => {
             navigate(`/movies/${movie._id}`);
-            scrollTo(0, 0);
+            window.scrollTo(0, 0);
           }}
           className="aspect-[2/3] w-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
@@ -34,7 +38,7 @@ const MovieCard = ({ movie }) => {
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/select-show/${movie._id}`);
-              scrollTo(0, 0);
+              window.scrollTo(0, 0);
             }}
             className="btn-primary px-6 py-2 text-sm translate-y-0 sm:translate-y-2 sm:group-hover:translate-y-0 transition-transform duration-300"
           >

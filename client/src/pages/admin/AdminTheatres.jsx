@@ -1,7 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Edit2, Ban, MapPin, Users, Phone, CheckCircle, XCircle, Clock, Monitor } from "lucide-react";
+import { AlertCircle, Ban, CheckCircle, Clock, Edit2, MapPin, Monitor, Phone, Users, XCircle } from "lucide-react";
+import { useFormValidation } from "../../hooks/useFormValidation.js";
+import { email as emailValidator, errorId, optional, optionalPhone10, required } from "../../lib/validation.js";
+
+const validateZip = (value) => {
+  const v = (value || "").toString().trim();
+  if (!v) return "";
+  const digits = v.replace(/\D/g, "");
+  if (digits.length !== v.length) return "Zip code must contain only digits";
+  if (digits.length !== 5 && digits.length !== 6) return "Zip code must be 5 or 6 digits";
+  return "";
+};
 
 const AdminTheatres = () => {
   const { axios, getAuthHeaders } = useAppContext();
@@ -15,21 +26,39 @@ const AdminTheatres = () => {
   const [viewingScreens, setViewingScreens] = useState(null);
   const [screens, setScreens] = useState([]);
   const [screensLoading, setScreensLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    location: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    contact_no: "",
-    email: "",
+
+  const formId = "admin-theatre-edit";
+  const schema = useMemo(
+    () => ({
+      name: required("Theatre name"),
+      city: required("City"),
+      state: required("State"),
+      email: optional(emailValidator("Email")),
+      contact_no: optionalPhone10("Contact number"),
+      zipCode: validateZip,
+    }),
+    []
+  );
+
+  const { values: formData, errors, touched, getInputProps, reset, validateForm } = useFormValidation({
+    formId,
+    initialValues: {
+      name: "",
+      location: "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      contact_no: "",
+      email: "",
+    },
+    schema,
   });
 
   const fetchScreens = async (theatreId) => {
     try {
       setScreensLoading(true);
-      const { data } = await axios.get(`/api/theatre/screens/theater/${theatreId}`, {
+      const { data } = await axios.get(`/api/admin/theatres/${theatreId}/screens`, {
         headers: getAuthHeaders(),
       });
 
@@ -55,13 +84,11 @@ const AdminTheatres = () => {
     try {
       setLoading(true);
       
-      // Fetch all theatres (pending filter applied client-side or server-side)
-      const pendingResponse = await axios.get("/api/theatre/theaters", {
+      const pendingResponse = await axios.get("/api/admin/theatres/pending", {
         headers: getAuthHeaders(),
       });
 
-      // Fetch approved theatres
-      const approvedResponse = await axios.get("/api/theatre/theaters", {
+      const approvedResponse = await axios.get("/api/admin/theatres", {
         headers: getAuthHeaders(),
       });
 
@@ -89,21 +116,10 @@ const AdminTheatres = () => {
     fetchTheatres();
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.name || !formData.city || !formData.state) {
-      toast.error("Please fill required fields");
-      return;
-    }
+    const { isValid } = validateForm();
+    if (!isValid) return;
 
     try {
       // Only handle editing existing theatres, not adding new ones
@@ -113,7 +129,7 @@ const AdminTheatres = () => {
       }
 
       const response = await axios.put(
-        `/api/theatre/theaters/${editingId}`,
+        `/api/admin/theatres/${editingId}`,
         formData,
         { headers: getAuthHeaders() }
       );
@@ -121,7 +137,7 @@ const AdminTheatres = () => {
       const { data } = response;
       if (data.success) {
         toast.success(data.message);
-        setFormData({
+        reset({
           name: "",
           location: "",
           address: "",
@@ -144,12 +160,12 @@ const AdminTheatres = () => {
   };
 
   const handleEdit = (theatre) => {
-    setFormData({
-      name: theatre.name,
-      location: theatre.location,
-      address: theatre.address,
-      city: theatre.city,
-      state: theatre.state,
+    reset({
+      name: theatre.name || "",
+      location: theatre.location || "",
+      address: theatre.address || "",
+      city: theatre.city || "",
+      state: theatre.state || "",
       zipCode: theatre.zipCode || "",
       contact_no: theatre.contact_no || "",
       email: theatre.email || "",
@@ -163,8 +179,8 @@ const AdminTheatres = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/theatre/theaters/${theatreId}`,
-        { status: 'inactive' },
+        `/api/admin/theatres/${theatreId}/disable`,
+        {},
         { headers: getAuthHeaders() }
       );
 
@@ -185,8 +201,8 @@ const AdminTheatres = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/theatre/theaters/${theatreId}`,
-        { status: 'active' },
+        `/api/admin/theatres/${theatreId}/enable`,
+        {},
         { headers: getAuthHeaders() }
       );
 
@@ -204,10 +220,9 @@ const AdminTheatres = () => {
 
   const handleApproveTheatre = async (theatreId, action) => {
     try {
-      // Approve/decline theatre - using update endpoint
       const { data } = await axios.put(
-        `/api/theatre/theaters/${theatreId}`,
-        { approval_status: action === "approve" ? "approved" : "declined" },
+        `/api/admin/theatres/${theatreId}/approve`,
+        { action },
         { headers: getAuthHeaders() }
       );
 
@@ -226,7 +241,7 @@ const AdminTheatres = () => {
   const handleCancel = () => {
     setShowForm(false);
     setEditingId(null);
-    setFormData({
+    reset({
       name: "",
       location: "",
       address: "",
@@ -291,73 +306,99 @@ const AdminTheatres = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="min-w-0">
+                <div className="relative">
+                  <input
+                    {...getInputProps("name")}
+                    type="text"
+                    placeholder="Theatre Name *"
+                    required
+                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                  />
+                  {touched.name && errors.name && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
+                  )}
+                </div>
+                {touched.name && errors.name && <p id={errorId(formId, "name")} className="field-error-text mt-1">{errors.name}</p>}
+              </div>
+
               <input
+                {...getInputProps("location")}
                 type="text"
-                name="name"
-                placeholder="Theatre Name *"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="text"
-                name="location"
                 placeholder="Location"
-                value={formData.location}
-                onChange={handleInputChange}
                 className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
+
               <input
+                {...getInputProps("address")}
                 type="text"
-                name="address"
                 placeholder="Address"
-                value={formData.address}
-                onChange={handleInputChange}
                 className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
-              <input
-                type="text"
-                name="city"
-                placeholder="City *"
-                value={formData.city}
-                onChange={handleInputChange}
-                required
-                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="text"
-                name="state"
-                placeholder="State *"
-                value={formData.state}
-                onChange={handleInputChange}
-                required
-                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="text"
-                name="zipCode"
-                placeholder="Zip Code"
-                value={formData.zipCode}
-                onChange={handleInputChange}
-                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="tel"
-                name="contact_no"
-                placeholder="Contact / Phone"
-                value={formData.contact_no}
-                onChange={handleInputChange}
-                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
+
+              <div className="min-w-0">
+                <div className="relative">
+                  <input
+                    {...getInputProps("city")}
+                    type="text"
+                    placeholder="City *"
+                    required
+                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                  />
+                  {touched.city && errors.city && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
+                  )}
+                </div>
+                {touched.city && errors.city && <p id={errorId(formId, "city")} className="field-error-text mt-1">{errors.city}</p>}
+              </div>
+
+              <div className="min-w-0">
+                <div className="relative">
+                  <input
+                    {...getInputProps("state")}
+                    type="text"
+                    placeholder="State *"
+                    required
+                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                  />
+                  {touched.state && errors.state && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
+                  )}
+                </div>
+                {touched.state && errors.state && <p id={errorId(formId, "state")} className="field-error-text mt-1">{errors.state}</p>}
+              </div>
+
+              <div className="min-w-0">
+                <input
+                  {...getInputProps("zipCode")}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Zip Code"
+                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+                {touched.zipCode && errors.zipCode && <p id={errorId(formId, "zipCode")} className="field-error-text mt-1">{errors.zipCode}</p>}
+              </div>
+
+              <div className="min-w-0">
+                <input
+                  {...getInputProps("contact_no")}
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="Contact / Phone"
+                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+                {touched.contact_no && errors.contact_no && <p id={errorId(formId, "contact_no")} className="field-error-text mt-1">{errors.contact_no}</p>}
+              </div>
+
+              <div className="min-w-0">
+                <input
+                  {...getInputProps("email")}
+                  type="email"
+                  placeholder="Email"
+                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                />
+                {touched.email && errors.email && <p id={errorId(formId, "email")} className="field-error-text mt-1">{errors.email}</p>}
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2 sm:gap-3 justify-end pt-2">

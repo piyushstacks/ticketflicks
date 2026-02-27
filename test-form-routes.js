@@ -111,7 +111,7 @@ async function testUserRoutes() {
   
   // Test signup
   info('Testing user signup...');
-  const signupResult = await testEndpoint('POST', '/api/user/signup', testUser);
+  const signupResult = await testEndpoint('POST', '/api/user/users/register', testUser);
   if (signupResult.ok) {
     success('User signup working');
     return signupResult.data.token;
@@ -126,7 +126,7 @@ async function testAuthRoutes(token) {
   
   // Test login
   info('Testing user login...');
-  const loginResult = await testEndpoint('POST', '/api/user/login', {
+  const loginResult = await testEndpoint('POST', '/api/user/users/login', {
     email: testUser.email,
     password: testUser.password
   });
@@ -145,7 +145,7 @@ async function testPasswordRoutes() {
   
   // Test forgot password
   info('Testing forgot password...');
-  const forgotResult = await testEndpoint('POST', '/api/user/forgot-password', {
+  const forgotResult = await testEndpoint('POST', '/api/user/users/forgot-password', {
     email: testUser.email
   });
   
@@ -169,16 +169,44 @@ async function testTheatreRoutes() {
     success('Theatre OTP request working');
   } else {
     error(`Theatre OTP request failed: ${otpResult.data?.message || otpResult.error}`);
+    return;
   }
   
-  // Test fetch all theatres
-  info('Testing fetch all theatres...');
-  const theatresResult = await testEndpoint('GET', '/api/theatre/');
-  
-  if (theatresResult.ok) {
-    success('Fetch theatres working');
+  const devOtp = otpResult.data?.devOtp;
+  if (!devOtp) {
+    warning('No devOtp returned (NODE_ENV may be production). Skipping registration completion test.');
+    return;
+  }
+
+  info('Testing theatre registration completion...');
+  const screenLayout = {
+    key: 'test-layout',
+    rows: 2,
+    seatsPerRow: 5,
+    totalSeats: 10,
+    layout: [
+      ['S', 'S', 'S', 'S', 'S'],
+      ['S', 'S', 'S', 'S', 'S'],
+    ],
+  };
+
+  const registerResult = await testEndpoint('POST', '/api/theatre/register', {
+    manager: testManager,
+    theatre: testTheatre,
+    screens: [
+      {
+        name: 'Screen 1',
+        layout: screenLayout,
+        pricing: { unified: 150 },
+      },
+    ],
+    otp: devOtp,
+  });
+
+  if (registerResult.ok && registerResult.data?.success) {
+    success('Theatre registration completion working');
   } else {
-    error(`Fetch theatres failed: ${theatresResult.data?.message || theatresResult.error}`);
+    error(`Theatre registration completion failed: ${registerResult.data?.message || registerResult.error}`);
   }
 }
 

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import {
+  AlertCircle,
   Edit2,
   Plus,
   Eye,
@@ -18,6 +19,7 @@ import {
   Trash2,
   Link,
 } from "lucide-react";
+import { composeValidators, dateNotPast, dateRequired, errorId, maxLength, numberMin, optional, required, url as urlValidator } from "../../lib/validation.js";
 
 const AdminMovies = () => {
   const { axios, getAuthHeaders } = useAppContext();
@@ -42,10 +44,46 @@ const AdminMovies = () => {
     reviews: ["", "", "", "", ""], // 5 default empty review URL fields
   });
 
+  const formId = "admin-movie";
+  const [touched, setTouched] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validators = useMemo(
+    () => ({
+      title: composeValidators(required("Movie title"), maxLength("Movie title", 120)),
+      release_date: composeValidators(dateRequired("Release date"), dateNotPast("Release date")),
+      overview: composeValidators(required("Movie overview"), maxLength("Movie overview", 2000)),
+      poster_path: optional(urlValidator("Poster URL")),
+      backdrop_path: optional(urlValidator("Backdrop URL")),
+      trailer_path: optional(urlValidator("Trailer URL")),
+      runtime: optional(numberMin("Runtime (minutes)", 1)),
+      tagline: optional(maxLength("Tagline", 140)),
+    }),
+    []
+  );
+
+  const validateField = (name, nextValues) => {
+    const validator = validators[name];
+    if (!validator) return "";
+    return validator(nextValues[name], nextValues) || "";
+  };
+
+  const touchAndValidate = (name, nextValues) => {
+    setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
+    const error = validateField(name, nextValues);
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      if (error) next[name] = error;
+      else delete next[name];
+      return next;
+    });
+    return error;
+  };
+
   const fetchMovies = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/show/movies", {
+      const { data } = await axios.get("/api/admin/movies", {
         headers: getAuthHeaders(),
       });
 
@@ -68,10 +106,13 @@ const AdminMovies = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (touched[name]) {
+        touchAndValidate(name, next);
+      }
+      return next;
+    });
   };
 
   const handleGenreChange = (genreId) => {
@@ -192,21 +233,26 @@ const AdminMovies = () => {
     return today.toISOString().split('T')[0];
   };
 
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    if (!name) return;
+    touchAndValidate(name, formData);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.overview || !formData.release_date) {
-      toast.error("Please fill required fields");
-      return;
+    const nextTouched = {};
+    const nextErrors = {};
+    for (const name of Object.keys(validators)) {
+      nextTouched[name] = true;
+      const error = validateField(name, formData);
+      if (error) nextErrors[name] = error;
     }
-
-    // Validate release date is not in the past
-    const releaseDate = new Date(formData.release_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (releaseDate < today) {
-      toast.error("Release date cannot be in the past. Please select today or a future date.");
+    setTouched((prev) => ({ ...nextTouched, ...prev }));
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error(Object.values(nextErrors)[0]);
       return;
     }
 
@@ -233,12 +279,12 @@ const AdminMovies = () => {
 
       if (editingId) {
         response = await axios.put(
-          `/api/show/movies/${editingId}`,
+          `/api/admin/movies/${editingId}`,
           submitData,
           { headers: getAuthHeaders() },
         );
       } else {
-        response = await axios.post("/api/show/movies", submitData, {
+        response = await axios.post("/api/admin/movies/create", submitData, {
           headers: getAuthHeaders(),
         });
       }
@@ -301,7 +347,9 @@ const AdminMovies = () => {
       casts: movie.casts || [],
       reviews: reviews,
     });
-    setEditingId(movie._id || movie.id);
+    setTouched({});
+    setFieldErrors({});
+    setEditingId(movie._id);
     setShowForm(true);
   };
 
@@ -315,7 +363,7 @@ const AdminMovies = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/show/movies/${movieId}`,
+        `/api/admin/movies/${movieId}`,
         { isActive: false },
         { headers: getAuthHeaders() },
       );
@@ -342,7 +390,7 @@ const AdminMovies = () => {
 
     try {
       const { data } = await axios.put(
-        `/api/show/movies/${movieId}`,
+        `/api/admin/movies/${movieId}`,
         { isActive: true },
         { headers: getAuthHeaders() },
       );
@@ -362,6 +410,8 @@ const AdminMovies = () => {
   const handleCancel = () => {
     setShowForm(false);
     setEditingId(null);
+    setTouched({});
+    setFieldErrors({});
     setFormData({
       title: "",
       overview: "",
@@ -432,16 +482,29 @@ const AdminMovies = () => {
                 >
                   Movie Title *
                 </label>
-                <input
-                  id="title"
-                  type="text"
-                  name="title"
-                  placeholder="Enter movie title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                />
+                <div className="relative">
+                  <input
+                    id="title"
+                    type="text"
+                    name="title"
+                    placeholder="Enter movie title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.title && fieldErrors.title ? "true" : undefined}
+                    aria-describedby={touched.title && fieldErrors.title ? errorId(formId, "title") : undefined}
+                    required
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                  />
+                  {touched.title && fieldErrors.title && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
+                  )}
+                </div>
+                {touched.title && fieldErrors.title && (
+                  <p id={errorId(formId, "title")} className="field-error-text mt-1" role="alert">
+                    {fieldErrors.title}
+                  </p>
+                )}
               </div>
               <div>
                 <label
@@ -450,16 +513,29 @@ const AdminMovies = () => {
                 >
                   Release Date *
                 </label>
-                <input
-                  id="release_date"
-                  type="date"
-                  name="release_date"
-                  value={formData.release_date}
-                  onChange={handleInputChange}
-                  min={getTodayString()}
-                  required
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-                />
+                <div className="relative">
+                  <input
+                    id="release_date"
+                    type="date"
+                    name="release_date"
+                    value={formData.release_date}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.release_date && fieldErrors.release_date ? "true" : undefined}
+                    aria-describedby={touched.release_date && fieldErrors.release_date ? errorId(formId, "release_date") : undefined}
+                    min={getTodayString()}
+                    required
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                  />
+                  {touched.release_date && fieldErrors.release_date && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
+                  )}
+                </div>
+                {touched.release_date && fieldErrors.release_date && (
+                  <p id={errorId(formId, "release_date")} className="field-error-text mt-1" role="alert">
+                    {fieldErrors.release_date}
+                  </p>
+                )}
               </div>
               <div>
                 <label
@@ -476,8 +552,16 @@ const AdminMovies = () => {
                     placeholder="https://example.com/poster.jpg"
                     value={formData.poster_path}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.poster_path && fieldErrors.poster_path ? "true" : undefined}
+                    aria-describedby={touched.poster_path && fieldErrors.poster_path ? errorId(formId, "poster_path") : undefined}
                     className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                   />
+                  {touched.poster_path && fieldErrors.poster_path && (
+                    <p id={errorId(formId, "poster_path")} className="field-error-text" role="alert">
+                      {fieldErrors.poster_path}
+                    </p>
+                  )}
                   {formData.poster_path && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-400 mb-1">Preview:</p>
@@ -509,8 +593,16 @@ const AdminMovies = () => {
                     placeholder="https://example.com/backdrop.jpg"
                     value={formData.backdrop_path}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.backdrop_path && fieldErrors.backdrop_path ? "true" : undefined}
+                    aria-describedby={touched.backdrop_path && fieldErrors.backdrop_path ? errorId(formId, "backdrop_path") : undefined}
                     className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                   />
+                  {touched.backdrop_path && fieldErrors.backdrop_path && (
+                    <p id={errorId(formId, "backdrop_path")} className="field-error-text" role="alert">
+                      {fieldErrors.backdrop_path}
+                    </p>
+                  )}
                   {formData.backdrop_path && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-400 mb-1">Preview:</p>
@@ -541,8 +633,16 @@ const AdminMovies = () => {
                   placeholder="https://www.youtube.com/watch?v=..."
                   value={formData.trailer_path}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  aria-invalid={touched.trailer_path && fieldErrors.trailer_path ? "true" : undefined}
+                  aria-describedby={touched.trailer_path && fieldErrors.trailer_path ? errorId(formId, "trailer_path") : undefined}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                 />
+                {touched.trailer_path && fieldErrors.trailer_path && (
+                  <p id={errorId(formId, "trailer_path")} className="field-error-text mt-1" role="alert">
+                    {fieldErrors.trailer_path}
+                  </p>
+                )}
               </div>
               <div>
                 <label
@@ -558,9 +658,17 @@ const AdminMovies = () => {
                   placeholder="120"
                   value={formData.runtime}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  aria-invalid={touched.runtime && fieldErrors.runtime ? "true" : undefined}
+                  aria-describedby={touched.runtime && fieldErrors.runtime ? errorId(formId, "runtime") : undefined}
                   min="1"
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                 />
+                {touched.runtime && fieldErrors.runtime && (
+                  <p id={errorId(formId, "runtime")} className="field-error-text mt-1" role="alert">
+                    {fieldErrors.runtime}
+                  </p>
+                )}
               </div>
               <div>
                 <label
@@ -576,8 +684,16 @@ const AdminMovies = () => {
                   placeholder="Enter movie tagline"
                   value={formData.tagline}
                   onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  aria-invalid={touched.tagline && fieldErrors.tagline ? "true" : undefined}
+                  aria-describedby={touched.tagline && fieldErrors.tagline ? errorId(formId, "tagline") : undefined}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                 />
+                {touched.tagline && fieldErrors.tagline && (
+                  <p id={errorId(formId, "tagline")} className="field-error-text mt-1" role="alert">
+                    {fieldErrors.tagline}
+                  </p>
+                )}
               </div>
               <div>
                 <label
@@ -614,10 +730,18 @@ const AdminMovies = () => {
                 placeholder="Enter movie overview/synopsis"
                 value={formData.overview}
                 onChange={handleInputChange}
+                onBlur={handleBlur}
+                aria-invalid={touched.overview && fieldErrors.overview ? "true" : undefined}
+                aria-describedby={touched.overview && fieldErrors.overview ? errorId(formId, "overview") : undefined}
                 required
                 rows={4}
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
               />
+              {touched.overview && fieldErrors.overview && (
+                <p id={errorId(formId, "overview")} className="field-error-text mt-1" role="alert">
+                  {fieldErrors.overview}
+                </p>
+              )}
             </div>
 
             {/* Genres */}

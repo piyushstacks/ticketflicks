@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, X } from 'lucide-react';
 import { SEAT_LAYOUTS, SEAT_TIERS, getLayoutByKey, calculateTotalSeats, getSeatCountByTier, validatePricing } from './SeatLayoutTemplates.js';
 
@@ -11,6 +11,7 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
   const [unifiedPrice, setUnifiedPrice] = useState('');
   const [errors, setErrors] = useState({});
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [allScreensValid, setAllScreensValid] = useState(false);
 
   const currentScreen = screens[currentScreenIndex] || {
     name: '',
@@ -98,6 +99,39 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
     
     setErrors({});
   }, [currentScreenIndex]); // Remove screens from dependencies
+
+  // Validate all screens - defined before useEffect that uses it
+  const validateAllScreens = () => {
+    let allValid = true;
+    
+    screens.forEach((screen, index) => {
+      if (!screen.name?.trim() || !screen.layout) {
+        allValid = false;
+        return;
+      }
+      
+      if (screen.pricing.unified) {
+        if (!screen.pricing.unified || screen.pricing.unified <= 0) {
+          allValid = false;
+          return;
+        }
+      } else {
+        const pricingErrors = validatePricing(screen.pricing);
+        if (pricingErrors.length > 0) {
+          allValid = false;
+          return;
+        }
+      }
+    });
+    
+    return allValid;
+  };
+
+  // Compute allScreensValid when screens change
+  useEffect(() => {
+    const valid = validateAllScreens();
+    setAllScreensValid(valid);
+  }, [screens]);
 
   const handleLayoutSelect = (layoutKey) => {
     const layout = getLayoutByKey(layoutKey);
@@ -235,39 +269,6 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const validateAllScreens = () => {
-    let allValid = true;
-    
-    screens.forEach((screen, index) => {
-      if (!screen.name?.trim() || !screen.layout) {
-        allValid = false;
-        setCurrentScreenIndex(index);
-        return;
-      }
-      
-      if (screen.pricing.unified) {
-        if (!screen.pricing.unified || screen.pricing.unified <= 0) {
-          allValid = false;
-          setCurrentScreenIndex(index);
-          return;
-        }
-      } else {
-        const pricingErrors = validatePricing(screen.pricing);
-        if (pricingErrors.length > 0) {
-          allValid = false;
-          setCurrentScreenIndex(index);
-          return;
-        }
-      }
-    });
-    
-    if (!allValid) {
-      setErrors({ general: 'Please complete all screen configurations before proceeding' });
-    }
-    
-    return allValid;
   };
 
   const handleNext = () => {
@@ -650,12 +651,19 @@ const ScreenConfiguration = ({ screens, setScreens, onNext, onPrevious }) => {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-end mt-8">
+      <div className="flex justify-between mt-8">
+        <button
+          onClick={onPrevious}
+          className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+        >
+          ← Back
+        </button>
         <button
           onClick={handleNext}
-          className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+          disabled={!allScreensValid}
+          className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Update
+          Submit
         </button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import ScreenTbl from "../models/ScreenTbl.js";
 import Theatre from "../models/Theatre.js";
 import User from "../models/User.js";
+import Show from "../models/show_tbls.js";
 import mongoose from "mongoose";
 
 // Seat tier code to name mapping
@@ -367,7 +368,6 @@ export const deleteScreenTbl = async (req, res) => {
     }
 
     // Check if there are any active shows for this screen
-    const Show = mongoose.model("Show");
     const activeShows = await Show.countDocuments({
       screen: screenId,
       isActive: true,

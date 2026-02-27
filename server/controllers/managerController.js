@@ -33,8 +33,8 @@ export const dashboardManagerData = async (req, res) => {
     const theatreId = theatre._id;
 
     const activeShows = await Show.countDocuments({
-      theater_id: theatreId,
-      show_date: { $gte: new Date() },
+      theatre: theatreId,
+      showDateTime: { $gte: new Date() },
     });
 
     const todayStart = new Date();
@@ -43,13 +43,13 @@ export const dashboardManagerData = async (req, res) => {
     todayEnd.setHours(23, 59, 59, 999);
 
     const todayBookings = await Booking.countDocuments({
-      theater_id: theatreId,
+      theatre: theatreId,
       createdAt: { $gte: todayStart, $lte: todayEnd },
     });
 
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const monthBookings = await Booking.find({
-      theater_id: theatreId,
+      theatre: theatreId,
       isPaid: true,
       createdAt: { $gte: monthStart },
     });
@@ -118,12 +118,11 @@ export const addShow = async (req, res) => {
     }
 
     const show = await Show.create({
-      movie_id: movieId,
-      theater_id: theatreId,
-      screen_id: screenId,
-      show_date: showDateTime,
+      movie: movieId,
+      theatre: theatreId,
+      screen: screenId,
+      showDateTime: showDateTime,
       seatTiers: seatTiers,
-      available_seats: [],
       isActive: true,
     });
 
@@ -146,7 +145,7 @@ export const editShow = async (req, res) => {
     const { showId } = req.params;
     const { movieId, screenId, showDateTime, seatTiers, basePrice: providedBasePrice } = req.body;
 
-    const show = await ShowNew.findById(showId);
+    const show = await Show.findById(showId);
     if (!show || show.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Invalid show or not authorized" });
     }
@@ -164,7 +163,7 @@ export const editShow = async (req, res) => {
     }
     if (providedBasePrice) updateData.basePrice = providedBasePrice;
 
-    const updatedShow = await ShowNew.findByIdAndUpdate(showId, updateData, { new: true })
+    const updatedShow = await Show.findByIdAndUpdate(showId, updateData, { new: true })
       .populate("movie")
       .populate("screen");
 
@@ -186,12 +185,12 @@ export const deleteShow = async (req, res) => {
     const theatreId = manager.managedTheatreId;
     const { showId } = req.params;
 
-    const show = await ShowNew.findById(showId);
+    const show = await Show.findById(showId);
     if (!show || show.theatre.toString() !== theatreId.toString()) {
       return res.json({ success: false, message: "Invalid show or not authorized" });
     }
 
-    await ShowNew.findByIdAndDelete(showId);
+    await Show.findByIdAndDelete(showId);
 
     res.json({ success: true, message: "Show deleted successfully" });
   } catch (error) {
@@ -589,7 +588,7 @@ export const toggleMovieStatus = async (req, res) => {
       });
 
       // Also disable all future shows for this movie at this theatre
-      await ShowNew.updateMany(
+      await Show.updateMany(
         {
           movie: movieId,
           theatre: theatreId,

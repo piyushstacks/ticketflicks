@@ -1,48 +1,68 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuthContext } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
-import { UserIcon, MailIcon, PhoneIcon, ArrowLeft, Save } from "lucide-react";
+import { AlertCircle, ArrowLeft, MailIcon, PhoneIcon, Save, UserIcon } from "lucide-react";
 import axios from "axios";
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { composeValidators, errorId, optionalPhone10, required } from "../lib/validation.js";
+
+const minName = (value) => {
+  const v = (value || "").toString().trim();
+  if (v.length < 2) return "Full name must be at least 2 characters";
+  return "";
+};
 
 const EditProfile = () => {
   const { user, getAuthHeaders, saveAuth, token } = useAuthContext();
   const navigate = useNavigate();
   
-  const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
   const [loading, setLoading] = useState(false);
+
+  const formId = "edit-profile";
+  const schema = useMemo(
+    () => ({
+      name: composeValidators(required("Full name"), minName),
+      phone: optionalPhone10("Phone number"),
+    }),
+    []
+  );
+
+  const { values, errors, touched, getInputProps, validateForm, reset } = useFormValidation({
+    formId,
+    initialValues: { name: "", email: "", phone: "" },
+    schema,
+  });
 
   useEffect(() => {
     if (user) {
-      setFormData({
+      reset({
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
       });
     }
-  }, [user]);
+  }, [reset, user]);
 
   const isDirty = useMemo(() => {
     return (
-      formData.name.trim() !== (user?.name || "") || 
-      formData.phone.trim() !== (user?.phone || "")
+      (values.name || "").trim() !== (user?.name || "") || 
+      (values.phone || "").trim() !== (user?.phone || "")
     );
-  }, [formData, user]);
-
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  }, [user, values.name, values.phone]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isDirty) return;
+    const { isValid } = validateForm();
+    if (!isValid) return;
     
     setLoading(true);
     try {
       const updateData = {
-        name: formData.name.trim(),
-        phone: formData.phone.trim(),
+        name: values.name.trim(),
+        phone: values.phone.trim(),
       };
 
       const response = await axios.put(`/api/user/users/${user._id}`, updateData, { 
@@ -86,7 +106,7 @@ const EditProfile = () => {
             
             {/* NAME FIELD */}
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Full Name</label>
+              <label className="text-xs font-bold uppercase tracking-widest" htmlFor={`${formId}-name`} style={{ color: "var(--text-secondary)" }}>Full Name</label>
               <div className="relative flex items-center">
                 {/* Fixed Icon Container */}
                 <div className="absolute left-0 pl-4 flex items-center pointer-events-none">
@@ -94,15 +114,23 @@ const EditProfile = () => {
                 </div>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
+                  {...getInputProps("name")}
                   className="input-field w-full py-3 pr-4 transition-all"
                   style={{ paddingLeft: "3.5rem" }} // Force padding regardless of global CSS
                   placeholder="Enter name"
                   required
                 />
+                {touched.name && errors.name && (
+                  <div className="absolute right-4">
+                    <AlertCircle className="w-5 h-5" style={{ color: "#ef4444" }} />
+                  </div>
+                )}
               </div>
+              {touched.name && errors.name && (
+                <p id={errorId(formId, "name")} className="field-error-text" role="alert">
+                  {errors.name}
+                </p>
+              )}
             </div>
 
             {/* EMAIL FIELD */}
@@ -114,7 +142,7 @@ const EditProfile = () => {
                 </div>
                 <input
                   type="email"
-                  value={formData.email}
+                  value={values.email}
                   readOnly
                   className="input-field w-full py-3 pr-4 cursor-not-allowed"
                   style={{ paddingLeft: "3.5rem" }}
@@ -124,21 +152,31 @@ const EditProfile = () => {
 
             {/* PHONE FIELD */}
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Phone Number</label>
+              <label className="text-xs font-bold uppercase tracking-widest" htmlFor={`${formId}-phone`} style={{ color: "var(--text-secondary)" }}>Phone Number</label>
               <div className="relative flex items-center">
                 <div className="absolute left-0 pl-4 flex items-center pointer-events-none">
                   <PhoneIcon className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                 </div>
                 <input
                   type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
+                  {...getInputProps("phone")}
+                  inputMode="numeric"
                   className="input-field w-full py-3 pr-4 transition-all"
                   style={{ paddingLeft: "3.5rem" }}
                   placeholder="Phone number"
                 />
+                {touched.phone && errors.phone && (
+                  <div className="absolute right-4">
+                    <AlertCircle className="w-5 h-5" style={{ color: "#ef4444" }} />
+                  </div>
+                )}
               </div>
+              {touched.phone && errors.phone && (
+                <p id={errorId(formId, "phone")} className="field-error-text" role="alert">
+                  {errors.phone}
+                </p>
+              )}
+              {!errors.phone && <p className="field-help-text">Optional, but must be 10 digits if provided</p>}
             </div>
 
             <button

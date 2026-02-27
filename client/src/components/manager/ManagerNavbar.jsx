@@ -71,7 +71,12 @@ const ManagerNavbar = () => {
             onClick={() => navigate("/")}
             className="hover:opacity-80 transition"
           >
-            <img src={assets.logo} alt="TicketFlicks" className="w-36 h-auto" />
+            <img
+              src={assets.logo}
+              alt="TicketFlicks"
+              className="w-36 h-auto"
+              style={{ filter: "var(--logo-filter, none)" }}
+            />
           </button>
           <div className="flex items-center gap-3">
             <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-semibold">

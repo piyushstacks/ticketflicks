@@ -1,35 +1,35 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuthContext } from "../context/AuthContext.jsx";
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { composeValidators, email as emailValidator, errorId, matchesField, otp6, passwordStrong, required } from "../lib/validation.js";
 
 const ResetPassword = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { email: initialEmail } = state || {};
-  const [email, setEmail] = useState(initialEmail || "");
-  const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSameAsOldPassword, setIsSameAsOldPassword] = useState(false);
   const { resetPassword } = useAuthContext();
   const { resendForgot } = useAuthContext();
 
-  // Handle input changes with error clearing
-  const handleInputChange = (field, value) => {
-    // Update the field value
-    if (field === "email") {
-      setEmail(value);
-    } else if (field === "otp") {
-      setOtp(value);
-    } else if (field === "newPassword") {
-      setNewPassword(value);
-      setIsSameAsOldPassword(false); // Reset flag when user types
-    } else if (field === "confirmPassword") {
-      setConfirmPassword(value);
-    }
-  };
+  const formId = "reset-password";
+  const schema = useMemo(
+    () => ({
+      email: emailValidator("Email"),
+      otp: otp6("OTP code"),
+      newPassword: passwordStrong("New password"),
+      confirmPassword: composeValidators(required("Confirm new password"), matchesField("newPassword", "Passwords must match")),
+    }),
+    []
+  );
+
+  const { values, errors, touched, getInputProps, setFieldValue, validateForm } = useFormValidation({
+    formId,
+    initialValues: { email: initialEmail || "", otp: "", newPassword: "", confirmPassword: "" },
+    schema,
+  });
 
   // Password validation helper
   const getPasswordStrength = (pwd) => {
@@ -51,30 +51,20 @@ const ResetPassword = () => {
     return { ...strengthMap[score], score };
   };
 
-  const passwordStrength = getPasswordStrength(newPassword);
-  const passwordsMatch = newPassword === confirmPassword;
+  const passwordStrength = getPasswordStrength(values.newPassword);
+  const passwordsMatch = values.newPassword === values.confirmPassword;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !otp || !newPassword || !confirmPassword) {
-      return toast.error("All fields are required");
-    }
-    if (!passwordsMatch) {
-      return toast.error("Passwords do not match");
-    }
-    if (newPassword.length < 8) {
-      return toast.error("Password must be at least 8 characters");
-    }
-    if (!/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/\d/.test(newPassword) || !/[@$!%*?&]/.test(newPassword)) {
-      return toast.error("Password must include uppercase, lowercase, numbers, and special characters (@$!%*?&)");
-    }
+    const { isValid } = validateForm();
+    if (!isValid) return;
     if (isSameAsOldPassword) {
       return toast.error("New password must be different from current password");
     }
     
     setLoading(true);
     try {
-      const data = await resetPassword({ email, otp, newPassword });
+      const data = await resetPassword({ email: values.email, otp: values.otp, newPassword: values.newPassword });
       if (data.success) {
         toast.success(data.message || "Password reset successful");
         navigate("/login");
@@ -94,7 +84,12 @@ const ResetPassword = () => {
 
   const handleResend = async () => {
     try {
-      const data = await resendForgot({ email });
+      const emailError = emailValidator("Email")(values.email);
+      if (emailError) {
+        toast.error(emailError);
+        return;
+      }
+      const data = await resendForgot({ email: values.email });
       if (data.success) {
         toast.success(data.message || "OTP resent if email exists");
       } else {
@@ -111,24 +106,26 @@ const ResetPassword = () => {
         <h2 className="text-xl sm:text-2xl font-semibold mb-6" style={{ color: "var(--text-primary)" }}>Reset Password</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Email Address</label>
+            <label className="text-sm font-medium" htmlFor={`${formId}-email`} style={{ color: "var(--text-secondary)" }}>Email Address</label>
             <input
+              {...getInputProps("email")}
               type="email"
-              value={email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
               className="input-field"
               required
               title="Enter the email address where OTP was sent"
             />
+            {touched.email && errors.email && <p id={errorId(formId, "email")} className="field-error-text" role="alert">{errors.email}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>OTP Code</label>
+            <label className="text-sm font-medium" htmlFor={`${formId}-otp`} style={{ color: "var(--text-secondary)" }}>OTP Code</label>
             <div className="flex gap-2">
               <input
+                {...getInputProps("otp")}
                 type="text"
-                value={otp}
-                onChange={(e) => handleInputChange("otp", e.target.value)}
+                inputMode="numeric"
+                value={values.otp}
+                onChange={(e) => setFieldValue("otp", e.target.value.replace(/\D/g, ""))}
                 className="input-field flex-1"
                 placeholder="Enter 6-digit OTP"
                 required
@@ -145,49 +142,53 @@ const ResetPassword = () => {
               </button>
             </div>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>OTP expires in 2 minutes</p>
+            {touched.otp && errors.otp && <p id={errorId(formId, "otp")} className="field-error-text" role="alert">{errors.otp}</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>New Password</label>
+            <label className="text-sm font-medium" htmlFor={`${formId}-newPassword`} style={{ color: "var(--text-secondary)" }}>New Password</label>
             <input
               type="password"
-              value={newPassword}
-              onChange={(e) => handleInputChange("newPassword", e.target.value)}
+              {...getInputProps("newPassword")}
+              value={values.newPassword}
+              onChange={(e) => { setIsSameAsOldPassword(false); setFieldValue("newPassword", e.target.value); }}
               className="input-field"
               placeholder="Create a strong password"
               required
               title="Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters"
             />
-            {newPassword && (
+            {touched.newPassword && errors.newPassword && <p id={errorId(formId, "newPassword")} className="field-error-text" role="alert">{errors.newPassword}</p>}
+            {values.newPassword && (
               <div className="text-xs flex flex-wrap gap-x-3 gap-y-1" style={{ color: "var(--text-muted)" }}>
                 <span>Strength: <span className={passwordStrength.color}>{passwordStrength.text}</span></span>
-                <span className={newPassword.length >= 8 ? "text-green-500" : ""}>8+</span>
-                <span className={/[A-Z]/.test(newPassword) ? "text-green-500" : ""}>A-Z</span>
-                <span className={/[a-z]/.test(newPassword) ? "text-green-500" : ""}>a-z</span>
-                <span className={/\d/.test(newPassword) ? "text-green-500" : ""}>0-9</span>
-                <span className={/[@$!%*?&]/.test(newPassword) ? "text-green-500" : ""}>@$!</span>
+                <span className={values.newPassword.length >= 8 ? "text-green-500" : ""}>8+</span>
+                <span className={/[A-Z]/.test(values.newPassword) ? "text-green-500" : ""}>A-Z</span>
+                <span className={/[a-z]/.test(values.newPassword) ? "text-green-500" : ""}>a-z</span>
+                <span className={/\d/.test(values.newPassword) ? "text-green-500" : ""}>0-9</span>
+                <span className={/[@$!%*?&]/.test(values.newPassword) ? "text-green-500" : ""}>@$!</span>
               </div>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Confirm New Password</label>
+            <label className="text-sm font-medium" htmlFor={`${formId}-confirmPassword`} style={{ color: "var(--text-secondary)" }}>Confirm New Password</label>
             <input
               type="password"
-              value={confirmPassword}
-              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-              className={`input-field ${confirmPassword && !passwordsMatch ? "border-red-500" : confirmPassword && passwordsMatch ? "border-green-500" : ""}`}
+              {...getInputProps("confirmPassword")}
+              className={`input-field ${values.confirmPassword && passwordsMatch ? "border-green-500" : ""}`}
               placeholder="Re-enter your new password"
               required
               title="Re-enter your new password to confirm"
             />
-            {confirmPassword && !passwordsMatch && (
-              <p className="text-xs text-red-500">Passwords do not match</p>
+            {touched.confirmPassword && errors.confirmPassword && (
+              <p id={errorId(formId, "confirmPassword")} className="field-error-text" role="alert">
+                {errors.confirmPassword}
+              </p>
             )}
-            {confirmPassword && passwordsMatch && isSameAsOldPassword && (
+            {values.confirmPassword && passwordsMatch && isSameAsOldPassword && (
               <p className="text-xs text-red-500">New password must be different from current password</p>
             )}
-            {confirmPassword && passwordsMatch && !isSameAsOldPassword && (
+            {values.confirmPassword && passwordsMatch && !isSameAsOldPassword && (
               <p className="text-xs text-green-500">Passwords match</p>
             )}
           </div>

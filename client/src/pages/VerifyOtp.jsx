@@ -1,24 +1,40 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuthContext } from "../context/AuthContext.jsx";
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { email as emailValidator, errorId, otp6 } from "../lib/validation.js";
 
 const VerifyOtp = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { verifyOtp } = useAuthContext();
   const { resendLogin } = useAuthContext();
-  const [email, setEmail] = useState(state?.email || "");
-  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
+  const formId = "verify-otp";
+  const schema = useMemo(
+    () => ({
+      email: emailValidator("Email"),
+      otp: otp6("OTP"),
+    }),
+    []
+  );
+
+  const { values, errors, touched, getInputProps, setFieldValue, validateForm } = useFormValidation({
+    formId,
+    initialValues: { email: state?.email || "", otp: "" },
+    schema,
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !otp) return toast.error("Email and OTP are required");
+    const { isValid } = validateForm();
+    if (!isValid) return;
     setLoading(true);
     try {
-      const data = await verifyOtp({ email, otp }, { remember: true });
+      const data = await verifyOtp({ email: values.email, otp: values.otp }, { remember: true });
       if (!data.success) {
         toast.error(data.message || "Invalid OTP");
       } else {
@@ -36,7 +52,7 @@ const VerifyOtp = () => {
   const handleResend = async () => {
     if (cooldown > 0) return;
     try {
-      const data = await resendLogin({ email });
+      const data = await resendLogin({ email: values.email });
       if (data.success) {
         toast.success(data.message || "OTP resent");
         setCooldown(60); // 60s cooldown
@@ -63,13 +79,14 @@ const VerifyOtp = () => {
         <h2 className="text-white text-2xl mb-6 font-semibold">Verify OTP</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm text-white/80 font-medium">Email Address</label>
+            <label className="text-sm text-white/80 font-medium" htmlFor={`${formId}-email`}>Email Address</label>
             <div className="relative group">
               <input
+                {...getInputProps("email")}
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
+                className={`w-full px-3 py-2 rounded-md bg-black/40 text-white border transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80 ${
+                  touched.email && errors.email ? "border-red-500" : "border-white/20"
+                }`}
                 required
                 title="Enter your email address"
               />
@@ -80,15 +97,20 @@ const VerifyOtp = () => {
                 </svg>
               </div>
             </div>
+            {touched.email && errors.email && <p id={errorId(formId, "email")} className="field-error-text" role="alert">{errors.email}</p>}
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-white/80 font-medium">OTP Code</label>
+            <label className="text-sm text-white/80 font-medium" htmlFor={`${formId}-otp`}>OTP Code</label>
             <div className="relative group">
               <input
+                {...getInputProps("otp")}
                 type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
+                inputMode="numeric"
+                value={values.otp}
+                onChange={(e) => setFieldValue("otp", e.target.value.replace(/\D/g, ""))}
+                className={`w-full px-3 py-2 rounded-md bg-black/40 text-white border transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80 ${
+                  touched.otp && errors.otp ? "border-red-500" : "border-white/20"
+                }`}
                 placeholder="Enter 6-digit OTP"
                 required
                 maxLength={6}
@@ -101,6 +123,7 @@ const VerifyOtp = () => {
                 </svg>
               </div>
             </div>
+            {touched.otp && errors.otp && <p id={errorId(formId, "otp")} className="field-error-text" role="alert">{errors.otp}</p>}
           </div>
           <button
             type="submit"

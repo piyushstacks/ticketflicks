@@ -15,6 +15,26 @@ import Language from "../models/Language.js";
 import Cast from "../models/Cast.js";
 import Payment from "../models/Payment.js";
 
+// Old Models (for migration source)
+import OldTheatre from "../models/Theatre.js";
+import OldMovie from "../models/Movie.js";
+import OldScreenTbl from "../models/ScreenTbl.js";
+import OldShowTbls from "../models/show_tbls.js";
+import OldBooking from "../models/Booking.js";
+
+// Use unified models as targets
+const NewTheater = Theatre;
+const NewMovie = Movie;
+const NewScreen = Screen;
+const NewShow = Show;
+const NewBooking = Booking;
+const NewSeat = Seat;
+const NewSeatCategory = SeatCategory;
+const NewGenre = Genre;
+const NewLanguage = Language;
+const NewCast = Cast;
+const NewPayment = Payment;
+
 dotenv.config();
 
 console.log("[MIGRATE] Script starting...");

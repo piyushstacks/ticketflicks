@@ -1,27 +1,33 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useAuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { composeValidators, errorId, matchesField, notSameAs, passwordStrong, required } from "../lib/validation.js";
 
 const ChangePassword = () => {
-  const { changePassword, logout, user } = useAuthContext();
+  const { changePassword, logout } = useAuthContext();
   const navigate = useNavigate();
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Handle input changes with error clearing
-  const handleInputChange = (field, value) => {
-    // Update the field value
-    if (field === "currentPassword") {
-      setCurrentPassword(value);
-    } else if (field === "newPassword") {
-      setNewPassword(value);
-    } else if (field === "confirmPassword") {
-      setConfirmPassword(value);
-    }
-  };
+  const formId = "change-password";
+  const schema = useMemo(
+    () => ({
+      currentPassword: required("Current password"),
+      newPassword: composeValidators(
+        passwordStrong("New password"),
+        notSameAs("currentPassword", "New password", "current password")
+      ),
+      confirmPassword: composeValidators(required("Confirm new password"), matchesField("newPassword", "Passwords must match")),
+    }),
+    []
+  );
+
+  const { values, errors, touched, getInputProps, validateForm } = useFormValidation({
+    formId,
+    initialValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
+    schema,
+  });
 
   // Password validation helper
   const getPasswordStrength = (pwd) => {
@@ -43,36 +49,21 @@ const ChangePassword = () => {
     return { ...strengthMap[score], score };
   };
 
-  const passwordStrength = getPasswordStrength(newPassword);
-  const passwordsMatch = newPassword === confirmPassword;
-  const passwordsDifferent = currentPassword !== newPassword;
-  const isPasswordValid = newPassword.length >= 8 && 
-    /[a-z]/.test(newPassword) && 
-    /[A-Z]/.test(newPassword) && 
-    /\d/.test(newPassword) && 
-    /[@$!%*?&]/.test(newPassword);
+  const passwordStrength = getPasswordStrength(values.newPassword);
+  const passwordsMatch = values.newPassword === values.confirmPassword;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error("Please fill all fields");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error("New passwords do not match");
-      return;
-    }
-    if (currentPassword === newPassword) {
-      toast.error("New password must be different from current password");
-      return;
-    }
-    if (!isPasswordValid) {
-      toast.error("Password does not meet complexity requirements");
-      return;
-    }
+    const { isValid } = validateForm();
+    if (!isValid) return;
     setLoading(true);
     try {
-      const { data } = await changePassword({ currentPassword, newPassword, confirmPassword });
+
+      const data = await changePassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+        confirmPassword: values.confirmPassword,
+      });
       if (data.success) {
         toast.success(data.message || "Password changed successfully");
         // force logout and redirect to login
@@ -94,13 +85,14 @@ const ChangePassword = () => {
       <h2 className="text-2xl text-white mb-4">Change Password</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm text-white/80 font-medium">Current Password</label>
+          <label className="text-sm text-white/80 font-medium" htmlFor={`${formId}-currentPassword`}>Current Password</label>
           <div className="relative group">
             <input
               type="password"
-              value={currentPassword}
-              onChange={(e) => handleInputChange("currentPassword", e.target.value)}
-              className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
+              {...getInputProps("currentPassword")}
+              className={`w-full px-3 py-2 rounded-md bg-black/40 text-white border transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80 ${
+                touched.currentPassword && errors.currentPassword ? "border-red-500" : "border-white/20"
+              }`}
               required
               title="Enter your current password for verification"
             />
@@ -111,16 +103,22 @@ const ChangePassword = () => {
               </svg>
             </div>
           </div>
+          {touched.currentPassword && errors.currentPassword && (
+            <p id={errorId(formId, "currentPassword")} className="field-error-text mt-1" role="alert">
+              {errors.currentPassword}
+            </p>
+          )}
         </div>
 
         <div>
-          <label className="text-sm text-white/80 font-medium">New Password</label>
+          <label className="text-sm text-white/80 font-medium" htmlFor={`${formId}-newPassword`}>New Password</label>
           <div className="relative group">
             <input
               type="password"
-              value={newPassword}
-              onChange={(e) => handleInputChange("newPassword", e.target.value)}
-              className="w-full px-3 py-2 rounded-md bg-black/40 text-white border border-white/20 transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
+              {...getInputProps("newPassword")}
+              className={`w-full px-3 py-2 rounded-md bg-black/40 text-white border transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80 ${
+                touched.newPassword && errors.newPassword ? "border-red-500" : "border-white/20"
+              }`}
               placeholder="Create a strong password"
               required
               title="Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters"
@@ -132,37 +130,37 @@ const ChangePassword = () => {
               </svg>
             </div>
           </div>
+          {touched.newPassword && errors.newPassword && (
+            <p id={errorId(formId, "newPassword")} className="field-error-text mt-1" role="alert">
+              {errors.newPassword}
+            </p>
+          )}
           <div className="mt-1 text-xs">
             <p>
               Strength: <span className={passwordStrength.color}>{passwordStrength.text}</span>
             </p>
             <p className="text-white/60 mt-1">
-              <span className={newPassword.length >= 8 ? "text-green-400" : "text-white/60"}>✓ 8+ characters</span>
+              <span className={values.newPassword.length >= 8 ? "text-green-400" : "text-white/60"}>✓ 8+ characters</span>
               {"\n"}
-              <span className={/[A-Z]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Uppercase</span>
+              <span className={/[A-Z]/.test(values.newPassword) ? "text-green-400" : "text-white/60"}>✓ Uppercase</span>
               {"\n"}
-              <span className={/[a-z]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Lowercase</span>
+              <span className={/[a-z]/.test(values.newPassword) ? "text-green-400" : "text-white/60"}>✓ Lowercase</span>
               {"\n"}
-              <span className={/\d/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Number</span>
+              <span className={/\d/.test(values.newPassword) ? "text-green-400" : "text-white/60"}>✓ Number</span>
               {"\n"}
-              <span className={/[@$!%*?&]/.test(newPassword) ? "text-green-400" : "text-white/60"}>✓ Special char (@$!%*?&)</span>
+              <span className={/[@$!%*?&]/.test(values.newPassword) ? "text-green-400" : "text-white/60"}>✓ Special char (@$!%*?&)</span>
             </p>
           </div>
         </div>
 
         <div>
-          <label className="text-sm text-white/80 font-medium">Confirm New Password</label>
+          <label className="text-sm text-white/80 font-medium" htmlFor={`${formId}-confirmPassword`}>Confirm New Password</label>
           <div className="relative group">
             <input
               type="password"
-              value={confirmPassword}
-              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+              {...getInputProps("confirmPassword")}
               className={`w-full px-3 py-2 rounded-md bg-black/40 text-white border transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80 ${
-                confirmPassword && !passwordsMatch
-                  ? "border-red-500"
-                  : confirmPassword && passwordsMatch
-                  ? "border-green-500"
-                  : "border-white/20"
+                values.confirmPassword && passwordsMatch ? "border-green-500" : touched.confirmPassword && errors.confirmPassword ? "border-red-500" : "border-white/20"
               }`}
               placeholder="Re-enter your new password"
               required
@@ -175,13 +173,12 @@ const ChangePassword = () => {
               </svg>
             </div>
           </div>
-          {confirmPassword && !passwordsMatch && (
-            <p className="text-xs text-red-400 mt-1 animate-pulse">Passwords do not match</p>
+          {touched.confirmPassword && errors.confirmPassword && (
+            <p id={errorId(formId, "confirmPassword")} className="field-error-text mt-1" role="alert">
+              {errors.confirmPassword}
+            </p>
           )}
-          {confirmPassword && passwordsMatch && !passwordsDifferent && (
-            <p className="text-xs text-red-400 mt-1 animate-pulse">New password must be different from current password</p>
-          )}
-          {confirmPassword && passwordsMatch && passwordsDifferent && (
+          {values.confirmPassword && passwordsMatch && !errors.newPassword && (
             <p className="text-xs text-green-400 mt-1">Passwords match ✓</p>
           )}
         </div>
@@ -189,7 +186,7 @@ const ChangePassword = () => {
         <div className="flex items-center justify-between">
           <button
             type="submit"
-            disabled={loading || !passwordsMatch || !isPasswordValid || !passwordsDifferent}
+            disabled={loading || !passwordsMatch || !values.currentPassword || !values.newPassword}
             className="px-4 py-2 bg-indigo-600 rounded-md text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/20"
             title={loading ? "Changing your password..." : "Update your account password"}
           >

@@ -32,6 +32,7 @@
   --scrollbar-thumb: #3f3f46;
   --scrollbar-track: #18181b;
   --blur-glow-opacity: 0.3;
+  --logo-filter: none;
 }
 
 /* Light mode */
@@ -55,6 +56,8 @@ html:not(.dark) {
   --scrollbar-thumb: #d4d4d8;
   --scrollbar-track: #f4f4f5;
   --blur-glow-opacity: 0.12;
+  --logo-filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18))
+    drop-shadow(0 0 2px rgba(0, 0, 0, 0.22));
 }
 
 /* ===== GLOBAL RESETS ===== */
@@ -198,6 +201,29 @@ body,
 .input-field:focus {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--ring);
+}
+.input-field[aria-invalid="true"] {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.22);
+}
+.input-field[aria-invalid="true"]:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.22);
+}
+input[aria-invalid="true"]:not(.input-field),
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #ef4444 !important;
+}
+.field-error-text {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #ef4444;
+}
+.field-help-text {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--text-muted);
 }
 .input-field::placeholder {
   color: var(--text-muted);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { 
@@ -6,6 +6,7 @@ import {
   Monitor, Copy, Filter, ChevronDown, X, Repeat, Globe
 } from "lucide-react";
 import Loading from "../../components/Loading";
+import { composeValidators, dateAfterOrEqual, dateNotPast, errorId, numberMin, required } from "../../lib/validation.js";
 
 const ManagerShows = () => {
   const { axios, getAuthHeaders, imageBaseURL } = useAppContext();
@@ -31,6 +32,59 @@ const ManagerShows = () => {
     tierPrices: {},  // Will store individual tier prices: { "Standard": "150", "Deluxe": "200", ... }
     isActive: true
   });
+
+  const formId = "manager-show";
+  const [touched, setTouched] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validators = useMemo(
+    () => ({
+      movie: required("Movie"),
+      screen: required("Screen"),
+      showTime: required("Show time"),
+      language: required("Language"),
+      startDate: composeValidators(required("Start date"), dateNotPast("Start date")),
+      endDate: composeValidators(
+        required("End date"),
+        dateNotPast("End date"),
+        dateAfterOrEqual("startDate", "End date", "Start date")
+      ),
+    }),
+    []
+  );
+
+  const validateField = (name, nextValues) => {
+    if (name.startsWith("tierPrice_")) {
+      const tierName = name.replace("tierPrice_", "");
+      const v = nextValues.tierPrices?.[tierName];
+      if (v === undefined || v === null || v === "") return `Price for ${tierName} is required`;
+      const n = Number(v);
+      if (Number.isNaN(n)) return `Price for ${tierName} must be a number`;
+      if (n <= 0) return `Price for ${tierName} must be greater than 0`;
+      return "";
+    }
+    const validator = validators[name];
+    if (!validator) return "";
+    return validator(nextValues[name], nextValues) || "";
+  };
+
+  const touchAndValidate = (name, nextValues) => {
+    setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
+    const error = validateField(name, nextValues);
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      if (error) next[name] = error;
+      else delete next[name];
+      return next;
+    });
+    return error;
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    if (!name) return;
+    touchAndValidate(name, formData);
+  };
 
   const languages = [
     "English", "Hindi", "Tamil", "Telugu", "Malayalam", "Kannada", 
@@ -197,13 +251,19 @@ const ManagerShows = () => {
     // Handle tier price inputs separately
     if (name.startsWith('tierPrice_')) {
       const tierName = name.replace('tierPrice_', '');
-      setFormData(prev => ({
-        ...prev,
-        tierPrices: {
-          ...prev.tierPrices,
-          [tierName]: value
+      setFormData(prev => {
+        const next = {
+          ...prev,
+          tierPrices: {
+            ...prev.tierPrices,
+            [tierName]: value
+          }
+        };
+        if (touched[name]) {
+          touchAndValidate(name, next);
         }
-      }));
+        return next;
+      });
       console.log(`Updated ${tierName} tier price to: ${value}`);
       return;
     }
@@ -214,6 +274,9 @@ const ManagerShows = () => {
         [name]: value,
       };
       console.log("Updated formData:", newData);
+      if (touched[name]) {
+        touchAndValidate(name, newData);
+      }
       return newData;
     });
 
@@ -262,6 +325,35 @@ const ManagerShows = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const nextTouched = {};
+    const nextErrors = {};
+
+    for (const name of Object.keys(validators)) {
+      nextTouched[name] = true;
+      const error = validateField(name, formData);
+      if (error) nextErrors[name] = error;
+    }
+
+    if (formData.screen) {
+      const selectedScreen = screens.find((s) => s._id === formData.screen);
+      if (selectedScreen?.seatTiers?.length) {
+        for (const tier of selectedScreen.seatTiers) {
+          const key = `tierPrice_${tier.tierName}`;
+          nextTouched[key] = true;
+          const error = validateField(key, formData);
+          if (error) nextErrors[key] = error;
+        }
+      }
+    }
+
+    setTouched((prev) => ({ ...nextTouched, ...prev }));
+    setFieldErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error(Object.values(nextErrors)[0]);
+      return;
+    }
+
     // Debug: Log formData to see what values are actually present
     console.log("=== FORM SUBMISSION DEBUG ===");
     console.log("Form Data on Submit:", formData);
@@ -277,23 +369,6 @@ const ManagerShows = () => {
       startDateValue: formData.startDate,
       endDateValue: formData.endDate
     });
-
-    // Temporarily relax validation to see what happens
-    if (!formData.movie || !formData.screen || !formData.showTime) {
-      const missingFields = [];
-      if (!formData.movie) missingFields.push("Movie");
-      if (!formData.screen) missingFields.push("Screen");
-      if (!formData.showTime) missingFields.push("Show Time");
-      
-      toast.error(`Please fill all required fields. Missing: ${missingFields.join(", ")}`);
-      return;
-    }
-
-    // Check if tier prices are set
-    if (formData.screen && Object.keys(formData.tierPrices).length === 0) {
-      toast.error("Please set prices for all seat tiers");
-      return;
-    }
 
     console.log("Basic validation passed, proceeding with date validation...");
 
@@ -834,6 +909,9 @@ const ManagerShows = () => {
                       name="movie"
                       value={formData.movie}
                       onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      aria-invalid={touched.movie && fieldErrors.movie ? "true" : undefined}
+                      aria-describedby={touched.movie && fieldErrors.movie ? errorId(formId, "movie") : undefined}
                       required
                       className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
                     >
@@ -846,6 +924,11 @@ const ManagerShows = () => {
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
                   </div>
+                  {touched.movie && fieldErrors.movie && (
+                    <p id={errorId(formId, "movie")} className="field-error-text" role="alert">
+                      {fieldErrors.movie}
+                    </p>
+                  )}
                 </div>
 
                 {/* Screen Selection */}
@@ -859,6 +942,9 @@ const ManagerShows = () => {
                       name="screen"
                       value={formData.screen}
                       onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      aria-invalid={touched.screen && fieldErrors.screen ? "true" : undefined}
+                      aria-describedby={touched.screen && fieldErrors.screen ? errorId(formId, "screen") : undefined}
                       required
                       className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
                     >
@@ -871,6 +957,11 @@ const ManagerShows = () => {
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
                   </div>
+                  {touched.screen && fieldErrors.screen && (
+                    <p id={errorId(formId, "screen")} className="field-error-text" role="alert">
+                      {fieldErrors.screen}
+                    </p>
+                  )}
                 </div>
 
                 {/* Show Time */}
@@ -884,9 +975,17 @@ const ManagerShows = () => {
                     name="showTime"
                     value={formData.showTime}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.showTime && fieldErrors.showTime ? "true" : undefined}
+                    aria-describedby={touched.showTime && fieldErrors.showTime ? errorId(formId, "showTime") : undefined}
                     required
                     className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                   />
+                  {touched.showTime && fieldErrors.showTime && (
+                    <p id={errorId(formId, "showTime")} className="field-error-text" role="alert">
+                      {fieldErrors.showTime}
+                    </p>
+                  )}
                 </div>
 
                 {/* Language Selection */}
@@ -900,6 +999,9 @@ const ManagerShows = () => {
                       name="language"
                       value={formData.language}
                       onChange={handleInputChange}
+                      onBlur={handleBlur}
+                      aria-invalid={touched.language && fieldErrors.language ? "true" : undefined}
+                      aria-describedby={touched.language && fieldErrors.language ? errorId(formId, "language") : undefined}
                       required
                       className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
                     >
@@ -911,6 +1013,11 @@ const ManagerShows = () => {
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
                   </div>
+                  {touched.language && fieldErrors.language && (
+                    <p id={errorId(formId, "language")} className="field-error-text" role="alert">
+                      {fieldErrors.language}
+                    </p>
+                  )}
                 </div>
 
                 {/* Start Date */}
@@ -924,10 +1031,18 @@ const ManagerShows = () => {
                     name="startDate"
                     value={formData.startDate}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.startDate && fieldErrors.startDate ? "true" : undefined}
+                    aria-describedby={touched.startDate && fieldErrors.startDate ? errorId(formId, "startDate") : undefined}
                     min={getTodayString()}
                     required
                     className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                   />
+                  {touched.startDate && fieldErrors.startDate && (
+                    <p id={errorId(formId, "startDate")} className="field-error-text" role="alert">
+                      {fieldErrors.startDate}
+                    </p>
+                  )}
                 </div>
 
                 {/* End Date */}
@@ -941,10 +1056,18 @@ const ManagerShows = () => {
                     name="endDate"
                     value={formData.endDate}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.endDate && fieldErrors.endDate ? "true" : undefined}
+                    aria-describedby={touched.endDate && fieldErrors.endDate ? errorId(formId, "endDate") : undefined}
                     min={getTodayString()}
                     required
                     className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                   />
+                  {touched.endDate && fieldErrors.endDate && (
+                    <p id={errorId(formId, "endDate")} className="field-error-text" role="alert">
+                      {fieldErrors.endDate}
+                    </p>
+                  )}
                 </div>
 
                 {/* Tier Pricing */}
@@ -1002,12 +1125,32 @@ const ManagerShows = () => {
                                         name={`tierPrice_${tier.tierName}`}
                                         value={formData.tierPrices[tier.tierName] || ''}
                                         onChange={handleInputChange}
+                                        onBlur={handleBlur}
+                                        aria-invalid={
+                                          touched[`tierPrice_${tier.tierName}`] && fieldErrors[`tierPrice_${tier.tierName}`]
+                                            ? "true"
+                                            : undefined
+                                        }
+                                        aria-describedby={
+                                          touched[`tierPrice_${tier.tierName}`] && fieldErrors[`tierPrice_${tier.tierName}`]
+                                            ? `${formId}-${`tierPrice_${tier.tierName}`.replace(/[^a-zA-Z0-9_-]/g, "_")}-error`
+                                            : undefined
+                                        }
                                         min="0"
                                         step="10"
                                         placeholder={tier.price.toString()}
                                         className="w-full pl-8 pr-3 py-3 bg-gray-800/40 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                                       />
                                     </div>
+                                    {touched[`tierPrice_${tier.tierName}`] && fieldErrors[`tierPrice_${tier.tierName}`] && (
+                                      <p
+                                        id={`${formId}-${`tierPrice_${tier.tierName}`.replace(/[^a-zA-Z0-9_-]/g, "_")}-error`}
+                                        className="field-error-text"
+                                        role="alert"
+                                      >
+                                        {fieldErrors[`tierPrice_${tier.tierName}`]}
+                                      </p>
+                                    )}
                                   </div>
                                 ))}
                               </div>

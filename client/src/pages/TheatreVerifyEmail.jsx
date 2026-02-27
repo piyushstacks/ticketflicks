@@ -1,22 +1,32 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import { X, Mail, ArrowLeft, RefreshCw } from "lucide-react";
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { errorId, otp6 } from "../lib/validation.js";
 
 const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
   const navigate = useNavigate();
   const { requestTheatreRegistrationOtp, completeTheatreRegistration } = useAuthContext();
   
-  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [timeLeft, setTimeLeft] = useState(120); // 2 minutes
 
-  if (!theatreData || !managerData || !screens) {
-    navigate("/theatre-register");
-    return null;
-  }
+  const formId = "theatre-verify";
+  const schema = useMemo(() => ({ otp: otp6("OTP") }), []);
+  const { values, errors, touched, setFieldValue, touchField, validateForm } = useFormValidation({
+    formId,
+    initialValues: { otp: "" },
+    schema,
+  });
+
+  React.useEffect(() => {
+    if (!theatreData || !managerData || !screens) {
+      navigate("/theatres");
+    }
+  }, [theatreData, managerData, screens, navigate]);
 
   // Countdown timer
   React.useEffect(() => {
@@ -26,6 +36,10 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
     }
   }, [timeLeft]);
 
+  if (!theatreData || !managerData || !screens) {
+    return null;
+  }
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -34,11 +48,8 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (otp.length !== 6) {
-      toast.error("Please enter a 6-digit OTP");
-      return;
-    }
+    const { isValid } = validateForm();
+    if (!isValid) return;
 
     setLoading(true);
     try {
@@ -46,7 +57,7 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
         manager: managerData,
         theatre: theatreData,
         screens: screens,
-        otp: otp
+        otp: values.otp
       });
       
       if (data.success) {
@@ -70,8 +81,11 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
       const data = await requestTheatreRegistrationOtp({ email: managerData.email });
       if (data.success) {
         toast.success("OTP resent successfully");
+        if (import.meta.env.DEV && data.devOtp) {
+          toast.success(`Dev OTP: ${data.devOtp}`);
+        }
         setTimeLeft(120); // Reset timer
-        setOtp(""); // Clear OTP input
+        setFieldValue("otp", "");
       } else {
         toast.error(data.message || "Failed to resend OTP");
       }
@@ -116,21 +130,28 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
                     key={index}
                     type="text"
                     maxLength="1"
-                    value={otp[index] || ""}
+                    value={values.otp[index] || ""}
+                    name={`otp-${index}`}
+                    inputMode="numeric"
+                    aria-label={`OTP digit ${index + 1} of 6`}
+                    aria-invalid={touched.otp && !!errors.otp ? "true" : undefined}
+                    aria-describedby={touched.otp && errors.otp ? errorId(formId, "otp") : undefined}
+                    onFocus={() => touchField("otp")}
                     onChange={(e) => {
-                      const newOtp = otp.split('');
-                      newOtp[index] = e.target.value;
-                      setOtp(newOtp.join(''));
+                      const ch = e.target.value.replace(/\D/g, "").slice(-1);
+                      const next = (values.otp || "").padEnd(6, " ").split("");
+                      next[index] = ch || " ";
+                      setFieldValue("otp", next.join("").replace(/\s+$/g, ""), { touch: true });
                       
                       // Auto-focus next input
-                      if (e.target.value && index < 5) {
+                      if (ch && index < 5) {
                         const nextInput = e.target.parentElement.children[index + 1];
                         nextInput?.focus();
                       }
                     }}
                     onKeyDown={(e) => {
                       // Handle backspace
-                      if (e.key === 'Backspace' && !otp[index] && index > 0) {
+                      if (e.key === 'Backspace' && !values.otp[index] && index > 0) {
                         const prevInput = e.target.parentElement.children[index - 1];
                         prevInput?.focus();
                       }
@@ -139,6 +160,11 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
                   />
                 ))}
               </div>
+              {touched.otp && errors.otp && (
+                <p id={errorId(formId, "otp")} className="field-error-text text-center mt-3" role="alert">
+                  {errors.otp}
+                </p>
+              )}
             </div>
 
             {/* Timer */}
@@ -155,7 +181,7 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading || otp.length !== 6 || timeLeft === 0}
+              disabled={loading || values.otp.length !== 6 || timeLeft === 0}
               className="w-full py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
             >
               {loading ? (

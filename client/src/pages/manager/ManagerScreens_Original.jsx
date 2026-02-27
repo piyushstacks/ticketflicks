@@ -1,8 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { Plus, Edit2, Trash2, Tv, Users } from "lucide-react";
+import { AlertCircle, Edit2, Plus, Trash2, Tv, Users } from "lucide-react";
 import Loading from "../../components/Loading";
+import { errorId } from "../../lib/validation.js";
+
+const validateScreenNumber = (value) => {
+  const v = (value || "").toString().trim();
+  if (!v) return "Screen number is required";
+  const n = Number(v);
+  if (Number.isNaN(n) || !Number.isInteger(n)) return "Screen number must be a whole number";
+  if (n < 1) return "Screen number must be at least 1";
+  return "";
+};
+
+const validateTotalSeats = (value) => {
+  const v = (value || "").toString().trim();
+  if (!v) return "Total seats is required";
+  const n = Number(v);
+  if (Number.isNaN(n) || !Number.isInteger(n)) return "Total seats must be a whole number";
+  if (n < 50) return "Total seats must be at least 50";
+  if (n > 500) return "Total seats must be at most 500";
+  return "";
+};
 
 const ManagerScreens = () => {
   const { axios, getAuthHeaders } = useAppContext();
@@ -14,6 +34,42 @@ const ManagerScreens = () => {
     screenNumber: "",
     totalSeats: "",
   });
+
+  const formId = "manager-screen";
+  const [touched, setTouched] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validators = useMemo(
+    () => ({
+      screenNumber: validateScreenNumber,
+      totalSeats: validateTotalSeats,
+    }),
+    []
+  );
+
+  const validateField = (name, nextValues) => {
+    const validator = validators[name];
+    if (!validator) return "";
+    return validator(nextValues[name], nextValues) || "";
+  };
+
+  const touchAndValidate = (name, nextValues) => {
+    setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
+    const error = validateField(name, nextValues);
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      if (error) next[name] = error;
+      else delete next[name];
+      return next;
+    });
+    return error;
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    if (!name) return;
+    touchAndValidate(name, formData);
+  };
 
   const fetchScreens = async () => {
     try {
@@ -40,17 +96,27 @@ const ManagerScreens = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (touched[name]) touchAndValidate(name, next);
+      return next;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.screenNumber || !formData.totalSeats) {
-      toast.error("Please fill all fields");
+    const nextTouched = {};
+    const nextErrors = {};
+    for (const name of Object.keys(validators)) {
+      nextTouched[name] = true;
+      const error = validateField(name, formData);
+      if (error) nextErrors[name] = error;
+    }
+    setTouched((prev) => ({ ...nextTouched, ...prev }));
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      toast.error(Object.values(nextErrors)[0]);
       return;
     }
 
@@ -80,6 +146,8 @@ const ManagerScreens = () => {
       if (data.success) {
         toast.success(data.message);
         setFormData({ screenNumber: "", totalSeats: "" });
+        setTouched({});
+        setFieldErrors({});
         setEditingId(null);
         setShowForm(false);
         fetchScreens();
@@ -142,28 +210,58 @@ const ManagerScreens = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="number"
-                name="screenNumber"
-                placeholder="Screen Number (e.g., 1, 2, 3) *"
-                value={formData.screenNumber}
-                onChange={handleInputChange}
-                required
-                min="1"
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
+              <div className="min-w-0">
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="screenNumber"
+                    placeholder="Screen Number (e.g., 1, 2, 3) *"
+                    value={formData.screenNumber}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.screenNumber && fieldErrors.screenNumber ? "true" : undefined}
+                    aria-describedby={touched.screenNumber && fieldErrors.screenNumber ? errorId(formId, "screenNumber") : undefined}
+                    required
+                    min="1"
+                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition w-full pr-10"
+                  />
+                  {touched.screenNumber && fieldErrors.screenNumber && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
+                  )}
+                </div>
+                {touched.screenNumber && fieldErrors.screenNumber && (
+                  <p id={errorId(formId, "screenNumber")} className="field-error-text mt-1" role="alert">
+                    {fieldErrors.screenNumber}
+                  </p>
+                )}
+              </div>
 
-              <input
-                type="number"
-                name="totalSeats"
-                placeholder="Total Seats *"
-                value={formData.totalSeats}
-                onChange={handleInputChange}
-                required
-                min="50"
-                max="500"
-                className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
-              />
+              <div className="min-w-0">
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="totalSeats"
+                    placeholder="Total Seats *"
+                    value={formData.totalSeats}
+                    onChange={handleInputChange}
+                    onBlur={handleBlur}
+                    aria-invalid={touched.totalSeats && fieldErrors.totalSeats ? "true" : undefined}
+                    aria-describedby={touched.totalSeats && fieldErrors.totalSeats ? errorId(formId, "totalSeats") : undefined}
+                    required
+                    min="50"
+                    max="500"
+                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition w-full pr-10"
+                  />
+                  {touched.totalSeats && fieldErrors.totalSeats && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
+                  )}
+                </div>
+                {touched.totalSeats && fieldErrors.totalSeats && (
+                  <p id={errorId(formId, "totalSeats")} className="field-error-text mt-1" role="alert">
+                    {fieldErrors.totalSeats}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-3 justify-end">
@@ -173,6 +271,8 @@ const ManagerScreens = () => {
                   setShowForm(false);
                   setEditingId(null);
                   setFormData({ screenNumber: "", totalSeats: "" });
+                  setTouched({});
+                  setFieldErrors({});
                 }}
                 className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-medium"
               >
@@ -227,6 +327,8 @@ const ManagerScreens = () => {
                         screenNumber: screen.screenNumber,
                         totalSeats: screen.seatLayout?.totalSeats || "",
                       });
+                      setTouched({});
+                      setFieldErrors({});
                       setEditingId(screen._id);
                       setShowForm(true);
                     }}

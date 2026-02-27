@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuthContext } from "../context/AuthContext.jsx";
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { errorId, otp6 } from "../lib/validation.js";
 
 const VerifyEmail = () => {
   const { completeSignupWithOtp, requestSignupOtp } = useAuthContext();
@@ -9,7 +11,6 @@ const VerifyEmail = () => {
   const { state } = useLocation();
   const { name, phone, password, email, purpose } = state || {};
 
-  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
@@ -18,14 +19,21 @@ const VerifyEmail = () => {
     return null;
   }
 
+  const formId = "verify-email";
+  const schema = useMemo(() => ({ otp: otp6("Verification code") }), []);
+  const { values, errors, touched, getInputProps, setFieldValue, validateForm } = useFormValidation({
+    formId,
+    initialValues: { otp: "" },
+    schema,
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!otp) {
-      return toast.error("OTP is required");
-    }
+    const { isValid } = validateForm();
+    if (!isValid) return;
     setLoading(true);
     try {
-      const data = await completeSignupWithOtp({ email, otp, name, phone, password });
+      const data = await completeSignupWithOtp({ email, otp: values.otp, name, phone, password });
       if (data.success) {
         toast.success("Account created successfully!");
         navigate("/");
@@ -78,12 +86,14 @@ const VerifyEmail = () => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Verification Code</label>
+            <label className="text-sm font-medium" htmlFor={`${formId}-otp`} style={{ color: "var(--text-secondary)" }}>Verification Code</label>
             <div className="flex gap-2">
               <input
+                {...getInputProps("otp")}
                 type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                inputMode="numeric"
+                value={values.otp}
+                onChange={(e) => setFieldValue("otp", e.target.value.replace(/\D/g, ""))}
                 className="input-field flex-1"
                 placeholder="Enter 6-digit code"
                 maxLength={6}
@@ -101,6 +111,11 @@ const VerifyEmail = () => {
               </button>
             </div>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>Code expires in 10 minutes</p>
+            {touched.otp && errors.otp && (
+              <p id={errorId(formId, "otp")} className="field-error-text" role="alert">
+                {errors.otp}
+              </p>
+            )}
           </div>
 
           <button

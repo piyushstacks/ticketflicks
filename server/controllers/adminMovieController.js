@@ -1,5 +1,5 @@
 import Movie from "../models/Movie_new.js";
-import ShowNew from "../models/Show_new.js";
+import ShowNew from "../models/show_tbls.js";
 import RatingsReview from "../models/RatingsReview.js";
 import axios from "axios";
 import User from "../models/User.js";
@@ -96,21 +96,21 @@ export const getMoviesByTheatre = async (req, res) => {
     const { theatreId } = req.params;
 
     // Find all shows for this theatre
-    const shows = await ShowNew.find({ theater_id: theatreId, isActive: true })
-      .populate("movie_id", "title description poster_path backdrop_path release_date duration_min")
-      .select("movie_id show_date");
+    const shows = await ShowNew.find({ theatre: theatreId, isActive: true })
+      .populate("movie", "title description poster_path backdrop_path release_date duration_min")
+      .select("movie showDateTime");
 
     // Extract unique movies
     const moviesMap = new Map();
     shows.forEach((show) => {
-      if (show.movie_id && !moviesMap.has(show.movie_id._id.toString())) {
-        moviesMap.set(show.movie_id._id.toString(), {
-          ...show.movie_id.toObject(),
+      if (show.movie && !moviesMap.has(show.movie._id.toString())) {
+        moviesMap.set(show.movie._id.toString(), {
+          ...show.movie.toObject(),
           showDates: [],
         });
       }
-      if (show.movie_id) {
-        moviesMap.get(show.movie_id._id.toString()).showDates.push(show.show_date);
+      if (show.movie) {
+        moviesMap.get(show.movie._id.toString()).showDates.push(show.showDateTime);
       }
     });
 
@@ -190,11 +190,10 @@ export const scheduleMovieAtTheatre = async (req, res) => {
     }
 
     const newShow = new ShowNew({
-      movie_id: movieId,
-      theater_id: theatreId,
-      screen_id: screenId,
-      show_date: showDateObj,
-      available_seats: availableSeats || [],
+      movie: movieId,
+      theatre: theatreId,
+      screen: screenId,
+      showDateTime: showDateObj,
       isActive: true,
     });
 
@@ -460,7 +459,7 @@ export const deactivateMovie = async (req, res) => {
 
     // Also deactivate all shows for this movie
     await ShowNew.updateMany(
-      { movie_id: movieId },
+      { movie: movieId },
       { isActive: false }
     );
 

@@ -1,17 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { UserIcon, LockIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { AlertCircle, EyeIcon, EyeOffIcon, LockIcon, UserIcon } from "lucide-react";
 import { useAuthContext } from "../context/AuthContext.jsx";
 import ChangePasswordModal from "../components/ChangePasswordModal.jsx";
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { email as emailValidator, errorId, required } from "../lib/validation.js";
 
 const Login = () => {
   const { login } = useAuthContext();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState({ email: "", password: "" });
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const navigate = useNavigate();
@@ -19,44 +17,28 @@ const Login = () => {
 
   const next = new URLSearchParams(location.search).get("next") || "/";
 
-  // Handle input changes with error clearing
-  const handleInputChange = (field, value) => {
-    // Update the field value
-    if (field === "email") {
-      setEmail(value);
-    } else if (field === "password") {
-      setPassword(value);
-    }
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => {
-        const updated = { ...prev };
-        delete updated[field];
-        return updated;
-      });
-    }
-  };
+  const formId = "login";
+  const schema = useMemo(
+    () => ({
+      email: emailValidator("Email"),
+      password: required("Password"),
+    }),
+    []
+  );
+
+  const { values, errors, touched, getInputProps, validateForm, setFieldValue } = useFormValidation({
+    formId,
+    initialValues: { email: "", password: "", rememberMe: false },
+    schema,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const nextErrors = { email: "", password: "" };
-    if (!email) {
-      nextErrors.email = "Email is required.";
-    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      nextErrors.email = "Enter a valid email address (e.g., user@example.com)";
-    }
-    if (!password) {
-      nextErrors.password = "Password is required.";
-    }
-    if (nextErrors.email || nextErrors.password) {
-      setErrors(nextErrors);
-      return;
-    }
-    setErrors({ email: "", password: "" });
+    const { isValid } = validateForm();
+    if (!isValid) return;
     setLoading(true);
     try {
-      const data = await login({ email, password }, { remember: rememberMe });
+      const data = await login({ email: values.email, password: values.password }, { remember: values.rememberMe });
       if (!data.success) {
         toast.error(data.message || "Invalid credentials");
       } else {
@@ -91,37 +73,37 @@ const Login = () => {
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Email Address</label>
+              <label className="text-sm font-medium" htmlFor={`${formId}-email`} style={{ color: "var(--text-secondary)" }}>Email Address</label>
               <div className="relative group">
                 <input
+                  {...getInputProps("email")}
                   type="email"
                   className="input-field pr-10"
-                  value={email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="Enter your email address"
                   required
-                  name="email"
                   autoComplete="email"
                   title="Enter your registered email address"
                 />
-                <UserIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                {touched.email && errors.email ? (
+                  <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#ef4444" }} />
+                ) : (
+                  <UserIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                )}
               </div>
-              {errors.email && (
-                <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+              {touched.email && errors.email && (
+                <p id={errorId(formId, "email")} className="field-error-text mt-1" role="alert">{errors.email}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Password</label>
+              <label className="text-sm font-medium" htmlFor={`${formId}-password`} style={{ color: "var(--text-secondary)" }}>Password</label>
               <div className="relative group">
                 <input
+                  {...getInputProps("password")}
                   type={showPassword ? "text" : "password"}
                   className="input-field pr-16"
-                  value={password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
                   placeholder="Enter your password"
                   required
-                  name="password"
                   autoComplete="current-password"
                   title="Enter your account password"
                 />
@@ -136,8 +118,8 @@ const Login = () => {
                   {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+              {touched.password && errors.password && (
+                <p id={errorId(formId, "password")} className="field-error-text mt-1" role="alert">{errors.password}</p>
               )}
             </div>
 
@@ -146,8 +128,8 @@ const Login = () => {
                 <input
                   type="checkbox"
                   className="accent-accent w-3.5 h-3.5 rounded"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  checked={values.rememberMe}
+                  onChange={(e) => setFieldValue("rememberMe", e.target.checked)}
                 />
                 <span>Remember me</span>
               </label>

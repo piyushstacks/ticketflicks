@@ -1,33 +1,34 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
-import { MailIcon } from "lucide-react";
+import { AlertCircle, MailIcon } from "lucide-react";
+import { useFormValidation } from "../hooks/useFormValidation.js";
+import { email as emailValidator, errorId } from "../lib/validation.js";
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
   const { forgotPassword } = useAuthContext();
   const navigate = useNavigate();
 
-  const handleInputChange = (value) => {
-    setEmail(value);
-    if (errors.email) setErrors({});
-  };
+  const formId = "forgot-password";
+  const schema = useMemo(() => ({ email: emailValidator("Email") }), []);
+  const { values, errors, touched, getInputProps, validateForm } = useFormValidation({
+    formId,
+    initialValues: { email: "" },
+    schema,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) { setErrors({ email: "Email is required" }); return; }
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      setErrors({ email: "Enter a valid email address" }); return;
-    }
+    const { isValid } = validateForm();
+    if (!isValid) return;
     setSubmitting(true);
     try {
-      const data = await forgotPassword({ email });
+      const data = await forgotPassword({ email: values.email });
       if (data.success) {
         toast.success(data.message || "OTP sent if email exists");
-        navigate("/reset-password", { state: { email } });
+        navigate("/reset-password", { state: { email: values.email } });
       } else {
         toast.error(data.message || "Unable to process request");
       }
@@ -48,19 +49,22 @@ const ForgotPassword = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Email Address</label>
+            <label className="text-sm font-medium" htmlFor={`${formId}-email`} style={{ color: "var(--text-secondary)" }}>Email Address</label>
             <div className="relative">
               <input
+                {...getInputProps("email")}
                 type="email"
-                className={`input-field pr-10 ${errors.email ? "border-red-500" : ""}`}
-                value={email}
-                onChange={(e) => handleInputChange(e.target.value)}
+                className="input-field pr-10"
                 placeholder="Enter your registered email"
                 required
               />
-              <MailIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              {touched.email && errors.email ? (
+                <AlertCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#ef4444" }} />
+              ) : (
+                <MailIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
+              )}
             </div>
-            {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+            {touched.email && errors.email && <p id={errorId(formId, "email")} className="field-error-text">{errors.email}</p>}
           </div>
 
           <button

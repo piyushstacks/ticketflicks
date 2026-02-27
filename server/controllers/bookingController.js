@@ -222,9 +222,9 @@ export const createBooking = async (req, res) => {
     }
 
     const showData = await Show.findById(showId)
-      .populate("movie_id")
-      .populate("theater_id")
-      .populate("screen_id");
+      .populate("movie")
+      .populate("theatre")
+      .populate("screen");
 
     if (!showData) {
       return res.json({ success: false, message: "Show not found" });
@@ -503,9 +503,9 @@ export const fetchUserBookings = async (req, res) => {
       .populate({
         path: "show_id",
         populate: [
-          { path: "movie_id" },
-          { path: "theater_id" },
-          { path: "screen_id" },
+          { path: "movie" },
+          { path: "theatre" },
+          { path: "screen" },
         ],
       })
       .populate("seats_booked")
@@ -551,7 +551,7 @@ export const cancelBooking = async (req, res) => {
     }
 
     // Check cancellation deadline
-    const showTime = new Date(booking.show_id.show_date);
+    const showTime = new Date(booking.show_id.showDateTime);
     const currentTime = new Date();
     const hoursUntilShow = (showTime - currentTime) / (1000 * 60 * 60);
 
