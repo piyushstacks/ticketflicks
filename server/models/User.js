@@ -1,28 +1,52 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    email: { 
-      type: String, 
-      required: true, 
-      unique: true,
-      lowercase: true, // Automatically store email in lowercase
-      index: true,     // Index for faster lookups
-      trim: true       // Remove whitespace
-    },
-    phone: { type: String, required: true },
-    password_hash: { type: String, required: true },
-    role: { type: String, enum: ["customer", "admin", "manager"], default: "customer" },
-    managedTheatreId: { type: mongoose.Schema.Types.ObjectId, ref: "Theatre" },
-    last_login: { type: Date },
-    favorites: { type: [String], default: [] },
+const userSchema = new mongoose.Schema({
+  name: { 
+    type: String, 
+    required: true, 
+    trim: true 
   },
-  { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
-);
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true, 
+    lowercase: true, 
+    trim: true 
+  },
+  phone: { 
+    type: String, 
+    required: true, 
+    trim: true,
+    validate: {
+      validator: function(v) {
+        return /^\d{10}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid 10-digit phone number!`
+    }
+  },
+  password_hash: { 
+    type: String, 
+    required: true, 
+    select: false 
+  },
+  role: { 
+    type: String, 
+    required: true, 
+    enum: ["customer", "manager", "admin"] 
+  },
+  last_login: { 
+    type: Date 
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  }
+}, { timestamps: true });
 
-// Use model name 'User' for populate() compatibility and save to
-// the 'user_tbls' collection as requested.
-const User = mongoose.model("User", userSchema, "user_tbls");
+// Index for faster queries
+userSchema.index({ email: 1 });
+userSchema.index({ role: 1 });
+
+const User = mongoose.model("User", userSchema, "users_new");
 
 export default User;

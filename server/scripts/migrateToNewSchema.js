@@ -1,27 +1,19 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 
-// Old Models
-import OldUser from "../models/User.js";
-import OldTheatre from "../models/Theatre.js";
-import OldMovie from "../models/Movie.js";
-import OldScreenTbl from "../models/ScreenTbl.js";
-import OldShowTbls from "../models/show_tbls.js";
-import OldBooking from "../models/Booking.js";
-
-// New Models
-import NewUser from "../models/User_new.js";
-import NewTheater from "../models/Theater_new.js";
-import NewMovie from "../models/Movie_new.js";
-import NewScreen from "../models/Screen_new.js";
-import NewShow from "../models/Show_new.js";
-import NewBooking from "../models/Booking_new.js";
-import NewSeat from "../models/Seat.js";
-import NewSeatCategory from "../models/SeatCategory.js";
-import NewGenre from "../models/Genre.js";
-import NewLanguage from "../models/Language.js";
-import NewCast from "../models/Cast.js";
-import NewPayment from "../models/Payment.js";
+// Unified Models (all consolidated into single files)
+import User from "../models/User.js";
+import Theatre from "../models/Theatre.js";
+import Movie from "../models/Movie.js";
+import Screen from "../models/Screen.js";
+import Show from "../models/show_tbls.js";
+import Booking from "../models/Booking.js";
+import Seat from "../models/Seat.js";
+import SeatCategory from "../models/SeatCategory.js";
+import Genre from "../models/Genre.js";
+import Language from "../models/Language.js";
+import Cast from "../models/Cast.js";
+import Payment from "../models/Payment.js";
 
 dotenv.config();
 
@@ -45,35 +37,22 @@ const error = (msg, err) => console.error(`[MIGRATE ERROR] ${msg}`, err);
 // ============ MIGRATION FUNCTIONS ============
 
 const migrateUsers = async () => {
-  log("Starting User migration...");
-  const oldUsers = await OldUser.find();
+  log("Starting User verification...");
+  const users = await User.find();
   let count = 0;
 
-  for (const oldUser of oldUsers) {
+  for (const user of users) {
     try {
-      // Check if user already exists in new collection
-      let newUser = await NewUser.findOne({ email: oldUser.email });
-      
-      if (!newUser) {
-        // Create new user if doesn't exist
-        newUser = await NewUser.create({
-          name: oldUser.name || "Unknown",
-          email: oldUser.email,
-          phone: oldUser.phone || "0000000000",
-          password_hash: oldUser.password_hash || "default_hash",
-          role: oldUser.role || "customer",
-          last_login: oldUser.last_login,
-        });
+      // Verify user has required fields
+      if (user._id && user.email) {
+        idMaps.user.set(user._id.toString(), user._id.toString());
         count++;
       }
-      
-      // Always populate idMaps for downstream migrations
-      idMaps.user.set(oldUser._id.toString(), newUser._id.toString());
     } catch (err) {
-      error(`Failed to migrate user ${oldUser.email}`, err.message);
+      error(`Failed to process user ${user.email}`, err.message);
     }
   }
-  log(`✅ Migrated ${count} new users, total in idMaps: ${idMaps.user.size}`);
+  log(`✅ Found ${count} users in unified schema`);
 };
 
 const migrateTheaters = async () => {

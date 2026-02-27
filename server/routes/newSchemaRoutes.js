@@ -42,9 +42,9 @@ import {
 } from "../controllers/authController.js";
 import { otpRateLimiter } from "../middleware/otpRateLimiter.js";
 
-// Import old booking controller for Stripe integration
+// Import unified booking controller
 import {
-  createBooking,
+  createBooking as createBookingStripe,
   fetchOccupiedSeats,
   fetchUserBookings,
   cancelBooking,
@@ -81,11 +81,11 @@ router.post("/bookings/payment/stripe", bookingController.createStripePayment);
 router.post("/bookings/payment/confirm", bookingController.confirmPayment);
 router.get("/bookings", bookingController.getAllBookings);
 
-// ========== BOOKING ROUTES (Old Schema - Required for Frontend) ==========
-// These routes use the old booking controller with Stripe integration
-router.post("/bookings/create", protectUser, createBooking);
+// ========== BOOKING ROUTES (Stripe Integration) ==========
+// Legacy routes for Stripe payment integration - still supported for backward compatibility
+router.post("/bookings/create", protectUser, createBookingStripe);
 router.get("/bookings/seats/:showId", fetchOccupiedSeats);
-router.get("/bookings/my-bookings", protectUser, fetchUserBookings);
+router.get("/my-bookings", protectUser, fetchUserBookings);
 router.put("/bookings/:bookingId/cancel", protectUser, cancelBooking);
 router.post("/bookings/confirm-stripe", protectUser, confirmStripePayment);
 

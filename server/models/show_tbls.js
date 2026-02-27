@@ -1,45 +1,48 @@
 import mongoose from "mongoose";
 
-const showSchema = mongoose.Schema(
-  {
-    movie: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "Movie",
-    },
-    theatre: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "Theatre",
-    },
-    screen: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: "ScreenTbl",
-    },
-    showDateTime: { type: Date, required: true },
-    showTime: { type: String }, // HH:MM format
-    startDate: { type: Date }, // Show start date
-    endDate: { type: Date }, // Show end date
-    basePrice: { type: Number, required: true },
-    language: { type: String, default: "en" },
-    seatTiers: [
-      {
-        tierName: { type: String, required: true }, // e.g., "Standard", "Premium"
-        price: { type: Number, required: true },
-        seatsPerRow: { type: Number, default: 20 },
-        rowCount: { type: Number, default: 10 },
-        totalSeats: { type: Number },
-        occupiedSeats: { type: Object, default: {} }, // e.g., { "A1": "userId", "B5": "userId" }
-      },
-    ],
-    totalCapacity: { type: Number, required: true },
-    occupiedSeatsCount: { type: Number, default: 0 },
-    isActive: { type: Boolean, default: true },
+const showSchema = new mongoose.Schema({
+  movie_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "Movie", 
+    required: true 
   },
-  { minimize: false, timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
-);
+  theater_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "Theatre", 
+    required: true 
+  },
+  screen_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "Screen", 
+    required: true 
+  },
+  show_date: { 
+    type: Date, 
+    required: true 
+  },
+  show_time: {
+    type: String
+  },
+  start_date: {
+    type: Date
+  },
+  end_date: {
+    type: Date
+  },
+  available_seats: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "Seat" 
+  }],
+  isActive: {
+    type: Boolean,
+    default: true
+  }
+}, { timestamps: true });
 
-const ShowTbls = mongoose.model("ShowTbls", showSchema, "show_tbls");
+// Index for faster queries
+showSchema.index({ theater_id: 1, show_date: 1 });
+showSchema.index({ movie_id: 1, show_date: 1 });
 
-export default ShowTbls;
+const Show = mongoose.model("Show", showSchema, "shows_new");
+
+export default Show;
