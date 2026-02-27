@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import UserNew from "../models/User_new.js";
 import Otp from "../models/Otp.js";
 import sendEmail from "../configs/nodeMailer.js";
 
@@ -88,8 +89,10 @@ export const login = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
-    // Query with lowercase email (model will apply lowercase automatically)
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Support both schemas during transition
+    const user =
+      (await UserNew.findOne({ email: email.toLowerCase() }).select("+password_hash")) ||
+      (await User.findOne({ email: email.toLowerCase() }));
     console.log("User found:", !!user);
     if (!user) {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
@@ -129,8 +132,10 @@ export const forgotPasswordRequest = async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
-    // Query with lowercase email (model will apply lowercase automatically)
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Support both schemas during transition
+    const user =
+      (await UserNew.findOne({ email: email.toLowerCase() })) ||
+      (await User.findOne({ email: email.toLowerCase() }));
     if (!user) return res.json({ success: true, message: "If the email exists, an OTP has been sent" });
 
     // Delete any existing OTPs for this email (old OTP expires immediately when new one is sent)
@@ -166,8 +171,10 @@ export const resendForgotOtp = async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
-    // Query with lowercase email (model will apply lowercase automatically)
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Support both schemas during transition
+    const user =
+      (await UserNew.findOne({ email: email.toLowerCase() })) ||
+      (await User.findOne({ email: email.toLowerCase() }));
     if (!user) return res.json({ success: true, message: "If the email exists, an OTP has been sent" });
 
     // Delete old OTP
@@ -223,7 +230,9 @@ export const resetPasswordWithOtp = async (req, res) => {
     const match = await bcrypt.compare(otp, otpDoc.otpHash);
     if (!match) return res.status(400).json({ success: false, message: "Invalid OTP" });
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user =
+      (await UserNew.findOne({ email: email.toLowerCase() }).select("+password_hash")) ||
+      (await User.findOne({ email: email.toLowerCase() }));
     if (!user) return res.status(400).json({ success: false, message: "User not found" });
 
     user.password_hash = await bcrypt.hash(newPassword, 10);

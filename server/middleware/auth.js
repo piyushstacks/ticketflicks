@@ -70,21 +70,21 @@ export const protectAdminOnly = async (req, res, next) => {
       : null;
 
     if (!token) {
-      return res.json({ success: false, message: "not authorized" });
+      return res.json({ success: false, message: "not authorized - admin role required" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Check if user exists and has admin role
     // Login in the frontend uses the new schema user collection, so we support both.
-    const user = (await User.findById(decoded.id)) || (await UserNew.findById(decoded.id));
+    const user = (await UserNew.findById(decoded.id)) || (await User.findById(decoded.id));
     if (!user || user.role !== "admin") {
       return res.json({ success: false, message: "not authorized - admin role required" });
     }
 
-    req.user = { id: decoded.id, role: decoded.role };
+    req.user = { id: decoded.id, role: user.role };
     next();
   } catch (error) {
-    return res.json({ success: false, message: "not authorized" });
+    return res.json({ success: false, message: "not authorized - admin role required" });
   }
 };

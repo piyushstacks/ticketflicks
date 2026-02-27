@@ -16,13 +16,15 @@ const router = express.Router();
 
 // Public routes
 router.get("/", fetchAllTheatres);
-router.get("/:id", fetchTheatre);
 router.get("/find/search", searchTheatres);
 router.post("/request-otp", requestTheatreRegistrationOtp); // Public endpoint for OTP request
 router.post("/register", registerTheatre); // Public endpoint for new theatre registration
 
 // Get screens for a specific theatre
 router.get("/:theatreId/screens", getTheatreScreensPublic);
+
+// Generic theatre fetch route (keep after more specific routes)
+router.get("/:id", fetchTheatre);
 
 // Protected routes (require authentication)
 router.get("/manager/:managerId", protectUser, getTheatresByManager);

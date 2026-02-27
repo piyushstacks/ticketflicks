@@ -1,7 +1,7 @@
-import Theatre from "../models/Theater_new.js";
-import User from "../models/User_new.js";
+import TheaterNew from "../models/Theater_new.js";
+import UserNew from "../models/User_new.js";
 import Otp from "../models/Otp.js";
-import ScreenTbl from "../models/Screen_new.js";
+import ScreenNew from "../models/Screen_new.js";
 import bcryptjs from "bcryptjs";
 import sendEmail from "../configs/nodeMailer.js";
 
@@ -40,7 +40,7 @@ export const requestTheatreRegistrationOtp = async (req, res) => {
     console.log("Normalized email:", normalizedEmail);
 
     // Check if email already exists
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await UserNew.findOne({ email: normalizedEmail });
     if (existingUser) {
       console.log("ERROR: Email already registered");
       return res.status(400).json({ success: false, message: "Email already registered" });
@@ -186,7 +186,7 @@ export const registerTheatre = async (req, res) => {
     }
 
     // Check if manager email already exists
-    const existingManager = await User.findOne({ email: normalizedEmail });
+    const existingManager = await UserNew.findOne({ email: normalizedEmail });
     if (existingManager) {
       return res.status(409).json({
         success: false,
@@ -215,29 +215,36 @@ export const registerTheatre = async (req, res) => {
     // Hash password
     const hashedPassword = await bcryptjs.hash(password, 10);
 
-    // Create new manager user but with pending status initially
-    const newManager = new User({
+    // Create new manager user (approval is handled via TheaterNew.approval_status)
+    const newManager = new UserNew({
       name,
       email: normalizedEmail,
       phone: normalizedPhone,
       password_hash: hashedPassword,
-      role: "pending_manager", // Changed from "manager" to prevent login until approved
+      role: "manager",
     });
 
     const savedManager = await newManager.save();
 
-    // Create theatre with pending approval status (new schema)
-    const newTheatre = new Theatre({
+    // Create theatre with pending approval status (using new schema with manager_id)
+    const newTheatre = new TheaterNew({
       name: theatreName,
       location,
       contact_no: normalizedContactNo,
-      u_id: savedManager._id,
+      email: theatreEmail?.toLowerCase(),
+      address,
+      city,
+      state,
+      zipCode,
+      step3_pdf_url: theatre.step3_pdf_url,
+      manager_id: savedManager._id,
       approval_status: "pending",
-      disabled: false,
-      isDeleted: false,
     });
 
     const savedTheatre = await newTheatre.save();
+    console.log("[DEBUG] Theatre saved:", savedTheatre._id);
+    console.log("[DEBUG] Theatre manager_id:", savedTheatre.manager_id);
+    console.log("[DEBUG] Manager ID type:", typeof savedManager._id, savedManager._id);
 
     // Create Screen documents linked to the theatre
     const screenDocs = screens.map((screenData, index) => {
@@ -317,41 +324,53 @@ export const registerTheatre = async (req, res) => {
       }
 
       return {
-        Tid: savedTheatre._id,
         name: screenData.name || `Screen ${index + 1}`,
-        capacity: Number(screenData.layout.totalSeats || 0),
-        isDeleted: false,
+        screenNumber: screenData.name || `Screen ${index + 1}`,
+        Tid: savedTheatre._id,
+        capacity: screenData.layout.totalSeats || 100,
+        seatLayout: {
+          layout: screenData.layout.layout || [],
+          rows: screenData.layout.rows,
+          seatsPerRow: screenData.layout.seatsPerRow,
+          totalSeats: screenData.layout.totalSeats,
+        },
+        seatTiers: seatTiers,
+        isActive: true,
       };
     });
 
     // Validate screen documents before insertion
     for (let i = 0; i < screenDocs.length; i++) {
       const screenDoc = screenDocs[i];
-      if (!screenDoc.Tid) {
-        throw new Error(`Screen ${i + 1} is missing theatre reference`);
+      if (!screenDoc.seatLayout?.layout || screenDoc.seatLayout.layout.length === 0) {
+        throw new Error(`Screen ${i + 1} has invalid seat layout`);
       }
-      if (!screenDoc.name) {
-        throw new Error(`Screen ${i + 1} is missing a name`);
-      }
-      if (!Number.isFinite(screenDoc.capacity) || screenDoc.capacity < 10) {
-        throw new Error(`Screen ${i + 1} has invalid capacity`);
+      if (!screenDoc.seatTiers || screenDoc.seatTiers.length === 0) {
+        throw new Error(`Screen ${i + 1} has no seat tiers configured`);
       }
     }
 
-    // Insert Screen documents (new schema)
+    // Insert Screen documents
     try {
-      const insertedScreens = await ScreenTbl.insertMany(screenDocs);
+      console.log("[DEBUG] Attempting to insert screens:", JSON.stringify(screenDocs, null, 2));
+      const insertedScreens = await ScreenNew.insertMany(screenDocs);
       console.log("Successfully inserted screens:", insertedScreens.length);
     } catch (screenError) {
-      console.error("Error inserting screens:", screenError);
+      console.error("[DEBUG] Error inserting screens:", screenError);
+      console.error("[DEBUG] Error name:", screenError.name);
+      console.error("[DEBUG] Error message:", screenError.message);
+      if (screenError.errors) {
+        console.error("[DEBUG] Validation errors:", JSON.stringify(screenError.errors, null, 2));
+      }
       // Clean up created user and theatre if screen insertion fails
-      await User.findByIdAndDelete(savedManager._id);
-      await Theatre.findByIdAndDelete(savedTheatre._id);
+      await UserNew.findByIdAndDelete(savedManager._id);
+      await TheaterNew.findByIdAndDelete(savedTheatre._id);
 
       return res.status(500).json({
         success: false,
         message: "Error creating screen configurations",
         error: screenError.message,
+        details: screenError.errors || null,
       });
     }
 
@@ -448,11 +467,11 @@ export const fetchAllTheatres = async (req, res) => {
   try {
     const { status, disabled } = req.query;
 
-    const filter = { isDeleted: false };
+    const filter = {};
     if (status) filter.approval_status = status;
     if (disabled !== undefined) filter.disabled = disabled === "true";
 
-    const theatres = await Theatre.find(filter).populate("u_id", "name email phone");
+    const theatres = await TheaterNew.find(filter).populate("manager_id", "name email phone");
     res.status(200).json({
       success: true,
       theatres,
@@ -482,13 +501,12 @@ export const searchTheatres = async (req, res) => {
 
     const searchRegex = new RegExp(q.trim(), 'i'); // Case-insensitive search
     
-    const theatres = await Theatre.find({
+    const theatres = await TheaterNew.find({
       disabled: { $ne: true },
       approval_status: 'approved',
       $or: [
         { name: searchRegex },
-        { address: searchRegex },
-        { city: searchRegex }
+        { location: searchRegex }
       ]
     }).populate("manager_id", "name email phone").limit(10);
 
@@ -519,7 +537,7 @@ export const fetchTheatre = async (req, res) => {
         message: "Theatre not found",
       });
     }
-    const theatre = await Theatre.findById(id).populate("manager_id", "name email phone");
+    const theatre = await TheaterNew.findById(id).populate("manager_id", "name email phone");
 
     if (!theatre || theatre.approval_status !== "approved" || theatre.disabled) {
       return res.status(404).json({
@@ -546,19 +564,14 @@ export const fetchTheatre = async (req, res) => {
 export const updateTheatre = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, location, contact_no, address, city, state, zipCode, email } = req.body;
+    const { name, location, contact_no } = req.body;
 
     const updateData = {};
     if (name) updateData.name = name;
     if (location) updateData.location = location;
     if (contact_no) updateData.contact_no = contact_no;
-    if (address) updateData.address = address;
-    if (city) updateData.city = city;
-    if (state) updateData.state = state;
-    if (zipCode) updateData.zipCode = zipCode;
-    if (email) updateData.email = email;
 
-    const theatre = await Theatre.findByIdAndUpdate(id, updateData, { new: true }).populate(
+    const theatre = await TheaterNew.findByIdAndUpdate(id, updateData, { new: true }).populate(
       "manager_id",
       "name email phone"
     );
@@ -591,7 +604,7 @@ export const deleteTheatre = async (req, res) => {
     const { id } = req.params;
     
     // First find the theatre to get its manager_id
-    const theatre = await Theatre.findById(id);
+    const theatre = await TheaterNew.findById(id);
     if (!theatre) {
       return res.status(404).json({
         success: false,
@@ -599,20 +612,18 @@ export const deleteTheatre = async (req, res) => {
       });
     }
 
-    // Delete associated screens from ScreenTbl
-    await ScreenTbl.deleteMany({ theatre: id });
+    // Delete associated screens from ScreenNew
+    await ScreenNew.deleteMany({ Tid: id });
 
-    // Update manager to remove managedTheatreId
+    // Update manager to remove role if needed
     if (theatre.manager_id) {
-      await User.findByIdAndUpdate(theatre.manager_id, {
-        managedTheatreId: null,
-        managedTheatreId: null,
-        role: "customer" // Or some other appropriate role
+      await UserNew.findByIdAndUpdate(theatre.manager_id, {
+        role: "customer"
       });
     }
 
     // Finally delete the theatre
-    await Theatre.findByIdAndDelete(id);
+    await TheaterNew.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
@@ -632,7 +643,7 @@ export const deleteTheatre = async (req, res) => {
 export const getTheatresByManager = async (req, res) => {
   try {
     const { managerId } = req.params;
-    const theatres = await Theatre.find({ u_id: managerId, isDeleted: false });
+    const theatres = await TheaterNew.find({ manager_id: managerId });
     
     res.status(200).json({
       success: true,
@@ -653,15 +664,17 @@ export const fetchScreensByTheatre = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Use ScreenTbl to get screens data - only for approved, non-disabled theatres
-    const theatre = await Theatre.findById(id);
+    // Use ScreenNew to get screens data - only for approved, non-disabled theatres
+    const theatre = await TheaterNew.findById(id);
     
     if (!theatre || theatre.approval_status !== "approved" || theatre.disabled) {
       return res.json({ success: false, message: "Theatre not found" });
     }
     
-    // Fetch screens from ScreenTbl
-    const screens = await ScreenTbl.find({ theatre: id });
+    // Fetch screens from ScreenNew
+    const screens = await ScreenNew.find({ Tid: id })
+      .populate("theatre", "name location")
+      .sort({ name: 1 });
     
     res.json({ success: true, screens });
   } catch (error) {

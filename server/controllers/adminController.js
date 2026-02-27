@@ -1,24 +1,17 @@
 import mongoose from "mongoose";
 import { inngest } from "../inngest/index.js";
-import Booking from "../models/Booking.js";
-import ShowTbls from "../models/show_tbls.js";
-import User from "../models/User.js";
-import Theatre from "../models/Theatre.js";
-import ScreenTbl from "../models/ScreenTbl.js";
-import Movie from "../models/Movie.js";
-import bcryptjs from "bcryptjs";
-import sendEmail from "../configs/nodeMailer.js";
-
-// New schema models
 import BookingNew from "../models/Booking_new.js";
 import ShowNew from "../models/Show_new.js";
 import UserNew from "../models/User_new.js";
 import TheaterNew from "../models/Theater_new.js";
 import ScreenNew from "../models/Screen_new.js";
+import MovieNew from "../models/Movie_new.js";
+import bcryptjs from "bcryptjs";
+import sendEmail from "../configs/nodeMailer.js";
 
 export const isAdmin = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await UserNew.findById(req.user.id);
     const isAdminUser = user && user.role === "admin";
     res.json({ success: true, isAdmin: isAdminUser });
   } catch (error) {
@@ -29,12 +22,12 @@ export const isAdmin = async (req, res) => {
 //API to get dashboard data
 export const fetchDashboardData = async (req, res) => {
   try {
-    const bookings = await Booking.find({ isPaid: true });
-    const activeShows = await ShowTbls.find({
-      showDateTime: { $gte: new Date() },
-    }).populate("movie");
+    const bookings = await BookingNew.find({ isPaid: true });
+    const activeShows = await ShowNew.find({
+      showDate: { $gte: new Date() },
+    }).populate("movie_id");
 
-    const totalUser = await User.countDocuments();
+    const totalUser = await UserNew.countDocuments();
 
     const dashboardData = {
       totalBookings: bookings.length,
@@ -53,11 +46,16 @@ export const fetchDashboardData = async (req, res) => {
 // Get pending theatre registrations - New
 export const getPendingTheatres = async (req, res) => {
   try {
-    const pendingTheatres = await TheaterNew.find({
-      approval_status: "pending",
-      isDeleted: false,
-    })
-      .populate("u_id", "name email phone")
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
+    const pendingTheatres = await TheaterNew.find({ approval_status: "pending" })
+      .populate("manager_id", "name email phone")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, theatres: pendingTheatres });
@@ -70,6 +68,14 @@ export const getPendingTheatres = async (req, res) => {
 // Approve theatre registration - New
 export const approveTheatre = async (req, res) => {
   try {
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
     const { theatreId } = req.params;
     const { action } = req.body; // "approve" or "decline"
 
@@ -77,9 +83,26 @@ export const approveTheatre = async (req, res) => {
       return res.json({ success: false, message: "Invalid action" });
     }
 
-    const theatre = await TheaterNew.findById(theatreId).populate("u_id");
+    const theatre = await TheaterNew.findById(theatreId);
+    console.log("[DEBUG] approveTheatre - theatre found:", theatre?._id);
+    console.log("[DEBUG] approveTheatre - raw manager_id:", theatre?.manager_id);
+    
     if (!theatre) {
       return res.json({ success: false, message: "Theatre not found" });
+    }
+
+    // Look up manager directly instead of populate
+    let manager = null;
+    if (theatre.manager_id) {
+      manager = await UserNew.findById(theatre.manager_id);
+      console.log("[DEBUG] approveTheatre - manager lookup result:", manager?._id, manager?.name);
+    }
+    
+    if (!manager) {
+      return res.json({
+        success: false,
+        message: "Manager not found for this theatre",
+      });
     }
 
     if (theatre.approval_status !== "pending") {
@@ -94,13 +117,6 @@ export const approveTheatre = async (req, res) => {
       theatre.approval_status = "approved";
       theatre.approval_date = new Date();
       await theatre.save();
-
-      // Update manager role from pending_manager to manager
-      const manager = await UserNew.findById(theatre.u_id);
-      if (manager && manager.role === "pending_manager") {
-        manager.role = "manager";
-        await manager.save();
-      }
 
       // Generate login credentials email
       try {
@@ -141,7 +157,6 @@ export const approveTheatre = async (req, res) => {
     } else {
       // Decline the theatre
       theatre.approval_status = "declined";
-      theatre.approval_date = new Date();
       await theatre.save();
 
       // Send decline email
@@ -222,7 +237,7 @@ export const fetchAllScreens = async (req, res) => {
       .populate({
         path: "Tid",
         match: { approval_status: "approved", disabled: false, isDeleted: false },
-        select: "name location u_id",
+        select: "name location manager_id",
       })
       .sort({ createdAt: -1 });
 
@@ -235,7 +250,7 @@ export const fetchAllScreens = async (req, res) => {
           name: screen.Tid.name,
           location: screen.Tid.location,
           city: screen.Tid.location,
-          manager: screen.Tid.u_id,
+          manager: screen.Tid.manager_id,
         },
         screen: {
           name: screen.name,
@@ -254,7 +269,15 @@ export const fetchAllScreens = async (req, res) => {
 // Admin Dashboard Data - New
 export const dashboardAdminData = async (req, res) => {
   try {
-    const totalTheatres = await TheaterNew.countDocuments({ isDeleted: false });
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
+    const totalTheatres = await TheaterNew.countDocuments();
     const activeUsers = await UserNew.countDocuments({ role: "customer" });
     const paidBookings = await BookingNew.find({ isPaid: true });
     const totalRevenue = paidBookings.reduce(
@@ -265,7 +288,7 @@ export const dashboardAdminData = async (req, res) => {
     res.json({
       success: true,
       data: {
-        totalTheatres,
+        totalTheaterNews,
         activeUsers,
         totalRevenue,
         totalBookings: paidBookings.length,
@@ -280,21 +303,35 @@ export const dashboardAdminData = async (req, res) => {
 // Get All Theatres - Only approved theatres (strict: must have approval_status exactly 'approved')
 export const getAllTheatres = async (req, res) => {
   try {
-    const approvedOnly = { approval_status: { $eq: "approved" }, isDeleted: false };
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
 
-    const activeTheatresRaw = await TheaterNew.find({
-      ...approvedOnly,
-      disabled: false,
-    })
-      .populate("u_id", "name email phone")
+    // Debug: First check all theatres without filter
+    const allTheatres = await TheaterNew.find({});
+    console.log("[DEBUG] Total theatres in DB:", allTheatres.length);
+    console.log("[DEBUG] All theatres:", allTheatres.map(t => ({ 
+      _id: t._id, 
+      name: t.name, 
+      approval_status: t.approval_status,
+      disabled: t.disabled 
+    })));
+
+    const activeTheatresRaw = await TheaterNew.find({ approval_status: "approved", disabled: false })
+      .populate("manager_id", "name email phone")
       .sort({ name: 1 });
 
-    const disabledTheatresRaw = await TheaterNew.find({
-      ...approvedOnly,
-      disabled: true,
-    })
-      .populate("u_id", "name email phone")
+    console.log("[DEBUG] Active approved theatres found:", activeTheatresRaw.length);
+
+    const disabledTheatresRaw = await TheaterNew.find({ approval_status: "approved", disabled: true })
+      .populate("manager_id", "name email phone")
       .sort({ name: 1 });
+
+    console.log("[DEBUG] Disabled approved theatres found:", disabledTheatresRaw.length);
 
     const addScreenCounts = async (theatresList) => {
       return Promise.all(
@@ -306,7 +343,6 @@ export const getAllTheatres = async (req, res) => {
           const theatreObj = theatre.toObject();
           return {
             ...theatreObj,
-            manager_id: theatreObj.u_id,
             screenCount,
           };
         }),
@@ -326,10 +362,18 @@ export const getAllTheatres = async (req, res) => {
 // Get Theatre Details - New
 export const getTheatreDetails = async (req, res) => {
   try {
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
     const { theatreId } = req.params;
 
     const theatre = await TheaterNew.findById(theatreId).populate(
-      "u_id",
+      "manager_id",
       "name email phone",
     );
 
@@ -337,8 +381,7 @@ export const getTheatreDetails = async (req, res) => {
       return res.json({ success: false, message: "Theatre not found" });
     }
 
-    const theatreObj = theatre.toObject();
-    res.json({ success: true, theatre: { ...theatreObj, manager_id: theatreObj.u_id } });
+    res.json({ success: true, theatre });
   } catch (error) {
     console.error("[getTheatreDetails]", error);
     res.json({ success: false, message: error.message });
@@ -348,6 +391,14 @@ export const getTheatreDetails = async (req, res) => {
 // Create Theatre - New
 export const createTheatre = async (req, res) => {
   try {
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
     const { name, location, contact_no, managerId } = req.body;
 
     if (!name || !location || !contact_no) {
@@ -368,19 +419,17 @@ export const createTheatre = async (req, res) => {
       name,
       location,
       contact_no,
-      u_id: managerId,
+      manager_id: managerId,
       approval_status: "approved",
       disabled: false,
-      isDeleted: false,
     });
 
-    const populatedTheatre = await theatre.populate("u_id", "name email phone");
-    const theatreObj = populatedTheatre.toObject();
+    const populatedTheatre = await theatre.populate("manager_id", "name email phone");
 
     res.json({
       success: true,
       message: "Theatre created successfully",
-      theatre: { ...theatreObj, manager_id: theatreObj.u_id },
+      theatre: populatedTheatre,
     });
   } catch (error) {
     console.error("[createTheatre]", error);
@@ -391,6 +440,14 @@ export const createTheatre = async (req, res) => {
 // Update Theatre - New
 export const updateTheatre = async (req, res) => {
   try {
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
     const { theatreId } = req.params;
     const {
       name,
@@ -419,23 +476,21 @@ export const updateTheatre = async (req, res) => {
       if (!manager || manager.role !== "manager") {
         return res.json({ success: false, message: "Invalid manager" });
       }
-      updateData.u_id = managerId;
+      updateData.manager_id = managerId;
     }
 
     const theatre = await TheaterNew.findByIdAndUpdate(theatreId, updateData, {
       new: true,
-    }).populate("u_id", "name email phone");
+    }).populate("manager_id", "name email phone");
 
     if (!theatre) {
       return res.json({ success: false, message: "Theatre not found" });
     }
 
-    const theatreObj = theatre.toObject();
-
     res.json({
       success: true,
       message: "Theatre updated successfully",
-      theatre: { ...theatreObj, manager_id: theatreObj.u_id },
+      theatre,
     });
   } catch (error) {
     console.error("[updateTheatre]", error);
@@ -446,16 +501,23 @@ export const updateTheatre = async (req, res) => {
 // Disable Theatre - New
 export const disableTheatre = async (req, res) => {
   try {
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
     const { theatreId } = req.params;
 
     const theatre = await TheaterNew.findByIdAndUpdate(
       theatreId,
       {
         disabled: true,
-        disabled_date: new Date(),
       },
       { new: true },
-    ).populate("u_id", "name email phone");
+    ).populate("manager_id", "name email phone");
 
     if (!theatre) {
       return res.json({ success: false, message: "Theatre not found" });
@@ -464,7 +526,7 @@ export const disableTheatre = async (req, res) => {
     res.json({
       success: true,
       message: "Theatre disabled successfully",
-      theatre: { ...theatre.toObject(), manager_id: theatre.toObject().u_id },
+      theatre,
     });
   } catch (error) {
     console.error("[disableTheatre]", error);
@@ -475,13 +537,20 @@ export const disableTheatre = async (req, res) => {
 // Enable Theatre - New
 export const enableTheatre = async (req, res) => {
   try {
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
     const { theatreId } = req.params;
 
-    const theatre = await Theatre.findByIdAndUpdate(
+    const theatre = await TheaterNew.findByIdAndUpdate(
       theatreId,
       {
         disabled: false,
-        disabled_date: null,
       },
       { new: true },
     ).populate("manager_id", "name email phone");
@@ -504,9 +573,17 @@ export const enableTheatre = async (req, res) => {
 // Delete Theatre - New
 export const deleteTheatre = async (req, res) => {
   try {
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
     const { theatreId } = req.params;
 
-    const theatre = await Theatre.findByIdAndDelete(theatreId);
+    const theatre = await TheaterNew.findByIdAndDelete(theatreId);
 
     if (!theatre) {
       return res.json({ success: false, message: "Theatre not found" });
@@ -522,9 +599,17 @@ export const deleteTheatre = async (req, res) => {
 // Get Theatre Payments/Bookings - New
 export const getTheatrePayments = async (req, res) => {
   try {
+    const user = await UserNew.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.json({
+        success: false,
+        message: "Unauthorized - Admin access required",
+      });
+    }
+
     const { theatreId } = req.params;
 
-    const bookings = await Booking.find({
+    const bookings = await BookingNew.find({
       theatre: theatreId,
       isPaid: true,
     })
@@ -541,7 +626,7 @@ export const getTheatrePayments = async (req, res) => {
       .filter(Boolean);
     const usersMap = userIds.length
       ? (
-          await User.find({ _id: { $in: userIds } })
+          await UserNew.find({ _id: { $in: userIds } })
             .select("name email")
             .lean()
         ).reduce((acc, u) => {
@@ -577,7 +662,7 @@ export const getTheatrePayments = async (req, res) => {
 // Get all shows for admin - organized by theatre
 export const getAllShows = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await UserNew.findById(req.user.id);
     if (!user || user.role !== "admin") {
       return res.json({
         success: false,
@@ -585,11 +670,10 @@ export const getAllShows = async (req, res) => {
       });
     }
 
-    const shows = await ShowTbls.find({})
-      .populate("movie", "title poster_path overview genres")
-      .populate("theatre", "name location city")
-      .populate("screen", "screenNumber name seatLayout seatTiers isActive")
-      .sort({ showDateTime: -1 });
+    const shows = await ShowNew.find({})
+      .populate("movie_id", "title poster_path overview genres")
+      .populate("theater_id", "name location")
+      .sort({ showDate: -1 });
 
     console.log("Found shows for admin:", shows.length);
 
@@ -603,7 +687,7 @@ export const getAllShows = async (req, res) => {
 // Get screens for a specific theatre
 export const getTheatreScreens = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await UserNew.findById(req.user.id);
     if (!user || user.role !== "admin") {
       return res.json({
         success: false,
@@ -613,9 +697,9 @@ export const getTheatreScreens = async (req, res) => {
 
     const { theatreId } = req.params;
 
-    const screens = await ScreenTbl.find({ theatre: theatreId })
-      .populate("theatre", "name location city")
-      .sort({ screenNumber: 1 });
+    const screens = await ScreenNew.find({ Tid: theatreId })
+      .populate("theatre", "name location")
+      .sort({ name: 1 });
 
     console.log("Found screens for theatre:", theatreId, screens.length);
 
@@ -632,7 +716,7 @@ export const deleteShow = async (req, res) => {
     const { id } = req.params;
 
     // Check if show has bookings
-    const bookings = await Booking.findOne({ show: id });
+    const bookings = await BookingNew.findOne({ show: id });
     if (bookings) {
       return res.status(400).json({
         success: false,
@@ -640,7 +724,7 @@ export const deleteShow = async (req, res) => {
       });
     }
 
-    const show = await ShowTbls.findByIdAndDelete(id);
+    const show = await ShowNew.findByIdAndDelete(id);
     if (!show) {
       return res.status(404).json({
         success: false,
@@ -666,7 +750,7 @@ export const deleteShow = async (req, res) => {
 export const toggleShowStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const show = await ShowTbls.findById(id);
+    const show = await ShowNew.findById(id);
 
     if (!show) {
       return res.status(404).json({

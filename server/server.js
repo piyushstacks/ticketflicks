@@ -23,6 +23,7 @@ import newSchemaRouter from "./routes/newSchemaRoutes.js";
 import searchRouter from "./routes/searchRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import managerRouter from "./routes/managerRoutes.js";
+import theatreRouter from "./routes/theatreRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,7 +56,7 @@ app.use("/api/public", publicRouter);
 app.use("/api/show", newSchemaRouter);  // Shows, Movies
 app.use("/api/booking", newSchemaRouter);  // Bookings
 app.use("/api/user", newSchemaRouter);  // Users
-app.use("/api/theatre", newSchemaRouter);  // Theaters, Screens
+app.use("/api/theatre", theatreRouter);  // Theatres (old schema)
 app.use("/api/search", searchRouter);  // Search (dedicated router)
 
 // Dedicated admin and manager routes with proper middleware

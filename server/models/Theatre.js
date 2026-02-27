@@ -46,6 +46,11 @@ const theatreSchema = new mongoose.Schema(
       required: false,
       trim: true,
     },
+    step3_pdf_url: {
+      type: String,
+      required: false,
+      trim: true,
+    },
     approval_status: {
       type: String,
       enum: ["pending", "approved", "declined"],

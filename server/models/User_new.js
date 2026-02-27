@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
   role: { 
     type: String, 
     required: true, 
-    enum: ["customer", "manager", "admin", "pending_manager"] 
+    enum: ["customer", "manager", "admin"] 
   },
   last_login: { 
     type: Date 

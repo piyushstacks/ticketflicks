@@ -11,14 +11,39 @@ const theaterSchema = new mongoose.Schema({
     required: true, 
     trim: true 
   },
-  u_id: { 
+  manager_id: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: "User", 
+    ref: "UserNew", 
     required: true 
   },
   contact_no: { 
     type: String, 
     trim: true 
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true
+  },
+  address: {
+    type: String,
+    trim: true
+  },
+  city: {
+    type: String,
+    trim: true
+  },
+  state: {
+    type: String,
+    trim: true
+  },
+  zipCode: {
+    type: String,
+    trim: true
+  },
+  step3_pdf_url: {
+    type: String,
+    trim: true
   },
   approval_status: { 
     type: String, 
@@ -35,6 +60,6 @@ const theaterSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-const TheaterNew = mongoose.model("TheaterNew", theaterSchema, "theaters_new");
+const TheaterNew = mongoose.model("TheaterNew", theaterSchema, "theatres");
 
 export default TheaterNew;
