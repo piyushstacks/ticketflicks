@@ -101,9 +101,9 @@ const debug = async () => {
 
     // Find a show
     const show = await Show.findOne({ isActive: true })
-      .populate("movie")
-      .populate("theatre")
-      .populate("screen")
+      .populate("movie_id")
+      .populate("theater_id")
+      .populate("screen_id")
       .sort({ createdAt: -1 });
 
     if (!show) {
@@ -112,13 +112,13 @@ const debug = async () => {
     }
 
     console.log(`Testing with Show ID: ${show._id}`);
-    console.log(`Screen: ${show.screen?.name} (${show.screen?._id})`);
+    console.log(`Screen: ${show.screen_id?.name} (${show.screen_id?._id})`);
     
     // Pick a seat from the layout
     let testSeat = "A1";
-    if (show.screen?.seatLayout?.layout) {
+    if (show.screen_id?.seatLayout?.layout) {
         // Find a valid seat in the layout
-        show.screen.seatLayout.layout.forEach((row, rIndex) => {
+        show.screen_id.seatLayout.layout.forEach((row, rIndex) => {
             row.forEach((code, cIndex) => {
                 if (code && code !== "") {
                     testSeat = `${String.fromCharCode(65 + rIndex)}${cIndex + 1}`;

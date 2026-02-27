@@ -1,7 +1,7 @@
 import axios from "axios";
 import Movie from "../models/Movie.js";
-import ShowTbls from "../models/show_tbls.js";
-import ScreenTbl from "../models/ScreenTbl.js";
+import Show from "../models/show_tbls.js";
+import Screen from "../models/Screen.js";
 import Theatre from "../models/Theatre.js";
 import { inngest } from "../inngest/index.js";
 
@@ -201,17 +201,17 @@ export const fetchShows = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const shows = await ShowTbls.find({
-      showDateTime: { $gte: today },
+    const shows = await Show.find({
+      show_date: { $gte: today },
       isActive: true,
     })
       .populate(
-        "movie",
+        "movie_id",
         "title overview poster_path backdrop_path release_date vote_average runtime genres isActive reviews _id",
       )
-      .populate("theatre")
-      .populate("screen")
-      .sort({ showDateTime: 1 });
+      .populate("theater_id")
+      .populate("screen_id")
+      .sort({ show_date: 1 });
 
     // Only include shows where the movie exists and is active (not disabled by admin)
     const showsWithActiveMovie = shows.filter(
@@ -233,21 +233,21 @@ export const fetchShowsByMovie = async (req, res) => {
   try {
     const { movieId } = req.params;
 
-    const shows = await ShowTbls.find({
-      movie: movieId,
-      showDateTime: { $gte: new Date() },
+    const shows = await Show.find({
+      movie_id: movieId,
+      show_date: { $gte: new Date() },
     })
-      .populate("theatre")
-      .populate("screen")
-      .sort({ showDateTime: 1 });
+      .populate("theater_id")
+      .populate("screen_id")
+      .sort({ show_date: 1 });
 
-    // Group by theatre and screen (Show model uses "theatre")
+    // Group by theatre and screen (Show model uses "theater_id")
     const groupedShows = {};
     shows.forEach((show) => {
-      const theatre = show.theatre;
+      const theatre = show.theater_id;
       if (!theatre) return;
       const theatreId = theatre._id.toString();
-      const screenId = show.screen._id.toString();
+      const screenId = show.screen_id._id.toString();
 
       if (!groupedShows[theatreId]) {
         groupedShows[theatreId] = {
@@ -258,7 +258,7 @@ export const fetchShowsByMovie = async (req, res) => {
 
       if (!groupedShows[theatreId].screens[screenId]) {
         groupedShows[theatreId].screens[screenId] = {
-          screen: show.screen,
+          screen: show.screen_id,
           shows: [],
         };
       }
@@ -311,15 +311,15 @@ export const fetchShow = async (req, res) => {
   try {
     const { showId } = req.params;
 
-    const show = await ShowTbls.findById(showId)
-      .populate("movie")
-      .populate("theatre")
-      .populate("screen");
+    const show = await Show.findById(showId)
+      .populate("movie_id")
+      .populate("theater_id")
+      .populate("screen_id");
 
     if (!show) {
       return res.json({ success: false, message: "Show not found" });
     }
-    if (show.movie && show.movie.isActive === false) {
+    if (show.movie_id && show.movie_id.isActive === false) {
       return res.json({
         success: false,
         message: "This movie is not available for booking",
@@ -349,25 +349,25 @@ export const fetchShowByMovieId = async (req, res) => {
       return res.json({ success: true, movie, dateTime: {} });
     }
 
-    const shows = await ShowTbls.find({
-      movie: movieId,
-      showDateTime: { $gte: new Date() },
+    const shows = await Show.find({
+      movie_id: movieId,
+      show_date: { $gte: new Date() },
     })
-      .populate("theatre")
-      .populate("screen");
+      .populate("theater_id")
+      .populate("screen_id");
 
     const dateTime = {};
 
     shows.forEach((show) => {
-      const date = show.showDateTime.toISOString().split("T")[0];
+      const date = show.show_date.toISOString().split("T")[0];
       if (!dateTime[date]) {
         dateTime[date] = [];
       }
       dateTime[date].push({
-        time: show.showDateTime,
+        time: show.show_date,
         showId: show._id,
-        theatre: show.theatre,
-        screen: show.screen,
+        theatre: show.theater_id,
+        screen: show.screen_id,
         seatTiers: show.seatTiers,
       });
     });
@@ -386,12 +386,12 @@ export const getAvailableMoviesForCustomers = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const moviesWithShows = await ShowTbls.find({
-      showDateTime: { $gte: today },
+    const moviesWithShows = await Show.find({
+      show_date: { $gte: today },
       isActive: true,
     })
-      .distinct("movie")
-      .populate("movie");
+      .distinct("movie_id")
+      .populate("movie_id");
 
     const movies = await Movie.find({
       _id: { $in: moviesWithShows },
@@ -436,15 +436,15 @@ export const getAllActiveMovies = async (req, res) => {
 // Debug API to get all shows regardless of date (for troubleshooting)
 export const getAllShowsDebug = async (req, res) => {
   try {
-    const shows = await ShowTbls.find({ isActive: true })
-      .populate("movie")
-      .populate("theatre")
-      .populate("screen")
-      .sort({ showDateTime: 1 });
+    const shows = await Show.find({ isActive: true })
+      .populate("movie_id")
+      .populate("theater_id")
+      .populate("screen_id")
+      .sort({ show_date: 1 });
 
     const currentDate = new Date();
-    const futureShows = shows.filter(show => new Date(show.showDateTime) >= currentDate);
-    const pastShows = shows.filter(show => new Date(show.showDateTime) < currentDate);
+    const futureShows = shows.filter(show => new Date(show.show_date) >= currentDate);
+    const pastShows = shows.filter(show => new Date(show.show_date) < currentDate);
 
     res.json({ 
       success: true, 
