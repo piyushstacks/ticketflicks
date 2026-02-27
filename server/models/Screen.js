@@ -1,29 +1,50 @@
 import mongoose from "mongoose";
 
-const screenSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true }, // e.g., "Screen 1", "Screen 2"
-    screenNumber: { type: String, required: true }, // e.g., "Screen 1", "Screen 2"
-    theatre: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Theatre" },
-    seatLayout: {
-      layout: { type: [[String]], required: true }, // 2D array of seat types
-      rows: { type: Number, required: true }, // Number of rows
-      seatsPerRow: { type: Number, required: true }, // Seats per row
-      totalSeats: { type: Number, required: true }, // Total seats in the screen
-    },
-    seatTiers: [
-      {
-        tierName: { type: String, required: true }, // e.g., "Standard", "Premium", "VIP"
-        price: { type: Number, required: true },
-        rows: [String], // e.g., ["A", "B", "C"] or specific rows for this tier
-        seatsPerRow: { type: Number }, // Optional: if different from default
-      },
-    ],
-    isActive: { type: Boolean, default: true },
+const screenSchema = new mongoose.Schema({
+  Tid: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "Theatre", 
+    required: true 
   },
-  { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
-);
+  name: { 
+    type: String, 
+    required: true, 
+    trim: true 
+  },
+  screenNumber: {
+    type: String,
+    trim: true
+  },
+  capacity: { 
+    type: Number, 
+    required: true, 
+    min: 10 
+  },
+  seatLayout: {
+    layout: [[String]],
+    rows: Number,
+    seatsPerRow: Number,
+    totalSeats: Number
+  },
+  seatTiers: [{
+    tierName: String,
+    price: Number,
+    rows: [String],
+    seatsPerRow: Number
+  }],
+  isActive: { 
+    type: Boolean, 
+    default: true 
+  },
+  isDeleted: { 
+    type: Boolean, 
+    default: false 
+  }
+}, { timestamps: true });
 
-const Screen = mongoose.model("Screen", screenSchema);
+// Index for faster queries
+screenSchema.index({ Tid: 1 });
+
+const Screen = mongoose.model("Screen", screenSchema, "screens_new");
 
 export default Screen;

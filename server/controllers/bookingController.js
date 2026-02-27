@@ -1,6 +1,6 @@
 import { inngest } from "../inngest/index.js";
 import Booking from "../models/Booking.js";
-import ShowTbls from "../models/show_tbls.js";
+import Show from "../models/show_tbls.js";
 import User from "../models/User.js";
 import Stripe from "stripe";
 import { markSeatsAndCompleteBooking } from "./stripeWebhooks.js";
@@ -103,7 +103,7 @@ const getTierInfoForSeat = (show, seatNumber) => {
 
 const fetchSeatsAvailablity = async (showId, selectedSeats) => {
   try {
-    const showData = await ShowTbls.findById(showId);
+    const showData = await Show.findById(showId);
 
     if (!showData) return false;
 
@@ -221,10 +221,10 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    const showData = await ShowTbls.findById(showId)
-      .populate("movie")
-      .populate("theatre")
-      .populate("screen");
+    const showData = await Show.findById(showId)
+      .populate("movie_id")
+      .populate("theater_id")
+      .populate("screen_id");
 
     if (!showData) {
       return res.json({ success: false, message: "Show not found" });
@@ -280,19 +280,13 @@ export const createBooking = async (req, res) => {
 
     // Create booking record with tentative status
     const bookingData = {
-      user: user.id,
-      show: showId,
-      theatre: showData.theatre?._id,
-      screen: showData.screen?._id,
-      bookedSeats: bookedSeatsWithTier.map((s) => ({
-        seatNumber: s.seatNumber,
-        tierName: s.tierName,
-        price: s.price,
-      })),
-      amount: totalAmount,
+      user_id: user.id,
+      show_id: showId,
+      seats_booked: bookedSeatsWithTier.map((s) => s.seatNumber), // Seat IDs for references
+      total_amount: totalAmount,
+      status: "pending",
       isPaid: false,
-      paymentLink: null,
-      paymentIntentId: null,
+      payment_link: null,
     };
 
     console.log("[createBooking] Booking data to save:", JSON.stringify(bookingData, null, 2));
@@ -395,8 +389,7 @@ export const createBooking = async (req, res) => {
       }
     });
 
-    booking.paymentLink = session.url;
-    booking.paymentIntentId = session.payment_intent || session.id;
+    booking.payment_link = session.url;
     await booking.save();
 
     // Run inngest scheduler function to check payment status after 10 minutes
@@ -445,7 +438,7 @@ export const createBooking = async (req, res) => {
 export const fetchOccupiedSeats = async (req, res) => {
   try {
     const { showId } = req.params;
-    const showData = await ShowTbls.findById(showId);
+    const showData = await Show.findById(showId);
 
     if (!showData) {
       return res.json({ success: false, message: "Show not found" });
@@ -502,22 +495,20 @@ export const fetchUserBookings = async (req, res) => {
     console.log("[fetchUserBookings] User ID:", userId);
     console.log("[fetchUserBookings] Status filter:", statusFilter);
 
-    let query = { user: userId };
-    // Remove status filtering since Booking model doesn't have status field
-    // Just get all bookings for the user
+    let query = { user_id: userId };
 
     console.log("[fetchUserBookings] Query:", query);
 
     const bookings = await Booking.find(query)
-      .populate("show")
       .populate({
-        path: "show",
+        path: "show_id",
         populate: [
-          { path: "movie" },
-          { path: "theatre" },
-          { path: "screen" },
+          { path: "movie_id" },
+          { path: "theater_id" },
+          { path: "screen_id" },
         ],
       })
+      .populate("seats_booked")
       .sort({ createdAt: -1 });
 
     console.log("[fetchUserBookings] Found bookings:", bookings.length);
@@ -541,8 +532,8 @@ export const cancelBooking = async (req, res) => {
     // Find booking and verify ownership
     const booking = await Booking.findOne({
       _id: bookingId,
-      user: userId,
-    }).populate("show");
+      user_id: userId,
+    }).populate("show_id");
 
     if (!booking) {
       return res.status(404).json({
@@ -552,15 +543,15 @@ export const cancelBooking = async (req, res) => {
     }
 
     // Check if booking can be cancelled
-    if (booking.status !== "confirmed") {
+    if (booking.status !== "confirmed" && booking.status !== "pending") {
       return res.status(400).json({
         success: false,
-        message: "Only confirmed bookings can be cancelled.",
+        message: "Only pending or confirmed bookings can be cancelled.",
       });
     }
 
     // Check cancellation deadline
-    const showTime = new Date(booking.show.dateTime);
+    const showTime = new Date(booking.show_id.show_date);
     const currentTime = new Date();
     const hoursUntilShow = (showTime - currentTime) / (1000 * 60 * 60);
 
@@ -569,21 +560,6 @@ export const cancelBooking = async (req, res) => {
         success: false,
         message: "Cannot cancel booking within 2 hours of show time.",
       });
-    }
-
-    // Release the seats back to available
-    if (booking.show && booking.show.seatTiers) {
-      for (const bookedSeat of booking.bookedSeats) {
-        const tierIndex = booking.show.seatTiers.findIndex(
-          (t) => t.tierName === bookedSeat.tierName
-        );
-        
-        if (tierIndex !== -1 && booking.show.seatTiers[tierIndex].occupiedSeats) {
-          delete booking.show.seatTiers[tierIndex].occupiedSeats[bookedSeat.seatNumber];
-        }
-      }
-      booking.show.markModified("seatTiers");
-      await booking.show.save();
     }
 
     // Update booking status
