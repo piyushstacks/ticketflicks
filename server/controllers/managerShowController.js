@@ -1,5 +1,5 @@
 import * as managerShowService from "../services/managerShowService.js";
-import { asyncHandler } from "../services/errorService.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
 
 export const getAvailableMovies = asyncHandler(async (req, res) => {
   const movies = await managerShowService.getAvailableMovies(req.user.id);
@@ -12,7 +12,12 @@ export const getTheatreScreens = asyncHandler(async (req, res) => {
 });
 
 export const addShow = asyncHandler(async (req, res) => {
-  const show = await managerShowService.addShow(req.user.id, req.body);
+  // Support both { movie, screen } and { movieId, screenId } request formats
+  const body = { ...req.body };
+  if (body.movieId && !body.movie) body.movie = body.movieId;
+  if (body.screenId && !body.screen) body.screen = body.screenId;
+
+  const show = await managerShowService.addShow(req.user.id, body);
   res.status(201).json({
     success: true,
     message: "Show added successfully",

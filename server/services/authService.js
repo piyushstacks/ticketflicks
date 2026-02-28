@@ -132,6 +132,65 @@ export const login = async (data) => {
 };
 
 /**
+ * Request OTP for signup
+ */
+export const requestSignupOtp = async (email) => {
+  // Validate email
+  const emailValidation = validateEmail(email);
+  if (!emailValidation.valid) {
+    throw new ValidationError(emailValidation.message);
+  }
+
+  const normalizedEmail = sanitizeEmail(email);
+
+  // Check if email is already registered
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  if (existingUser) {
+    throw new AlreadyExistsError("Email already registered");
+  }
+
+  // Delete any existing signup OTPs for this email
+  await Otp.deleteMany({ email: normalizedEmail, purpose: "signup" });
+
+  // Generate OTP
+  const otp = ("000000" + Math.floor(Math.random() * 999999)).slice(-6);
+  const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
+  const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+  await Otp.create({
+    email: normalizedEmail,
+    otpHash,
+    purpose: "signup",
+    expiresAt,
+  });
+
+  // Log OTP in development
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[DEV] Signup OTP for ${normalizedEmail}: ${otp}`);
+  }
+
+  // Send email
+  try {
+    await sendEmail({
+      to: normalizedEmail,
+      subject: "Signup OTP Verification",
+      body: `<p>Your signup verification OTP is <strong>${otp}</strong>. It expires in 2 minutes.</p>`,
+    });
+  } catch (err) {
+    console.error("[requestSignupOtp] Email send failed:", err);
+    if (process.env.NODE_ENV === "production") {
+      throw err;
+    }
+  }
+
+  return {
+    success: true,
+    message: "OTP sent to email. Please verify to complete signup.",
+    email: normalizedEmail,
+  };
+};
+
+/**
  * Request OTP for password reset
  */
 export const requestPasswordResetOtp = async (email) => {
@@ -288,6 +347,7 @@ export const verifyToken = (token) => {
 export default {
   signup,
   login,
+  requestSignupOtp,
   requestPasswordResetOtp,
   resetPasswordWithOtp,
   changePassword,

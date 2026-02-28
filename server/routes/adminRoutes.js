@@ -98,4 +98,7 @@ adminRouter.post(
   removeMoviesFromTheatre,
 );
 
+// Feedbacks
+adminRouter.get("/feedbacks", protectAdmin, fetchAllFeedbacks);
+
 export default adminRouter;

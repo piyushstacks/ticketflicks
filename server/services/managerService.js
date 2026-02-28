@@ -18,14 +18,28 @@ export const getManagerTheatre = async (managerId) => {
     throw new UnauthorizedError("Manager access required");
   }
 
-  const theatre = await Theatre.findOne({
-    manager_id: managerId,
-    approval_status: "approved",
-    disabled: false,
-  });
+  let theatre = null;
+
+  // Try using managedTheatreId first (most reliable)
+  if (manager.managedTheatreId) {
+    theatre = await Theatre.findOne({
+      _id: manager.managedTheatreId,
+      approval_status: "approved",
+      disabled: { $ne: true },
+    });
+  }
+
+  // Fallback to manager_id lookup
+  if (!theatre) {
+    theatre = await Theatre.findOne({
+      manager_id: managerId,
+      approval_status: "approved",
+      disabled: { $ne: true },
+    });
+  }
 
   if (!theatre) {
-    throw new NotFoundError("Theatre assigned to manager");
+    throw new NotFoundError("Approved theatre assigned to manager");
   }
 
   return theatre;

@@ -54,18 +54,21 @@ router.post("/request-otp", requestTheatreRegistrationOtp);
 router.post("/register", registerTheatre);
 
 // ========== SHOW ROUTES ==========
-router.post("/shows", showController.addShow);
+router.post("/shows", protectUser, showController.addShow);
 router.get("/shows", showController.fetchShows);
 router.get("/shows/all", showController.fetchShows); // Frontend expects /all endpoint
 router.get("/shows/:showId", showController.fetchShow);
 router.get("/show/:showId", showController.fetchShow); // Alias for /shows/:showId
 router.get("/shows/movie/:movieId", showController.fetchShowsByMovie);
-router.put("/shows/:showId", showController.updateShow);
-router.delete("/shows/:showId", showController.deleteShow);
-router.patch("/shows/:showId/status", showController.toggleShowStatus);
-router.get("/movies/available", showController.getAvailableMovies);
-router.get("/upcoming-movies", movieController.getAllMovies); // Frontend expects this
-router.get("/trailer/:id", movieController.getMovieById); // Frontend expects this
+router.put("/shows/:showId", protectUser, showController.updateShow);
+router.delete("/shows/:showId", protectUser, showController.deleteShow);
+router.patch("/shows/:showId/status", protectUser, showController.toggleShowStatus);
+router.get("/movies/available", showController.getAvailableMoviesForCustomers); // Public - for home page
+router.get("/movies/all-active", showController.getAllActiveMovies); // Public - all active movies
+router.get("/upcoming-movies", showController.fetchUpcomingMovies); // Frontend expects this
+router.get("/trailer/:movieId", showController.getMovieTrailer); // Trailer by movie ID
+router.get("/trailer/:id", showController.getMovieTrailer); // Alias
+router.get("/movies/:movieId/details", showController.fetchShowByMovieId); // Movie + showtimes
 
 // ========== BOOKING ROUTES ==========
 router.post("/bookings", protectUser, createBooking);
@@ -102,6 +105,7 @@ router.post("/movies/tmdb/import/:tmdbId", movieController.importMovieFromTMDB);
 // Auth routes (from authController)
 router.post("/signup", authController.signup);
 router.post("/login", authController.login);
+router.post("/signup/request-otp", otpRateLimiter(), authController.requestSignupOtp);
 router.post("/signup/complete", authController.completeSignupWithOtp);
 
 // Password management routes

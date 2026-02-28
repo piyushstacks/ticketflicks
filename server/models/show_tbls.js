@@ -1,30 +1,24 @@
 import mongoose from "mongoose";
 
 const showSchema = new mongoose.Schema({
-  movie: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Movie", 
+  movie: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Movie",
     required: [true, "Movie is required"]
   },
-  theatre: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Theatre", 
+  theatre: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Theatre",
     required: [true, "Theatre is required"]
   },
-  screen: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "ScreenTbl", 
+  screen: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ScreenTbl",
     required: [true, "Screen is required"]
   },
-  showDateTime: { 
-    type: Date, 
-    required: [true, "Show date and time is required"],
-    validate: {
-      validator: function(v) {
-        return v > new Date();
-      },
-      message: "Show date must be in the future"
-    }
+  showDateTime: {
+    type: Date,
+    required: [true, "Show date and time is required"]
   },
   language: {
     type: String,
@@ -39,24 +33,24 @@ const showSchema = new mongoose.Schema({
   },
   // Seat tier configuration with prices
   seatTiers: [{
-    tierName: { 
-      type: String, 
+    tierName: {
+      type: String,
       required: true,
       enum: ["Standard", "Deluxe", "Premium", "Recliner", "Couple"]
     },
-    price: { 
-      type: Number, 
+    price: {
+      type: Number,
       required: true,
       min: [0, "Tier price cannot be negative"]
     },
     // For future use if tiers have seat counts
-    totalSeats: { 
+    totalSeats: {
       type: Number,
       default: 0
     },
     // Track occupied seats per tier
     occupiedSeats: {
-      type: mongoose.Schema.Types.Mixed, 
+      type: mongoose.Schema.Types.Mixed,
       default: {}
     }
   }],
@@ -85,8 +79,7 @@ const showSchema = new mongoose.Schema({
   },
   isActive: {
     type: Boolean,
-    default: true,
-    select: false
+    default: true
   },
   isDeleted: {
     type: Boolean,
@@ -103,7 +96,7 @@ showSchema.index({ showDateTime: 1 });
 showSchema.index({ isDeleted: 1 });
 
 // Query middleware to exclude deleted shows by default
-showSchema.pre(/^find/, function() {
+showSchema.pre(/^find/, function () {
   if (this.getOptions()?.includeDeleted !== true) {
     this.where({ isDeleted: { $ne: true } });
   }

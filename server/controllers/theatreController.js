@@ -16,6 +16,15 @@ export const requestTheatreRegistrationOtp = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Verify OTP for theatre registration
+ */
+export const verifyTheatreOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  const result = await theatreService.verifyTheatreOtp(email, otp);
+  res.json(result);
+});
+
+/**
  * Register a new theatre
  */
 export const registerTheatre = asyncHandler(async (req, res) => {
@@ -83,6 +92,7 @@ export const approveTheatre = asyncHandler(async (req, res) => {
 
 export default {
   requestTheatreRegistrationOtp,
+  verifyTheatreOtp,
   registerTheatre,
   getTheatreDetails,
   getAllTheatres,

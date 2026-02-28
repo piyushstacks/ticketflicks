@@ -26,6 +26,52 @@ const THEATRE_OTP_TTL_MS = 2 * 60 * 1000; // 2 minutes
 const BCRYPT_ROUNDS = 10;
 
 /**
+ * Verify OTP for theatre registration (step before final registration)
+ */
+export const verifyTheatreOtp = async (email, otp) => {
+  // Validate email
+  const emailValidation = validateEmail(email);
+  if (!emailValidation.valid) {
+    throw new ValidationError(emailValidation.message);
+  }
+
+  // Validate OTP format
+  if (!otp || otp.length !== 6) {
+    throw new ValidationError("Invalid OTP format");
+  }
+
+  const normalizedEmail = sanitizeEmail(email);
+
+  // Find OTP record
+  const otpRecord = await Otp.findOne({
+    email: normalizedEmail,
+    purpose: "theatre-registration",
+  });
+
+  if (!otpRecord) {
+    throw new ValidationError("OTP not found or expired");
+  }
+
+  if (new Date() > otpRecord.expiresAt) {
+    await Otp.deleteOne({ _id: otpRecord._id });
+    throw new ValidationError("OTP has expired");
+  }
+
+  const isValidOtp = await bcrypt.compare(otp, otpRecord.otpHash);
+  if (!isValidOtp) {
+    throw new ValidationError("Invalid OTP");
+  }
+
+  // OTP is valid - don't delete it yet, just mark as verified for registration
+  return {
+    success: true,
+    message: "OTP verified successfully",
+    email: normalizedEmail,
+    verified: true,
+  };
+};
+
+/**
  * Request OTP for theatre registration
  */
 export const requestTheatreOtp = async (email) => {
@@ -378,6 +424,7 @@ export const approveTheatre = async (theatreId, action, notes = "") => {
 
 export default {
   requestTheatreOtp,
+  verifyTheatreOtp,
   registerTheatre,
   getTheatreDetails,
   getAllTheatres,

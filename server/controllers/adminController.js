@@ -108,11 +108,11 @@ export const getAllTheatres = asyncHandler(async (req, res) => {
       name: t.name,
       location: t.location,
       city: t.city,
-      manager: {
-        id: t.manager_id._id.toString(),
-        name: t.manager_id.name,
-        email: t.manager_id.email,
-      },
+      manager: t.manager_id ? {
+        id: t.manager_id._id?.toString() || t.manager_id.toString(),
+        name: t.manager_id.name || "N/A",
+        email: t.manager_id.email || "N/A",
+      } : null,
       approvalStatus: t.approval_status,
       disabled: t.disabled,
       createdAt: t.createdAt,

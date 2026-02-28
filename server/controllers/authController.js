@@ -50,6 +50,24 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Request signup OTP
+ */
+export const requestSignupOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required",
+    });
+  }
+
+  const result = await authService.requestSignupOtp(email);
+
+  res.status(200).json(result);
+});
+
+/**
  * Request password reset OTP
  */
 export const forgotPasswordRequest = asyncHandler(async (req, res) => {
@@ -204,6 +222,7 @@ export const completeSignupWithOtp = asyncHandler(async (req, res) => {
 export default {
   signup,
   login,
+  requestSignupOtp,
   forgotPasswordRequest,
   resendForgotOtp,
   resetPasswordWithOtp,

@@ -7,23 +7,30 @@ import youtubeService from "../services/youtubeService.js";
 // Fetch and update movie trailer from YouTube
 const fetchAndUpdateTrailer = async (movie) => {
   try {
-    // Only fetch if trailer_path is not set or is invalid
-    if (!movie.trailer_path || !youtubeService.isValidYouTubeUrl(movie.trailer_path)) {
+    // Use stored trailer if available
+    const storedTrailer = movie.trailer_link || movie.trailer_path;
+    if (storedTrailer && youtubeService.isValidYouTubeUrl(storedTrailer)) {
+      return storedTrailer;
+    }
+
+    // Only fetch from YouTube if no trailer stored and YouTube API key exists
+    if (process.env.YOUTUBE_API_KEY) {
       const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
       const trailerUrl = await youtubeService.searchMovieTrailer(movie.title, year);
-      
+
       if (trailerUrl) {
-        await Movie.findByIdAndUpdate(movie._id, { 
-          trailer_path: trailerUrl 
+        await Movie.findByIdAndUpdate(movie._id, {
+          trailer_link: trailerUrl,
+          trailer_path: trailerUrl
         });
         console.log(`Updated trailer for movie: ${movie.title}`);
         return trailerUrl;
       }
     }
-    return movie.trailer_path;
+    return storedTrailer || null;
   } catch (error) {
     console.error(`Error fetching trailer for ${movie.title}:`, error);
-    return movie.trailer_path;
+    return movie.trailer_link || movie.trailer_path || null;
   }
 };
 
@@ -33,8 +40,8 @@ export const getShowsByTheatre = async (req, res) => {
     const { theatreId } = req.params;
 
     // Validate theatre exists and is approved
-    const theatre = await Theatre.findOne({ 
-      _id: theatreId, 
+    const theatre = await Theatre.findOne({
+      _id: theatreId,
       approval_status: 'approved',
       disabled: { $ne: true }
     });
@@ -50,13 +57,13 @@ export const getShowsByTheatre = async (req, res) => {
       isActive: true,
       showDateTime: { $gte: startOfToday }
     })
-    .populate("movie", "title poster_path backdrop_path isActive")
-    .populate("theatre", "name location city")
-    .populate("screen", "screenNumber name seatTiers")
-    .sort({ showDateTime: 1 });
+      .populate("movie", "title poster_path backdrop_path isActive")
+      .populate("theatre", "name location city")
+      .populate("screen", "screenNumber name seatTiers")
+      .sort({ showDateTime: 1 });
 
     console.log("Total shows found for theatre:", theatreId, shows.length);
-    
+
     // Debug: Log each show and its movie status
     shows.forEach((show, index) => {
       console.log(`Show ${index + 1}:`, {
@@ -108,14 +115,14 @@ export const getShowsByMovie = async (req, res) => {
       isActive: true,
       showDateTime: { $gte: startOfToday }
     })
-    .populate({
-      path: "theatre",
-      match: { approval_status: 'approved', disabled: { $ne: true } },
-      select: "name location city"
-    })
-    .populate("screen", "screenNumber name seatLayout seatTiers")
-    .populate("movie", "title poster_path backdrop_path")
-    .sort({ showDateTime: 1 });
+      .populate({
+        path: "theatre",
+        match: { approval_status: 'approved', disabled: { $ne: true } },
+        select: "name location city"
+      })
+      .populate("screen", "screenNumber name seatLayout seatTiers")
+      .populate("movie", "title poster_path backdrop_path")
+      .sort({ showDateTime: 1 });
 
     console.log("Found shows for movie:", movieId, shows.length);
 
@@ -125,31 +132,31 @@ export const getShowsByMovie = async (req, res) => {
 
     // Group shows by theatre -> screen -> shows
     const groupedShows = {};
-    
+
     validShows.forEach(show => {
       const theatreId = show.theatre._id.toString();
-      
+
       if (!groupedShows[theatreId]) {
         groupedShows[theatreId] = {
           theatre: show.theatre,
           screens: {}
         };
       }
-      
+
       const screenId = show.screen._id.toString();
-      
+
       if (!groupedShows[theatreId].screens[screenId]) {
         groupedShows[theatreId].screens[screenId] = {
           screen: show.screen,
           shows: []
         };
       }
-      
+
       groupedShows[theatreId].screens[screenId].shows.push(show);
     });
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       groupedShows,
       movie: movie
     });
@@ -165,7 +172,7 @@ export const getMovieDetails = async (req, res) => {
     const { movieId } = req.params;
 
     const movie = await Movie.findById(movieId);
-    
+
     if (!movie) {
       return res.json({ success: false, message: "Movie not found" });
     }
@@ -175,7 +182,7 @@ export const getMovieDetails = async (req, res) => {
 
     // Return updated movie data
     const updatedMovie = await Movie.findById(movieId);
-    
+
     res.json({ success: true, movie: updatedMovie });
   } catch (error) {
     console.error("[getMovieDetails]", error);
