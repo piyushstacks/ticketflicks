@@ -170,3 +170,46 @@ export const getScreensByManagerPublic = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+// Stub functions for seat routes compatibility
+export const createSeatCategory = async (req, res) => {
+  res.status(501).json({ success: false, message: "Seat categories not implemented" });
+};
+
+export const getAllSeatCategories = async (req, res) => {
+  res.status(501).json({ success: false, message: "Seat categories not implemented" });
+};
+
+export const createSeats = async (req, res) => {
+  res.status(501).json({ success: false, message: "Seat creation not implemented" });
+};
+
+export const getAllSeats = async (req, res) => {
+  res.status(501).json({ success: false, message: "Seat listing not implemented" });
+};
+
+export const getSeatsByScreen = async (req, res) => {
+  res.status(501).json({ success: false, message: "Seat by screen not implemented" });
+};
+
+export const updateSeat = async (req, res) => {
+  res.status(501).json({ success: false, message: "Seat update not implemented" });
+};
+
+export const deleteSeat = async (req, res) => {
+  res.status(501).json({ success: false, message: "Seat deletion not implemented" });
+};
+
+// Default export
+export default {
+  getTheatreScreensPublic,
+  getScreenDetailsPublic,
+  getScreensByManagerPublic,
+  createSeatCategory,
+  getAllSeatCategories,
+  createSeats,
+  getAllSeats,
+  getSeatsByScreen,
+  updateSeat,
+  deleteSeat,
+};

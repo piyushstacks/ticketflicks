@@ -44,6 +44,12 @@ import { fetchAllFeedbacks } from "../controllers/feedbackController.js";
 
 const adminRouter = express.Router();
 
+// Debug: Log all incoming admin requests
+adminRouter.use((req, res, next) => {
+  console.log("[adminRoutes] Incoming:", req.method, req.url, "Auth:", req.headers.authorization ? "present" : "missing");
+  next();
+});
+
 // Existing admin routes
 adminRouter.get("/is-admin", protectAdminOnly, isAdmin);
 adminRouter.get("/dashboard", protectAdminOnly, fetchDashboardData);

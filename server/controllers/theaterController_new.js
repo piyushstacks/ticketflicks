@@ -1,5 +1,5 @@
-import Theater from "../models/Theater_new.js";
-import User from "../models/User_new.js";
+import Theater from "../models/Theatre.js";
+import User from "../models/User.js";
 
 // Create new theater
 export const createTheater = async (req, res) => {

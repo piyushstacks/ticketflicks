@@ -48,7 +48,7 @@ export const AppProvider = ({ children }) => {
 
   const fetchIsAdmin = async () => {
     try {
-      const { data } = await axios.get("/api/user/users/is-admin", {
+      const { data } = await axios.get("/api/user/is-admin", {
         headers: getAuthHeaders(),
       });
 
@@ -144,7 +144,7 @@ export const AppProvider = ({ children }) => {
 
   const fetchFavoriteMovies = async () => {
     try {
-      const { data } = await axios.get("/api/user/users/favorites", {
+      const { data } = await axios.get("/api/user/favorites", {
         headers: getAuthHeaders(),
       });
 

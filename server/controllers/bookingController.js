@@ -595,3 +595,42 @@ export const cancelBooking = async (req, res) => {
     });
   }
 };
+
+// Stub functions for missing booking routes
+export const getBooking = async (req, res) => {
+  res.status(501).json({ success: false, message: "Get single booking not implemented" });
+};
+
+export const updateBookingStatus = async (req, res) => {
+  res.status(501).json({ success: false, message: "Booking status update not implemented" });
+};
+
+export const createStripePayment = async (req, res) => {
+  res.status(501).json({ success: false, message: "Stripe payment creation not implemented" });
+};
+
+export const confirmPayment = async (req, res) => {
+  res.status(501).json({ success: false, message: "Payment confirmation not implemented" });
+};
+
+export const getAllBookings = async (req, res) => {
+  res.status(501).json({ success: false, message: "Get all bookings not implemented" });
+};
+
+// Alias for fetchUserBookings
+export const getUserBookings = fetchUserBookings;
+
+// Default export for router compatibility
+export default {
+  confirmStripePayment,
+  createBooking,
+  fetchOccupiedSeats,
+  fetchUserBookings,
+  cancelBooking,
+  getBooking,
+  updateBookingStatus,
+  createStripePayment,
+  confirmPayment,
+  getAllBookings,
+  getUserBookings,
+};

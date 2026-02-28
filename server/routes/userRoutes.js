@@ -37,6 +37,9 @@ userRouter.post("/forgot-password/resend", forgotPasswordRateLimiter, (req, res)
 userRouter.post("/reset-password", resetPasswordWithOtp);
 
 // Authenticated routes
+userRouter.get("/is-admin", protectUser, (req, res) => {
+  res.json({ success: true, isAdmin: req.user?.role === "admin" });
+});
 userRouter.post("/change-password", protectUser, changePassword);
 userRouter.put("/profile", protectUser, updateUserProfile);
 userRouter.get("/bookings", protectUser, fetchUserBookings);

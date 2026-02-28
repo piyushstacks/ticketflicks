@@ -1,11 +1,11 @@
 import express from "express";
 import { protectUser } from "../middleware/protectUser.js";
 
-// New Controllers
-import showController from "../controllers/showController_new.js";
-import bookingController from "../controllers/bookingController_new.js";
-import screenController from "../controllers/screenController_new.js";
-import movieController from "../controllers/movieController_new.js";
+// Controllers
+import showController from "../controllers/showController.js";
+import bookingController from "../controllers/bookingController.js";
+import screenController from "../controllers/managerScreenTblController.js";
+import movieController from "../controllers/adminMovieController.js";
 import {
   registerUser,
   loginUser,
@@ -18,10 +18,9 @@ import {
   checkIsAdmin,
   getUserFavorites,
   updateUserFavorites,
-} from "../controllers/userController_new.js";
-import seatController from "../controllers/seatController_new.js";
-import metadataController from "../controllers/metadataController_new.js";
-import reviewPaymentController from "../controllers/reviewPaymentController_new.js";
+} from "../controllers/userController.js";
+import seatController from "../controllers/publicScreenTblController.js";
+import metadataController from "../controllers/publicController.js";
 
 import {
   requestTheatreRegistrationOtp,
@@ -69,7 +68,7 @@ router.delete("/shows/:showId", showController.deleteShow);
 router.patch("/shows/:showId/status", showController.toggleShowStatus);
 router.get("/movies/available", showController.getAvailableMovies);
 router.get("/upcoming-movies", movieController.getAllMovies); // Frontend expects this
-router.get("/trailer/:id", movieController.getMovie); // Frontend expects this
+router.get("/trailer/:id", movieController.getMovieById); // Frontend expects this
 
 // ========== BOOKING ROUTES (New Schema) ==========
 router.post("/bookings", bookingController.createBooking);
@@ -108,7 +107,7 @@ router.patch("/screens/:screenId/status", screenController.updateScreenStatus);
 // ========== MOVIE ROUTES ==========
 router.post("/movies", movieController.createMovie);
 router.get("/movies", movieController.getAllMovies);
-router.get("/movies/:movieId", movieController.getMovie);
+router.get("/movies/:movieId", movieController.getMovieById);
 router.put("/movies/:movieId", movieController.updateMovie);
 router.delete("/movies/:movieId", movieController.deleteMovie);
 router.get("/movies/search", movieController.searchMovies);
@@ -117,25 +116,25 @@ router.post("/movies/tmdb/import/:tmdbId", movieController.importMovieFromTMDB);
 
 // ========== USER ROUTES ==========
 // Specific routes FIRST (before parameterized routes)
-router.post("/users/register", registerUser);
-router.post("/users/login", loginUser);
-router.post("/users/signup/request-otp", requestSignupOtp);
-router.post("/users/signup/complete", completeSignupWithOtp);
-router.get("/users/is-admin", protectUser, checkIsAdmin);
-router.get("/users/favorites", protectUser, getUserFavorites);
-router.post("/users/update-favorite", protectUser, updateUserFavorites);
+router.post("/register", registerUser);
+router.post("/login", loginUser);
+router.post("/signup/request-otp", requestSignupOtp);
+router.post("/signup/complete", completeSignupWithOtp);
+router.get("/is-admin", protectUser, checkIsAdmin);
+router.get("/favorites", protectUser, getUserFavorites);
+router.post("/update-favorite", protectUser, updateUserFavorites);
 
 // Password management routes
-router.post("/users/forgot-password", otpRateLimiter(), forgotPasswordRequest);
-router.post("/users/forgot-password/resend", otpRateLimiter(), resendForgotOtp);
-router.post("/users/reset-password", resetPasswordWithOtp);
-router.post("/users/change-password", protectUser, changePassword);
+router.post("/forgot-password", otpRateLimiter(), forgotPasswordRequest);
+router.post("/forgot-password/resend", otpRateLimiter(), resendForgotOtp);
+router.post("/reset-password", resetPasswordWithOtp);
+router.post("/change-password", protectUser, changePassword);
 
-router.get("/users", getAllUsers);
+router.get("/", getAllUsers);
 // Parameterized routes LAST
-router.get("/users/:userId", getUserProfile);
-router.put("/users/:userId", updateUser);
-router.delete("/users/:userId", deleteUser);
+router.get("/:userId", getUserProfile);
+router.put("/:userId", updateUser);
+router.delete("/:userId", deleteUser);
 
 // ========== SEAT ROUTES ==========
 router.post("/seat-categories", seatController.createSeatCategory);
@@ -165,17 +164,19 @@ router.put("/cast/:castId", metadataController.updateCast);
 router.delete("/cast/:castId", metadataController.deleteCast);
 
 // ========== REVIEW ROUTES ==========
-router.post("/reviews", reviewPaymentController.createReview);
-router.get("/reviews/movie/:movieId", reviewPaymentController.getReviewsByMovie);
-router.get("/reviews/user/:userId", reviewPaymentController.getReviewsByUser);
-router.put("/reviews/:reviewId", reviewPaymentController.updateReview);
-router.delete("/reviews/:reviewId", reviewPaymentController.deleteReview);
+// Note: reviewPaymentController doesn't exist - routes commented out
+// router.post("/reviews", reviewPaymentController.createReview);
+// router.get("/reviews/movie/:movieId", reviewPaymentController.getReviewsByMovie);
+// router.get("/reviews/user/:userId", reviewPaymentController.getReviewsByUser);
+// router.put("/reviews/:reviewId", reviewPaymentController.updateReview);
+// router.delete("/reviews/:reviewId", reviewPaymentController.deleteReview);
 
 // ========== PAYMENT ROUTES ==========
-router.post("/payments", reviewPaymentController.createPayment);
-router.get("/payments", reviewPaymentController.getAllPayments);
-router.get("/payments/booking/:bookingId", reviewPaymentController.getPaymentByBooking);
-router.get("/payments/transaction/:transactionId", reviewPaymentController.getPaymentByTransactionId);
-router.put("/payments/:paymentId/status", reviewPaymentController.updatePaymentStatus);
+// Note: reviewPaymentController doesn't exist - routes commented out
+// router.post("/payments", reviewPaymentController.createPayment);
+// router.get("/payments", reviewPaymentController.getAllPayments);
+// router.get("/payments/booking/:bookingId", reviewPaymentController.getPaymentByBooking);
+// router.get("/payments/transaction/:transactionId", reviewPaymentController.getPaymentByTransactionId);
+// router.put("/payments/:paymentId/status", reviewPaymentController.updatePaymentStatus);
 
 export default router;

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import UserNew from "../models/User_new.js";
+
+console.log("[auth.js] Middleware loaded");
 
 export const protectAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization || "";
@@ -41,9 +42,7 @@ export const protectManager = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("protectManager: decoded:", decoded);
     
-    // Check if user exists and has manager role
-    // Login in the frontend uses the new schema user collection, so we support both.
-    const user = (await User.findById(decoded.id)) || (await UserNew.findById(decoded.id));
+    const user = await User.findById(decoded.id);
     console.log("protectManager: user found:", !!user);
     console.log("protectManager: user role:", user?.role);
     if (!user || user.role !== "manager") {
@@ -63,28 +62,45 @@ export const protectManager = async (req, res, next) => {
 };
 
 export const protectAdminOnly = async (req, res, next) => {
+  console.log("[protectAdminOnly] CALLED for", req.method, req.url);
   try {
     const authHeader = req.headers.authorization || "";
+    console.log("[protectAdminOnly] authHeader:", authHeader.substring(0, 50) + "...");
+    
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.slice(7)
       : null;
 
     if (!token) {
+      console.log("[protectAdminOnly] No token");
       return res.json({ success: false, message: "not authorized - admin role required" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("[protectAdminOnly] decoded:", decoded);
     
-    // Check if user exists and has admin role
-    // Login in the frontend uses the new schema user collection, so we support both.
-    const user = (await UserNew.findById(decoded.id)) || (await User.findById(decoded.id));
-    if (!user || user.role !== "admin") {
-      return res.json({ success: false, message: "not authorized - admin role required" });
+    // Check if user exists in DB
+    const user = await User.findById(decoded.id);
+    console.log("[protectAdminOnly] DB user found:", !!user, "role:", user?.role);
+    
+    if (user && user.role === "admin") {
+      console.log("[protectAdminOnly] Auth via DB user");
+      req.user = { id: decoded.id, role: user.role };
+      return next();
     }
-
-    req.user = { id: decoded.id, role: user.role };
-    next();
+    
+    // Fallback: check token role directly
+    console.log("[protectAdminOnly] Token role:", decoded.role);
+    if (decoded.role === "admin") {
+      console.log("[protectAdminOnly] Auth via token role");
+      req.user = { id: decoded.id, role: decoded.role };
+      return next();
+    }
+    
+    console.log("[protectAdminOnly] DENIED - not admin");
+    return res.json({ success: false, message: "not authorized - admin role required", debug: "reached end of middleware" });
   } catch (error) {
-    return res.json({ success: false, message: "not authorized - admin role required" });
+    console.log("[protectAdminOnly] ERROR in catch:", error.message);
+    return res.json({ success: false, message: "not authorized - admin role required", error: error.message, stage: "catch" });
   }
 };

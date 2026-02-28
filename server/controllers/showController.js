@@ -551,3 +551,39 @@ export const searchMoviesAndShows = async (req, res) => {
     });
   }
 };
+
+// Stub functions for missing show routes
+export const updateShow = async (req, res) => {
+  res.status(501).json({ success: false, message: "Show update not implemented" });
+};
+
+export const deleteShow = async (req, res) => {
+  res.status(501).json({ success: false, message: "Show deletion not implemented" });
+};
+
+export const toggleShowStatus = async (req, res) => {
+  res.status(501).json({ success: false, message: "Show status toggle not implemented" });
+};
+
+// Alias for getAvailableMoviesForCustomers
+export const getAvailableMovies = getAvailableMoviesForCustomers;
+
+// Default export
+export default {
+  getMovieTrailer,
+  fetchNowPlayingMovies,
+  addShow,
+  fetchShows,
+  fetchShowsByMovie,
+  fetchUpcomingMovies,
+  fetchShow,
+  fetchShowByMovieId,
+  getAvailableMoviesForCustomers,
+  getAllActiveMovies,
+  getAllShowsDebug,
+  searchMoviesAndShows,
+  updateShow,
+  deleteShow,
+  toggleShowStatus,
+  getAvailableMovies,
+};

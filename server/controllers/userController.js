@@ -112,3 +112,75 @@ export const updateUserProfile = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Check if user is admin
+export const checkIsAdmin = async (req, res) => {
+  try {
+    console.log("[checkIsAdmin] req.user:", req.user);
+    const user = await User.findById(req.user.id);
+    console.log("[checkIsAdmin] user found:", !!user, "role:", user?.role);
+    
+    // If user found in DB, use DB role
+    if (user) {
+      return res.json({ success: true, isAdmin: user.role === "admin" });
+    }
+    
+    // Fallback: if user not in DB but token has role, trust token
+    if (req.user.role) {
+      console.log("[checkIsAdmin] User not in DB, using token role:", req.user.role);
+      return res.json({ success: true, isAdmin: req.user.role === "admin" });
+    }
+    
+    return res.json({ success: false, message: "User not found" });
+  } catch (error) {
+    console.error("[checkIsAdmin]", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Alias functions for newSchemaRoutes compatibility
+export const getUserFavorites = fetchFavorites;
+export const updateUserFavorites = updateFavorite;
+export const getUserProfile = updateUserProfile;
+export const updateUser = updateUserProfile;
+
+// Get all users (admin only)
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}, { password_hash: 0 }).sort({ createdAt: -1 });
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error("[getAllUsers]", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Delete user
+export const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    await User.findByIdAndDelete(userId);
+    res.json({ success: true, message: "User deleted successfully" });
+  } catch (error) {
+    console.error("[deleteUser]", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Stub functions for OTP signup (imported from authController in routes)
+export const requestSignupOtp = async (req, res) => {
+  res.status(501).json({ success: false, message: "OTP signup not implemented in this controller" });
+};
+
+export const completeSignupWithOtp = async (req, res) => {
+  res.status(501).json({ success: false, message: "OTP signup not implemented in this controller" });
+};
+
+// Stub functions for register/login (handled by authController)
+export const registerUser = async (req, res) => {
+  res.status(501).json({ success: false, message: "Use /api/user/signup instead" });
+};
+
+export const loginUser = async (req, res) => {
+  res.status(501).json({ success: false, message: "Use /api/user/login instead" });
+};

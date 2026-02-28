@@ -1,7 +1,7 @@
 import ShowTbls from "../models/show_tbls.js";
-import Movie from "../models/Movie_new.js";
-import Theatre from "../models/Theater_new.js";
-import ScreenTbl from "../models/Screen_new.js";
+import Movie from "../models/Movie.js";
+import Theatre from "../models/Theatre.js";
+import ScreenTbl from "../models/ScreenTbl.js";
 import youtubeService from "../services/youtubeService.js";
 
 // Fetch and update movie trailer from YouTube
@@ -181,4 +181,64 @@ export const getMovieDetails = async (req, res) => {
     console.error("[getMovieDetails]", error);
     res.json({ success: false, message: error.message });
   }
+};
+
+// Stub functions for genre routes
+export const createGenre = async (req, res) => {
+  res.status(501).json({ success: false, message: "Genre management not implemented" });
+};
+export const getAllGenres = async (req, res) => {
+  res.status(501).json({ success: false, message: "Genre listing not implemented" });
+};
+export const updateGenre = async (req, res) => {
+  res.status(501).json({ success: false, message: "Genre update not implemented" });
+};
+export const deleteGenre = async (req, res) => {
+  res.status(501).json({ success: false, message: "Genre deletion not implemented" });
+};
+
+// Stub functions for language routes
+export const createLanguage = async (req, res) => {
+  res.status(501).json({ success: false, message: "Language management not implemented" });
+};
+export const getAllLanguages = async (req, res) => {
+  res.status(501).json({ success: false, message: "Language listing not implemented" });
+};
+export const updateLanguage = async (req, res) => {
+  res.status(501).json({ success: false, message: "Language update not implemented" });
+};
+export const deleteLanguage = async (req, res) => {
+  res.status(501).json({ success: false, message: "Language deletion not implemented" });
+};
+
+// Stub functions for cast routes
+export const createCast = async (req, res) => {
+  res.status(501).json({ success: false, message: "Cast management not implemented" });
+};
+export const getAllCast = async (req, res) => {
+  res.status(501).json({ success: false, message: "Cast listing not implemented" });
+};
+export const updateCast = async (req, res) => {
+  res.status(501).json({ success: false, message: "Cast update not implemented" });
+};
+export const deleteCast = async (req, res) => {
+  res.status(501).json({ success: false, message: "Cast deletion not implemented" });
+};
+
+// Default export
+export default {
+  getShowsByMovie,
+  getMovieDetails,
+  createGenre,
+  getAllGenres,
+  updateGenre,
+  deleteGenre,
+  createLanguage,
+  getAllLanguages,
+  updateLanguage,
+  deleteLanguage,
+  createCast,
+  getAllCast,
+  updateCast,
+  deleteCast,
 };

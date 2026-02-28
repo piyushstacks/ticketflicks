@@ -1,16 +1,15 @@
-import Movie from "../models/Movie_new.js";
+import Movie from "../models/Movie.js";
 import ShowNew from "../models/show_tbls.js";
 import RatingsReview from "../models/RatingsReview.js";
 import axios from "axios";
 import User from "../models/User.js";
-import UserNew from "../models/User_new.js";
 import Theatre from "../models/Theatre.js";
 import Screen from "../models/Screen.js";
 
 // Sync movies from TMDB API
 export const syncMoviesFromTMDB = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -85,7 +84,7 @@ export const syncMoviesFromTMDB = async (req, res) => {
 // Get movies playing at a specific theatre (via Show_new model)
 export const getMoviesByTheatre = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -130,7 +129,7 @@ export const getMoviesByTheatre = async (req, res) => {
 // Schedule a movie at a theatre (create a show)
 export const scheduleMovieAtTheatre = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -213,7 +212,7 @@ export const scheduleMovieAtTheatre = async (req, res) => {
 // Remove a movie schedule from a theatre
 export const removeMovieSchedule = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -250,7 +249,7 @@ export const removeMovieSchedule = async (req, res) => {
 // Create new movie
 export const createMovie = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -363,7 +362,7 @@ export const includeTheatresForMovie = async (req, res) => {
 export const getAllAvailableMovies = async (req, res) => {
   try {
     // Get the current user (manager)
-    const manager = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const manager = (await User.findById(req.user.id));
     if (!manager || manager.role !== "manager") {
       return res.json({
         success: false,
@@ -398,7 +397,7 @@ export const getAllAvailableMovies = async (req, res) => {
 // Get all movies (admin view)
 export const getAllMovies = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -437,7 +436,7 @@ export const getMovieById = async (req, res) => {
 // Deactivate movie (soft delete)
 export const deactivateMovie = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -477,7 +476,7 @@ export const deactivateMovie = async (req, res) => {
 // Activate movie (restore from soft delete)
 export const activateMovie = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -511,7 +510,7 @@ export const activateMovie = async (req, res) => {
 // Update movie
 export const updateMovie = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -573,7 +572,7 @@ export const updateMovieReviews = async (req, res) => {
 // Delete a review
 export const deleteMovieReview = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -633,7 +632,7 @@ export const getMovieReviews = async (req, res) => {
 // Add a review to a movie
 export const addMovieReview = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -686,7 +685,7 @@ export const addMovieReview = async (req, res) => {
 // Update a review
 export const updateMovieReview = async (req, res) => {
   try {
-    const admin = (await UserNew.findById(req.user.id)) || (await User.findById(req.user.id));
+    const admin = (await User.findById(req.user.id));
     if (!admin || admin.role !== "admin") {
       return res.json({
         success: false,
@@ -723,4 +722,45 @@ export const updateMovieReview = async (req, res) => {
     console.error("[updateMovieReview]", error);
     res.json({ success: false, message: error.message });
   }
+};
+
+// Stub functions for missing movie routes
+export const deleteMovie = async (req, res) => {
+  res.status(501).json({ success: false, message: "Movie deletion not implemented - use deactivateMovie instead" });
+};
+
+export const searchMovies = async (req, res) => {
+  res.status(501).json({ success: false, message: "Movie search not implemented" });
+};
+
+export const fetchNowPlayingFromTMDB = async (req, res) => {
+  res.status(501).json({ success: false, message: "Fetch now playing from TMDB not implemented" });
+};
+
+export const importMovieFromTMDB = async (req, res) => {
+  res.status(501).json({ success: false, message: "Import movie from TMDB not implemented" });
+};
+
+// Default export
+export default {
+  syncMoviesFromTMDB,
+  getMoviesByTheatre,
+  scheduleMovieAtTheatre,
+  removeMovieSchedule,
+  createMovie,
+  updateMovie,
+  getAllMovies,
+  getMovieById,
+  deactivateMovie,
+  activateMovie,
+  updateMovieReviews,
+  deleteMovieReview,
+  getMovieReviews,
+  addMovieReview,
+  updateMovieReview,
+  getAllAvailableMovies,
+  deleteMovie,
+  searchMovies,
+  fetchNowPlayingFromTMDB,
+  importMovieFromTMDB,
 };

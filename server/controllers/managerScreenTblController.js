@@ -427,3 +427,29 @@ export const getScreenTblById = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+// Stub functions for screen routes compatibility (aliases and stubs)
+export const createScreen = addScreenTbl;
+export const getAllScreens = getTheatreScreensTbl;
+export const getScreensByTheater = getTheatreScreensTbl;
+export const getScreen = getScreenTblById;
+export const updateScreen = editScreenTbl;
+export const deleteScreen = deleteScreenTbl;
+export const updateScreenStatus = toggleScreenStatusTbl;
+
+// Default export
+export default {
+  getTheatreScreensTbl,
+  addScreenTbl,
+  editScreenTbl,
+  toggleScreenStatusTbl,
+  deleteScreenTbl,
+  getScreenTblById,
+  createScreen,
+  getAllScreens,
+  getScreensByTheater,
+  getScreen,
+  updateScreen,
+  deleteScreen,
+  updateScreenStatus,
+};
