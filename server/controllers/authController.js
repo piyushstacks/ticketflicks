@@ -138,6 +138,69 @@ export const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Complete signup with OTP verification
+ */
+export const completeSignupWithOtp = asyncHandler(async (req, res) => {
+  const { email, otp, name, phone, password } = req.body;
+
+  if (!email || !otp || !name || !phone || !password) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "All fields are required" 
+    });
+  }
+
+  // Find and verify OTP
+  const otpDoc = await Otp.findOne({
+    email: email.toLowerCase(),
+    purpose: "signup",
+    expiresAt: { $gte: new Date() }
+  }).sort({ createdAt: -1 });
+
+  if (!otpDoc) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "OTP not found or expired" 
+    });
+  }
+
+  const match = await bcrypt.compare(otp, otpDoc.otpHash);
+  if (!match) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Invalid OTP" 
+    });
+  }
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  if (existingUser) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Email already registered" 
+    });
+  }
+
+  // Create user using authService
+  const result = await authService.signup({
+    name,
+    email,
+    phone,
+    password,
+  });
+
+  // Delete OTP after successful signup
+  await Otp.deleteOne({ _id: otpDoc._id });
+
+  res.status(201).json({
+    success: true,
+    message: "Signup successful",
+    token: result.token,
+    user: result.user,
+  });
+});
+
 export default {
   signup,
   login,
@@ -145,4 +208,5 @@ export default {
   resendForgotOtp,
   resetPasswordWithOtp,
   changePassword,
+  completeSignupWithOtp,
 };

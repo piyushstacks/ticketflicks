@@ -37,12 +37,26 @@ export const ERROR_CODES = {
  * Standardized error response
  */
 export class AppError extends Error {
-  constructor(errorCode = ERROR_CODES.INTERNAL_ERROR, details = {}) {
-    super(errorCode.message);
-    this.status = errorCode.status;
-    this.code = errorCode.code;
-    this.message = errorCode.message;
-    this.details = details;
+  constructor(messageOrCode, statusOrDetails = {}) {
+    // Support both old pattern (message, status) and new pattern (errorCode, details)
+    if (typeof messageOrCode === 'string') {
+      // Old pattern: AppError(message, status)
+      const message = messageOrCode;
+      const status = typeof statusOrDetails === 'number' ? statusOrDetails : statusOrDetails.status || 500;
+      super(message);
+      this.status = status;
+      this.code = 'APP_ERROR';
+      this.message = message;
+      this.details = typeof statusOrDetails === 'object' ? statusOrDetails : {};
+    } else {
+      // New pattern: AppError(errorCode, details)
+      const errorCode = messageOrCode;
+      super(errorCode.message);
+      this.status = errorCode.status;
+      this.code = errorCode.code;
+      this.message = errorCode.message;
+      this.details = statusOrDetails;
+    }
     this.timestamp = new Date().toISOString();
   }
 }
@@ -175,6 +189,11 @@ export const handleAsyncError = (fn) => {
   };
 };
 
+/**
+ * Alias for backwards compatibility
+ */
+export const asyncHandler = handleAsyncError;
+
 export default {
   AppError,
   ValidationError,
@@ -185,4 +204,5 @@ export default {
   formatErrorResponse,
   logError,
   handleAsyncError,
+  asyncHandler,
 };

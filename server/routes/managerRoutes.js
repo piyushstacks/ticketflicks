@@ -1,57 +1,24 @@
 import express from "express";
 import { protectManager } from "../middleware/auth.js";
 import {
-  getManagerMovies,
-  addShow,
-  editShow,
-  deleteShow,
   dashboardManagerData,
-} from "../controllers/managerController.js";
-import {
   getTheatreShows,
-  toggleShowStatus,
-} from "../controllers/managerShowController.js";
-import {
-  addScreen,
-  editScreen,
-  deleteScreen,
-  getManagerBookings,
-  addMovie,
-  toggleMovieStatus,
-  removeMovie,
-  toggleScreenStatus,
+  getBookings,
+  getTheatreDetails,
 } from "../controllers/managerController.js";
-import {
-  getTheatreScreensTbl as getTheatreScreens,
-} from "../controllers/managerScreenTblController.js";
 
 const managerRouter = express.Router();
 
 // Dashboard
 managerRouter.get("/dashboard", protectManager, dashboardManagerData);
 
-// Movie Management
-managerRouter.get("/movies", protectManager, getManagerMovies);
-managerRouter.post("/movies/add", protectManager, addMovie);
-managerRouter.patch("/movies/:movieId/toggle", protectManager, toggleMovieStatus);
-managerRouter.delete("/movies/:movieId", protectManager, removeMovie);
-managerRouter.get("/movies/available", protectManager, getManagerMovies);
+// Theatre Details
+managerRouter.get("/theatre/:theatreId", protectManager, getTheatreDetails);
 
-// Screen Management
-managerRouter.get("/screens", protectManager, getTheatreScreens);
-managerRouter.post("/screens/add", protectManager, addScreen);
-managerRouter.put("/screens/:screenId", protectManager, editScreen);
-managerRouter.patch("/screens/:screenId/toggle", protectManager, toggleScreenStatus);
-managerRouter.delete("/screens/:screenId", protectManager, deleteScreen);
-
-// Shows Management (New Workflow)
+// Shows Management
 managerRouter.get("/shows", protectManager, getTheatreShows);
-managerRouter.post("/shows/add", protectManager, addShow);
-managerRouter.put("/shows/:showId", protectManager, editShow);
-managerRouter.patch("/shows/:showId/toggle", protectManager, toggleShowStatus);
-managerRouter.delete("/shows/:showId", protectManager, deleteShow);
 
 // Bookings
-managerRouter.get("/bookings", protectManager, getManagerBookings);
+managerRouter.get("/bookings", protectManager, getBookings);
 
 export default managerRouter;

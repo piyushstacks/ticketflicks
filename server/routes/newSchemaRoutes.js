@@ -6,18 +6,14 @@ import showController from "../controllers/showController.js";
 import bookingController from "../controllers/bookingController.js";
 import screenController from "../controllers/managerScreenTblController.js";
 import movieController from "../controllers/adminMovieController.js";
+import authController from "../controllers/authController.js";
 import {
-  registerUser,
-  loginUser,
-  getUserProfile,
-  updateUser,
   getAllUsers,
-  deleteUser,
-  requestSignupOtp,
-  completeSignupWithOtp,
   checkIsAdmin,
-  getUserFavorites,
-  updateUserFavorites,
+  updateUserProfile,
+  getUserProfile,
+  fetchFavorites,
+  updateFavorite,
 } from "../controllers/userController.js";
 import seatController from "../controllers/publicScreenTblController.js";
 import metadataController from "../controllers/publicController.js";
@@ -25,11 +21,11 @@ import metadataController from "../controllers/publicController.js";
 import {
   requestTheatreRegistrationOtp,
   registerTheatre,
-  fetchAllTheatres,
-  fetchTheatre,
-  updateTheatre,
-  deleteTheatre,
-  getTheatresByManager,
+  getAllTheatres,
+  getTheatreDetails,
+  searchTheatres,
+  getPendingTheatres,
+  approveTheatre,
 } from "../controllers/theatreController.js";
 
 // Import auth controller for password routes
@@ -43,11 +39,12 @@ import { otpRateLimiter } from "../middleware/otpRateLimiter.js";
 
 // Import unified booking controller
 import {
-  createBooking as createBookingStripe,
-  fetchOccupiedSeats,
-  fetchUserBookings,
-  cancelBooking,
+  createBooking,
   confirmStripePayment,
+  getBookingDetails,
+  cancelBooking,
+  checkSeatsAvailability,
+  calculatePricing,
 } from "../controllers/bookingController.js";
 
 const router = express.Router();
@@ -70,30 +67,18 @@ router.get("/movies/available", showController.getAvailableMovies);
 router.get("/upcoming-movies", movieController.getAllMovies); // Frontend expects this
 router.get("/trailer/:id", movieController.getMovieById); // Frontend expects this
 
-// ========== BOOKING ROUTES (New Schema) ==========
-router.post("/bookings", bookingController.createBooking);
-router.get("/bookings/user/:user_id", bookingController.getUserBookings);
-router.get("/bookings/:bookingId", bookingController.getBooking);
-router.put("/bookings/:bookingId/status", bookingController.updateBookingStatus);
-router.delete("/bookings/:bookingId", bookingController.cancelBooking);
-router.post("/bookings/payment/stripe", bookingController.createStripePayment);
-router.post("/bookings/payment/confirm", bookingController.confirmPayment);
-router.get("/bookings", bookingController.getAllBookings);
-
-// ========== BOOKING ROUTES (Stripe Integration) ==========
-// Legacy routes for Stripe payment integration - still supported for backward compatibility
-router.post("/bookings/create", protectUser, createBookingStripe);
-router.get("/bookings/seats/:showId", fetchOccupiedSeats);
-router.get("/my-bookings", protectUser, fetchUserBookings);
-router.put("/bookings/:bookingId/cancel", protectUser, cancelBooking);
-router.post("/bookings/confirm-stripe", protectUser, confirmStripePayment);
+// ========== BOOKING ROUTES ==========
+router.post("/bookings", protectUser, createBooking);
+router.get("/bookings/:id", getBookingDetails);
+router.post("/bookings/confirm", protectUser, confirmStripePayment);
+router.put("/bookings/:id/cancel", protectUser, cancelBooking);
+router.get("/bookings/availability/:showId", checkSeatsAvailability);
+router.post("/bookings/pricing", calculatePricing);
 
 // ========== THEATER ROUTES ==========
-router.get("/theaters", fetchAllTheatres);
-router.get("/theaters/manager/:managerId", protectUser, getTheatresByManager);
-router.get("/theaters/:id", fetchTheatre);
-router.put("/theaters/:id", protectUser, updateTheatre);
-router.delete("/theaters/:id", protectUser, deleteTheatre);
+router.get("/theaters", getAllTheatres);
+router.get("/theaters/search", searchTheatres);
+router.get("/theaters/:id", getTheatreDetails);
 
 // ========== SCREEN ROUTES ==========
 router.post("/screens", screenController.createScreen);
@@ -113,16 +98,11 @@ router.delete("/movies/:movieId", movieController.deleteMovie);
 router.get("/movies/search", movieController.searchMovies);
 router.get("/movies/tmdb/now-playing", movieController.fetchNowPlayingFromTMDB);
 router.post("/movies/tmdb/import/:tmdbId", movieController.importMovieFromTMDB);
-
 // ========== USER ROUTES ==========
-// Specific routes FIRST (before parameterized routes)
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.post("/signup/request-otp", requestSignupOtp);
-router.post("/signup/complete", completeSignupWithOtp);
-router.get("/is-admin", protectUser, checkIsAdmin);
-router.get("/favorites", protectUser, getUserFavorites);
-router.post("/update-favorite", protectUser, updateUserFavorites);
+// Auth routes (from authController)
+router.post("/signup", authController.signup);
+router.post("/login", authController.login);
+router.post("/signup/complete", authController.completeSignupWithOtp);
 
 // Password management routes
 router.post("/forgot-password", otpRateLimiter(), forgotPasswordRequest);
@@ -130,11 +110,14 @@ router.post("/forgot-password/resend", otpRateLimiter(), resendForgotOtp);
 router.post("/reset-password", resetPasswordWithOtp);
 router.post("/change-password", protectUser, changePassword);
 
-router.get("/", getAllUsers);
-// Parameterized routes LAST
-router.get("/:userId", getUserProfile);
-router.put("/:userId", updateUser);
-router.delete("/:userId", deleteUser);
+// User profile routes
+router.get("/profile", protectUser, getUserProfile);
+router.put("/profile", protectUser, updateUserProfile);
+router.get("/is-admin", protectUser, checkIsAdmin);
+
+// Favorites routes
+router.get("/favorites", protectUser, fetchFavorites);
+router.post("/favorites", protectUser, updateFavorite);
 
 // ========== SEAT ROUTES ==========
 router.post("/seat-categories", seatController.createSeatCategory);
