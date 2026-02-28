@@ -1,106 +1,171 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { UnauthorizedError } from "../services/errorService.js";
 
-console.log("[auth.js] Middleware loaded");
-
-export const protectAdmin = (req, res, next) => {
+/**
+ * Extract token from request headers
+ */
+const extractToken = (req) => {
   const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : null;
-
-  if (!token) {
-    return res.json({ success: false, message: "not authorized" });
+  if (!authHeader.startsWith("Bearer ")) {
+    return null;
   }
+  return authHeader.slice(7);
+};
 
+/**
+ * Verify JWT token
+ */
+const verifyToken = (token) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== "admin") {
-      return res.json({ success: false, message: "not authorized" });
-    }
-    req.user = { id: decoded.id, role: decoded.role };
-    next();
-  } catch {
-    return res.json({ success: false, message: "not authorized" });
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch (error) {
+    return null;
   }
 };
 
+/**
+ * Protect routes - requires any authenticated user
+ */
+export const protect = async (req, res, next) => {
+  try {
+    const token = extractToken(req);
+    if (!token) {
+      throw new UnauthorizedError("No token provided");
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      throw new UnauthorizedError("Invalid or expired token");
+    }
+
+    // Verify user exists in DB
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      throw new UnauthorizedError("User not found");
+    }
+
+    req.user = { id: user._id.toString(), role: user.role };
+    next();
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      code: error.code || "UNAUTHORIZED",
+      message: error.message || "Unauthorized",
+    });
+  }
+};
+
+/**
+ * Protect admin routes
+ */
+export const protectAdmin = async (req, res, next) => {
+  try {
+    const token = extractToken(req);
+    if (!token) {
+      throw new UnauthorizedError("No token provided");
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      throw new UnauthorizedError("Invalid or expired token");
+    }
+
+    if (decoded.role !== "admin") {
+      throw new UnauthorizedError("Admin access required");
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user || user.role !== "admin") {
+      throw new UnauthorizedError("Admin access required");
+    }
+
+    req.user = { id: user._id.toString(), role: "admin" };
+    next();
+  } catch (error) {
+    res.status(403).json({
+      success: false,
+      code: error.code || "FORBIDDEN",
+      message: error.message || "Admin access required",
+    });
+  }
+};
+
+/**
+ * Protect manager routes
+ */
 export const protectManager = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : null;
-
-    console.log("protectManager: authHeader:", authHeader);
-    console.log("protectManager: token:", token);
-
+    const token = extractToken(req);
     if (!token) {
-      return res.json({ success: false, message: "not authorized" });
+      throw new UnauthorizedError("No token provided");
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("protectManager: decoded:", decoded);
-    
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      throw new UnauthorizedError("Invalid or expired token");
+    }
+
+    if (decoded.role !== "manager") {
+      throw new UnauthorizedError("Manager access required");
+    }
+
     const user = await User.findById(decoded.id);
-    console.log("protectManager: user found:", !!user);
-    console.log("protectManager: user role:", user?.role);
     if (!user || user.role !== "manager") {
-      return res.json({ success: false, message: "not authorized - manager role required" });
+      throw new UnauthorizedError("Manager access required");
     }
 
-    req.user = { 
-      id: decoded.id, 
-      role: decoded.role,
-      managedTheatreId: user.managedTheatreId
-    };
+    req.user = { id: user._id.toString(), role: "manager", managedTheatreId: user.managedTheatreId };
     next();
   } catch (error) {
-    console.log("protectManager error:", error.message);
-    return res.json({ success: false, message: "not authorized" });
+    res.status(403).json({
+      success: false,
+      code: error.code || "FORBIDDEN",
+      message: error.message || "Manager access required",
+    });
   }
 };
 
-export const protectAdminOnly = async (req, res, next) => {
-  console.log("[protectAdminOnly] CALLED for", req.method, req.url);
+/**
+ * Protect customer routes
+ */
+export const protectCustomer = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization || "";
-    console.log("[protectAdminOnly] authHeader:", authHeader.substring(0, 50) + "...");
-    
-    const token = authHeader.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : null;
-
+    const token = extractToken(req);
     if (!token) {
-      console.log("[protectAdminOnly] No token");
-      return res.json({ success: false, message: "not authorized - admin role required" });
+      throw new UnauthorizedError("No token provided");
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("[protectAdminOnly] decoded:", decoded);
-    
-    // Check if user exists in DB
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      throw new UnauthorizedError("Invalid or expired token");
+    }
+
+    if (decoded.role !== "customer") {
+      throw new UnauthorizedError("Customer access required");
+    }
+
     const user = await User.findById(decoded.id);
-    console.log("[protectAdminOnly] DB user found:", !!user, "role:", user?.role);
-    
-    if (user && user.role === "admin") {
-      console.log("[protectAdminOnly] Auth via DB user");
-      req.user = { id: decoded.id, role: user.role };
-      return next();
+    if (!user || user.role !== "customer") {
+      throw new UnauthorizedError("Customer access required");
     }
-    
-    // Fallback: check token role directly
-    console.log("[protectAdminOnly] Token role:", decoded.role);
-    if (decoded.role === "admin") {
-      console.log("[protectAdminOnly] Auth via token role");
-      req.user = { id: decoded.id, role: decoded.role };
-      return next();
-    }
-    
-    console.log("[protectAdminOnly] DENIED - not admin");
-    return res.json({ success: false, message: "not authorized - admin role required", debug: "reached end of middleware" });
+
+    req.user = { id: user._id.toString(), role: "customer" };
+    next();
   } catch (error) {
-    console.log("[protectAdminOnly] ERROR in catch:", error.message);
-    return res.json({ success: false, message: "not authorized - admin role required", error: error.message, stage: "catch" });
+    res.status(403).json({
+      success: false,
+      code: error.code || "FORBIDDEN",
+      message: error.message || "Customer access required",
+    });
   }
+};
+
+export default {
+  protect,
+  protectAdmin,
+  protectManager,
+  protectCustomer,
+  extractToken,
+  verifyToken,
 };
