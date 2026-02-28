@@ -247,6 +247,33 @@ export const resetPasswordWithOtp = async (email, otp, newPassword) => {
 };
 
 /**
+ * Change password for authenticated user
+ */
+export const changePassword = async (email, currentPassword, newPassword) => {
+  const normalizedEmail = sanitizeEmail(email);
+
+  const passwordValidation = validatePassword(newPassword);
+  if (!passwordValidation.valid) {
+    throw new ValidationError(passwordValidation.message);
+  }
+
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user) {
+    throw new NotFoundError("User");
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+  if (!isMatch) {
+    throw new UnauthorizedError("Current password is incorrect");
+  }
+
+  user.password_hash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  await user.save();
+
+  return { success: true, message: "Password changed successfully" };
+};
+
+/**
  * Verify user token
  */
 export const verifyToken = (token) => {
@@ -263,6 +290,7 @@ export default {
   login,
   requestPasswordResetOtp,
   resetPasswordWithOtp,
+  changePassword,
   verifyToken,
   createToken,
   formatUserResponse,
