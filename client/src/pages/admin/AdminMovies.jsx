@@ -25,6 +25,7 @@ const AdminMovies = () => {
   const { axios, getAuthHeaders } = useAppContext();
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [languages, setLanguages] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [viewingMovie, setViewingMovie] = useState(null);
@@ -100,8 +101,21 @@ const AdminMovies = () => {
     }
   };
 
+  const fetchLanguages = async () => {
+    try {
+      const { data } = await axios.get("/api/v2/languages");
+      if (data.success && data.languages?.length > 0) {
+        setLanguages(data.languages);
+      }
+    } catch (error) {
+      console.error("Error fetching languages:", error);
+      // silently fail — dropdown will show fallback options
+    }
+  };
+
   useEffect(() => {
     fetchMovies();
+    fetchLanguages();
   }, []);
 
   const handleInputChange = (e) => {
@@ -709,10 +723,24 @@ const AdminMovies = () => {
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
                 >
-                  <option value="en">English</option>
-                  <option value="hi">Hindi</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
+                  {languages.length > 0 ? (
+                    languages.map((lang) => (
+                      <option key={lang._id} value={lang.code}>
+                        {lang.name}
+                      </option>
+                    ))
+                  ) : (
+                    /* Fallback while loading */
+                    <>
+                      <option value="en">English</option>
+                      <option value="hi">Hindi</option>
+                      <option value="ta">Tamil</option>
+                      <option value="te">Telugu</option>
+                      <option value="ml">Malayalam</option>
+                      <option value="kn">Kannada</option>
+                      <option value="mr">Marathi</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>

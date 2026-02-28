@@ -17,7 +17,7 @@ const ManagerShows = () => {
   const [showForm, setShowForm] = useState(false);
   const [viewingShow, setViewingShow] = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [filterWeek, setFilterWeek] = useState('current');
+  const [filterWeek, setFilterWeek] = useState('all'); // Default to ALL so shows are visible immediately
   const [filterMovie, setFilterMovie] = useState('');
   const [filterScreen, setFilterScreen] = useState('');
   const [showPricingCustomization, setShowPricingCustomization] = useState(false);
@@ -93,11 +93,13 @@ const ManagerShows = () => {
 
   const getCurrentWeekDates = () => {
     const today = new Date();
-    const currentDay = today.getDay();
-    const diff = today.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
-    const monday = new Date(today.setDate(diff));
-    const sunday = new Date(today.setDate(diff + 6));
-    
+    const currentDay = today.getDay(); // 0=Sun, 1=Mon...
+    // Calculate Monday as start of week
+    const diffToMonday = (currentDay === 0 ? -6 : 1 - currentDay);
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
     return {
       start: monday.toISOString().split('T')[0],
       end: sunday.toISOString().split('T')[0]
@@ -133,7 +135,7 @@ const ManagerShows = () => {
         return;
       }
       
-      const { data } = await axios.get("/api/show/shows", {
+      const { data } = await axios.get("/api/manager/shows/list", {
         headers: authHeaders,
       });
 
@@ -184,7 +186,7 @@ const ManagerShows = () => {
         return;
       }
       
-      const { data } = await axios.get("/api/show/movies/available", {
+      const { data } = await axios.get("/api/show/movies/all", {
         headers: authHeaders,
       });
 
@@ -375,31 +377,21 @@ const ManagerShows = () => {
     // Validate dates
     console.log("Starting date validation...");
     if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate);
-      const end = new Date(formData.endDate);
+      // Parse as local noon to avoid UTC timezone issues (IST = UTC+5:30)
+      const start = new Date(`${formData.startDate}T12:00:00`);
+      const end   = new Date(`${formData.endDate}T12:00:00`);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      console.log("Date validation:", {
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        start: start,
-        end: end,
-        today: today,
-        startBeforeToday: start < today,
-        endBeforeToday: end < today,
-        endBeforeStart: end < start
-      });
-      
-      if (start < today || end < today) {
-        console.log("Past date validation failed");
-        toast.error("Cannot create shows for past dates. Please select today or a future date.");
+      if (end < start) {
+        toast.error("End date cannot be before start date");
         return;
       }
-      
-      if (end < start) {
-        console.log("End date before start date validation failed");
-        toast.error("End date cannot be before start date");
+      // Only block dates that are clearly yesterday or earlier
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (end < yesterday) {
+        toast.error("Show end date cannot be in the past");
         return;
       }
     }
@@ -445,7 +437,7 @@ const ManagerShows = () => {
         console.log("API endpoint:", "/api/manager/shows/add");
         
         response = await axios.post(
-          "/api/show/shows",
+          "/api/manager/shows/add",
           showData,
           { headers: getAuthHeaders() }
         );
@@ -645,50 +637,30 @@ const ManagerShows = () => {
     console.log("[ManagerShows] Next week:", nextWeek);
     
     if (filterWeek === 'current') {
+      const currentWeek = getCurrentWeekDates();
       filtered = filtered.filter(show => {
-        // Handle both showDateTime and date fields for backward compatibility
         const dateField = show.showDateTime || show.startDate;
-        if (!dateField) {
-          console.warn(`[ManagerShows] Show ${show._id} missing date field`);
-          return false;
-        }
-        
-        const showDate = new Date(dateField);
-        const start = new Date(currentWeek.start);
-        const end = new Date(currentWeek.end);
-        end.setHours(23, 59, 59, 999);
-        
-        // Validate date
-        if (isNaN(showDate.getTime())) {
-          console.warn(`[ManagerShows] Invalid date for show ${show._id}:`, dateField);
-          return false;
-        }
-        
-        const inRange = showDate >= start && showDate <= end;
-        console.log(`[ManagerShows] Show ${show._id}: date=${showDate}, inRange=${inRange}`);
-        return inRange;
+        if (!dateField) return false;
+        // Parse as local noon to avoid UTC timezone offset causing wrong week
+        const dateStr = typeof dateField === 'string' ? dateField.split('T')[0] : new Date(dateField).toISOString().split('T')[0];
+        const showDate = new Date(`${dateStr}T12:00:00`);
+        const start = new Date(`${currentWeek.start}T00:00:00`);
+        const end = new Date(`${currentWeek.end}T23:59:59`);
+        return showDate >= start && showDate <= end;
       });
     } else if (filterWeek === 'next') {
+      const nextWeek = getNextWeekDates();
       filtered = filtered.filter(show => {
         const dateField = show.showDateTime || show.startDate;
-        if (!dateField) {
-          console.warn(`[ManagerShows] Show ${show._id} missing date field`);
-          return false;
-        }
-        
-        const showDate = new Date(dateField);
-        const start = new Date(nextWeek.start);
-        const end = new Date(nextWeek.end);
-        end.setHours(23, 59, 59, 999);
-        
-        if (isNaN(showDate.getTime())) {
-          console.warn(`[ManagerShows] Invalid date for show ${show._id}:`, dateField);
-          return false;
-        }
-        
+        if (!dateField) return false;
+        const dateStr = typeof dateField === 'string' ? dateField.split('T')[0] : new Date(dateField).toISOString().split('T')[0];
+        const showDate = new Date(`${dateStr}T12:00:00`);
+        const start = new Date(`${nextWeek.start}T00:00:00`);
+        const end = new Date(`${nextWeek.end}T23:59:59`);
         return showDate >= start && showDate <= end;
       });
     }
+    // filterWeek === 'all': no date filter, show everything
     
     console.log("[ManagerShows] After week filter:", filtered.length);
     
@@ -722,11 +694,44 @@ const ManagerShows = () => {
 
   const formatShowTime = (time) => {
     if (!time) return 'Not set';
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    return `${displayHour}:${minutes} ${ampm}`;
+    // If time looks like "HH:MM" or "HH:MM:SS" use it directly
+    const match = time.toString().match(/^(\d{1,2}):(\d{2})/);
+    if (match) {
+      const hour = parseInt(match[1]);
+      const minutes = match[2];
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+      return `${displayHour}:${minutes} ${ampm}`;
+    }
+    return time;
+  };
+
+  // Derive showTime from stored showTime or from showDateTime field
+  const getShowTime = (show) => {
+    if (show.showTime) return show.showTime;
+    if (show.showDateTime) {
+      // showDateTime is UTC – extract local time string
+      const d = new Date(show.showDateTime);
+      const h = d.getHours().toString().padStart(2, '0');
+      const m = d.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    }
+    return null;
+  };
+
+  // Derive startDate from stored startDate or from showDateTime
+  const getShowStartDate = (show) => {
+    if (show.startDate) return show.startDate;
+    if (show.showDateTime) {
+      return new Date(show.showDateTime).toISOString().split('T')[0];
+    }
+    return null;
+  };
+
+  // Derive endDate — if missing, same as startDate (single-day show)
+  const getShowEndDate = (show) => {
+    if (show.endDate) return show.endDate;
+    return getShowStartDate(show);
   };
 
   if (loading) {
@@ -794,9 +799,9 @@ const ManagerShows = () => {
                 onChange={(e) => setFilterWeek(e.target.value)}
                 className="w-full pl-4 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
               >
+                <option value="all">All Shows</option>
                 <option value="current">Current Week</option>
                 <option value="next">Next Week</option>
-                <option value="all">All Shows (Historical)</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
             </div>
@@ -1255,7 +1260,7 @@ const ManagerShows = () => {
                     <Clock className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Show Time</p>
-                      <p className="text-xs md:text-sm font-semibold truncate">{formatShowTime(show.showTime || '')}</p>
+                      <p className="text-xs md:text-sm font-semibold truncate">{formatShowTime(getShowTime(show))}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 md:gap-3 text-gray-300 bg-gray-800/50 p-2 md:p-3 rounded-lg border border-gray-700/50">
@@ -1263,7 +1268,7 @@ const ManagerShows = () => {
                     <div className="min-w-0">
                       <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Start Date</p>
                       <p className="text-xs md:text-sm font-semibold truncate">
-                        {show.startDate ? new Date(show.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Not set'}
+                        {getShowStartDate(show) ? new Date(`${getShowStartDate(show)}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Not set'}
                       </p>
                     </div>
                   </div>
@@ -1273,8 +1278,8 @@ const ManagerShows = () => {
                   <div className="flex flex-col min-w-0">
                     <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Date Range</span>
                     <span className="text-gray-300 text-xs md:text-sm truncate">
-                      {show.startDate && show.endDate 
-                        ? `${new Date(show.startDate).toLocaleDateString()} - ${new Date(show.endDate).toLocaleDateString()}`
+                      {(getShowStartDate(show) || getShowEndDate(show))
+                        ? `${new Date(`${getShowStartDate(show)}T12:00:00`).toLocaleDateString()} - ${new Date(`${getShowEndDate(show)}T12:00:00`).toLocaleDateString()}`
                         : 'Date range not set'
                       }
                     </span>
@@ -1411,7 +1416,7 @@ const ManagerShows = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Show Time:</span>
-                        <span className="text-gray-300">{formatShowTime(viewingShow.showTime)}</span>
+                        <span className="text-gray-300">{formatShowTime(getShowTime(viewingShow))}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Language:</span>
@@ -1419,11 +1424,19 @@ const ManagerShows = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Start Date:</span>
-                        <span className="text-gray-300">{new Date(viewingShow.startDate).toLocaleDateString()}</span>
+                        <span className="text-gray-300">
+                          {getShowStartDate(viewingShow)
+                            ? new Date(`${getShowStartDate(viewingShow)}T12:00:00`).toLocaleDateString()
+                            : 'Not set'}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">End Date:</span>
-                        <span className="text-gray-300">{new Date(viewingShow.endDate).toLocaleDateString()}</span>
+                        <span className="text-gray-300">
+                          {getShowEndDate(viewingShow)
+                            ? new Date(`${getShowEndDate(viewingShow)}T12:00:00`).toLocaleDateString()
+                            : 'Not set'}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Status:</span>

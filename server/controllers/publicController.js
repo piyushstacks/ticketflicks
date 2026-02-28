@@ -98,7 +98,7 @@ export const getShowsByMovie = async (req, res) => {
     if (!movie) {
       return res.json({ success: false, message: "Movie not found" });
     }
-    if (!movie.isActive) {
+    if (movie.isActive === false) {
       return res.json({
         success: true,
         groupedShows: {},
@@ -108,12 +108,19 @@ export const getShowsByMovie = async (req, res) => {
     }
 
     // Get all shows for this movie (only from approved theatres)
+    // A show is valid if its endDate is today or in the future,
+    // OR if it has no endDate but showDateTime >= today
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
+
     const shows = await ShowTbls.find({
       movie: movieId,
       isActive: true,
-      showDateTime: { $gte: startOfToday }
+      $or: [
+        { endDate: { $gte: startOfToday } },              // has endDate and it's today or future
+        { endDate: null, showDateTime: { $gte: startOfToday } }, // no endDate, showDateTime >= today
+        { endDate: { $exists: false }, showDateTime: { $gte: startOfToday } } // field absent
+      ]
     })
       .populate({
         path: "theatre",
@@ -206,16 +213,45 @@ export const deleteGenre = async (req, res) => {
 
 // Stub functions for language routes
 export const createLanguage = async (req, res) => {
-  res.status(501).json({ success: false, message: "Language management not implemented" });
+  try {
+    const Language = (await import('../models/Language.js')).default;
+    const { name, code, region } = req.body;
+    if (!name || !code) return res.status(400).json({ success: false, message: 'Name and code are required' });
+    const lang = await Language.create({ name: name.trim(), code: code.trim().toLowerCase(), region });
+    res.status(201).json({ success: true, language: lang });
+  } catch (err) {
+    if (err.code === 11000) return res.status(409).json({ success: false, message: 'Language already exists' });
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 export const getAllLanguages = async (req, res) => {
-  res.status(501).json({ success: false, message: "Language listing not implemented" });
+  try {
+    const Language = (await import('../models/Language.js')).default;
+    const languages = await Language.find().sort({ name: 1 });
+    res.json({ success: true, languages });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 export const updateLanguage = async (req, res) => {
-  res.status(501).json({ success: false, message: "Language update not implemented" });
+  try {
+    const Language = (await import('../models/Language.js')).default;
+    const lang = await Language.findByIdAndUpdate(req.params.languageId, req.body, { new: true, runValidators: true });
+    if (!lang) return res.status(404).json({ success: false, message: 'Language not found' });
+    res.json({ success: true, language: lang });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 export const deleteLanguage = async (req, res) => {
-  res.status(501).json({ success: false, message: "Language deletion not implemented" });
+  try {
+    const Language = (await import('../models/Language.js')).default;
+    const lang = await Language.findByIdAndDelete(req.params.languageId);
+    if (!lang) return res.status(404).json({ success: false, message: 'Language not found' });
+    res.json({ success: true, message: 'Language deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 // Stub functions for cast routes

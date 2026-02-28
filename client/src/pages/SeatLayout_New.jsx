@@ -643,18 +643,11 @@ const SeatLayout = () => {
       console.log("Booking response:", data);
       
       if (data.success) {
-        // Check if auth is properly stored before redirect
-        const authCheck = localStorage.getItem("auth") || sessionStorage.getItem("auth");
-        if (!authCheck) {
-          console.error("[SeatLayout] WARNING: Auth not found in storage before Stripe redirect!");
-          toast.error("Session error. Please log in again before payment.");
-          return;
-        }
-        console.log("[SeatLayout] Auth verified in storage before redirect");
-        
-        if (data.paymentLink) {
-          console.log("Redirecting to Stripe:", data.paymentLink);
-          window.location.href = data.paymentLink;
+        // Backend returns data.url (Stripe session) or data.paymentLink
+        const redirectUrl = data.url || data.paymentLink;
+        if (redirectUrl) {
+          console.log("[SeatLayout] Redirecting to Stripe:", redirectUrl);
+          window.location.href = redirectUrl;
         } else {
           toast.success("Booking created! No payment required.");
           navigate("/my-bookings");

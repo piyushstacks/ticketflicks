@@ -5,18 +5,18 @@ import { inngest } from "../inngest/index.js";
 
 export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, session) {
   const booking = await Booking.findById(bookingId);
-  
+
   // Check if booking is already paid to prevent double processing
-  if (!booking || booking.isPaid) {
+  if (!booking || booking.payment_status === 'completed') {
     console.log(`Booking ${bookingId} not found or already paid`);
     return;
   }
-  
+
   console.log(`Processing payment for booking ${bookingId}`);
 
-  const showData = await ShowTbls.findById(booking.show);
+  const showData = await ShowTbls.findById(booking.show_id);
   if (showData && showData.seatTiers) {
-    for (const seat of booking.bookedSeats) {
+    for (const seat of (booking.seats_booked || [])) {
       const tierIndex = showData.seatTiers.findIndex(
         (t) => t.tierName === seat.tierName
       );
@@ -25,18 +25,18 @@ export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, ses
           showData.seatTiers[tierIndex].occupiedSeats = {};
         }
         showData.seatTiers[tierIndex].occupiedSeats[seat.seatNumber] =
-          booking.user.toString();
+          booking.user_id.toString();
       }
     }
     showData.occupiedSeatsCount =
-      (showData.occupiedSeatsCount || 0) + booking.bookedSeats.length;
+      (showData.occupiedSeatsCount || 0) + (booking.seats_booked || []).length;
     showData.markModified("seatTiers");
     await showData.save();
   }
 
   let receiptUrl = null;
   try {
-    const paymentIntentId = session.payment_intent || session.payment_intent;
+    const paymentIntentId = session.payment_intent;
     if (paymentIntentId) {
       const pi = await stripeInstance.paymentIntents.retrieve(paymentIntentId);
       if (pi.latest_charge) {
@@ -49,10 +49,12 @@ export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, ses
   }
 
   await Booking.findByIdAndUpdate(bookingId, {
-    isPaid: true,
-    paymentLink: "",
-    paymentMode: "stripe",
-    receiptUrl: receiptUrl || undefined,
+    payment_status: 'completed',
+    status: 'confirmed',
+    payment_link: null,
+    payment_method: 'stripe',
+    payment_id: session.payment_intent || session.id,
+    ...(receiptUrl && { receiptUrl }),
   });
 
   await inngest.send({
@@ -79,7 +81,7 @@ export const stripeWebhooks = async (req, res) => {
 
   try {
     console.log("Stripe webhook received:", event.type);
-    
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;

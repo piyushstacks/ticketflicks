@@ -20,6 +20,20 @@ const showSchema = new mongoose.Schema({
     type: Date,
     required: [true, "Show date and time is required"]
   },
+  // Human-readable time string e.g. "14:30"
+  showTime: {
+    type: String,
+    trim: true
+  },
+  // Date range for recurring daily shows
+  startDate: {
+    type: String,  // stored as "YYYY-MM-DD"
+    trim: true
+  },
+  endDate: {
+    type: String,  // stored as "YYYY-MM-DD"
+    trim: true
+  },
   language: {
     type: String,
     trim: true,

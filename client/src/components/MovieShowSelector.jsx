@@ -65,7 +65,7 @@ const MovieShowSelector = () => {
   // Fetch movie details
   const fetchMovie = async () => {
     try {
-      const { data } = await axios.get(`/api/movies/${id}`);
+      const { data } = await axios.get(`/api/show/movies/${id}`);
       if (data.success) {
         setMovie(data.movie);
       }
@@ -107,7 +107,6 @@ const MovieShowSelector = () => {
 
   // Get shows for specific date, theatre, and screen
   const getShowsForDateAndTheatre = (date, theatreId, screenId) => {
-    const dateStr = date.toDateString();
     const theatreShows = shows[theatreId];
     if (!theatreShows) return [];
 
@@ -116,7 +115,24 @@ const MovieShowSelector = () => {
 
     return screenShows.shows.filter((show) => {
       const showDate = new Date(show.showDateTime || show.startDate);
-      return showDate.toDateString() === dateStr;
+
+      // If show has endDate, check if selected date falls within startDate..endDate range
+      if (show.endDate) {
+        const start = new Date(show.startDate || show.showDateTime);
+        const end   = new Date(show.endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        const check = new Date(date);
+        check.setHours(12, 0, 0, 0);
+        // Also check time of day matches (same show time)
+        const checkStr = date.toDateString();
+        const startStr = showDate.toDateString();
+        // If the selected date is within range, the show time is valid for that day
+        return check >= start && check <= end;
+      }
+
+      // Legacy: exact showDateTime date match
+      return showDate.toDateString() === date.toDateString();
     });
   };
 

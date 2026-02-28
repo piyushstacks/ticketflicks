@@ -2,7 +2,10 @@ import Feedback from "../models/Feedback.js";
 import { asyncHandler, AppError } from "../services/errorService.js";
 
 export const submitFeedback = asyncHandler(async (req, res) => {
-  const { rating, message, userId } = req.body;
+  const { rating, message } = req.body;
+  const userId = req.user?._id || req.user?.id;
+
+  if (!userId) throw new AppError("Authentication required.", 401);
 
   if (!rating) {
     throw new AppError(

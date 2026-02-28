@@ -89,18 +89,14 @@ export const getDashboardData = async (managerId) => {
   );
 
   return {
-    theatre: {
-      id: theatre._id.toString(),
-      name: theatre.name,
-      location: theatre.location,
-      city: theatre.city,
-    },
-    stats: {
-      activeShows,
-      todayBookings,
-      monthRevenue,
-      totalBookings: monthBookings.length,
-    },
+    theatreId: theatre._id,
+    theatreName: theatre.name,
+    theatreCity: theatre.city,
+    theatreLocation: theatre.location,
+    activeShows,
+    todayBookings,
+    monthRevenue,
+    totalBookings: monthBookings.length,
   };
 };
 

@@ -87,15 +87,17 @@ const FeedbackForm = () => {
               <label className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
                 Username
               </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
-                <input
-                  type="text"
-                  readOnly
-                  className="input-field pl-10 cursor-not-allowed opacity-60"
-                  value={user.name || "Guest User"}
-                  title="Your account username"
-                />
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm"
+                style={{
+                  background: "var(--bg-input)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-muted)",
+                  opacity: 0.7,
+                }}
+              >
+                <User className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+                <span className="truncate" style={{ color: "var(--text-primary)" }}>{user.name || "Guest User"}</span>
               </div>
             </div>
 

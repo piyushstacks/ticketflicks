@@ -88,12 +88,26 @@ export const deleteShow = asyncHandler(async (req, res) => {
 
 export const toggleShowStatus = asyncHandler(async (req, res) => {
   const { showId } = req.params;
-  const { status } = req.body;
-  const show = await showService.updateShow(showId, { status });
-  res.json({ success: true, show });
+  const { isActive } = req.body;
+  // If isActive is provided, use it directly; otherwise toggle current state
+  let newStatus;
+  if (typeof isActive === 'boolean') {
+    newStatus = isActive;
+  } else {
+    const currentShow = await showService.fetchShow(showId);
+    newStatus = !currentShow.isActive;
+  }
+  const show = await showService.updateShow(showId, { isActive: newStatus });
+  res.json({ success: true, message: `Show ${newStatus ? 'activated' : 'deactivated'} successfully`, show });
 });
 
 export const getAvailableMovies = getAvailableMoviesForCustomers;
+
+export const getAllMoviesForManager = asyncHandler(async (req, res) => {
+  // Return ALL active movies for managers/admins to schedule shows
+  const movies = await showService.fetchUpcomingMovies();
+  res.json({ success: true, movies });
+});
 
 export default {
   getMovieTrailer,
@@ -112,4 +126,5 @@ export default {
   deleteShow,
   toggleShowStatus,
   getAvailableMovies,
+  getAllMoviesForManager,
 };

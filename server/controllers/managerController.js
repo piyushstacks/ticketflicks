@@ -10,8 +10,13 @@ import { asyncHandler } from "../middleware/errorHandler.js";
  * Get manager dashboard data
  */
 export const dashboardManagerData = asyncHandler(async (req, res) => {
-  const data = await managerService.getDashboardData(req.user.id);
-  res.json({ success: true, dashboardData: data });
+  const raw = await managerService.getDashboardData(req.user.id);
+  // Also get screen count
+  const ScreenTbl = (await import("../models/ScreenTbl.js")).default;
+  const screens = await ScreenTbl.countDocuments({ theatre: raw.theatreId, isActive: true });
+
+  const data = { ...raw, screens };
+  res.json({ success: true, data, dashboardData: data });
 });
 
 /**

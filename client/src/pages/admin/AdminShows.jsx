@@ -14,7 +14,7 @@ const AdminShows = () => {
   const fetchShows = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/show/shows", {
+      const { data } = await axios.get("/api/admin/all-shows", {
         headers: getAuthHeaders(),
       });
 
@@ -33,12 +33,13 @@ const AdminShows = () => {
 
   const fetchTheatres = async () => {
     try {
-      const { data } = await axios.get("/api/theatre/theaters", {
+      const { data } = await axios.get("/api/admin/theatres", {
         headers: getAuthHeaders(),
       });
 
       if (data.success) {
-        setTheatres(data.theatres || []);
+        // Use 'all' array if present, otherwise combine theatres + disabledTheatres
+        setTheatres(data.all || [...(data.theatres || []), ...(data.disabledTheatres || [])]);
       }
     } catch (error) {
       console.error("Error fetching theatres:", error);

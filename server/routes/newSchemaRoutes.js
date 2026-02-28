@@ -46,6 +46,7 @@ import {
   checkSeatsAvailability,
   calculatePricing,
 } from "../controllers/bookingController.js";
+import Booking from "../models/Booking.js";
 
 const router = express.Router();
 
@@ -63,20 +64,112 @@ router.get("/shows/movie/:movieId", showController.fetchShowsByMovie);
 router.put("/shows/:showId", protectUser, showController.updateShow);
 router.delete("/shows/:showId", protectUser, showController.deleteShow);
 router.patch("/shows/:showId/status", protectUser, showController.toggleShowStatus);
+// Repeat shows for next week - accessible by both managers and admins
+router.post("/shows/repeat-week", protectUser, async (req, res) => {
+  try {
+    const managerShowService = await import("../services/managerShowService.js");
+    const { currentWeekStart, currentWeekEnd, nextWeekStart, nextWeekEnd } = req.body;
+    const result = await managerShowService.repeatShowsForNextWeek(
+      req.user.id,
+      currentWeekStart, currentWeekEnd, nextWeekStart, nextWeekEnd
+    );
+    res.json({ success: true, message: result.message, count: result.count });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
 router.get("/movies/available", showController.getAvailableMoviesForCustomers); // Public - for home page
-router.get("/movies/all-active", showController.getAllActiveMovies); // Public - all active movies
+router.get("/movies/all-active", showController.getAllActiveMovies); // Public - all active movies  
+router.get("/movies/all", showController.getAllMoviesForManager); // All active movies (for manager scheduling)
 router.get("/upcoming-movies", showController.fetchUpcomingMovies); // Frontend expects this
 router.get("/trailer/:movieId", showController.getMovieTrailer); // Trailer by movie ID
 router.get("/trailer/:id", showController.getMovieTrailer); // Alias
 router.get("/movies/:movieId/details", showController.fetchShowByMovieId); // Movie + showtimes
 
 // ========== BOOKING ROUTES ==========
+// Standard booking routes
 router.post("/bookings", protectUser, createBooking);
 router.get("/bookings/:id", getBookingDetails);
 router.post("/bookings/confirm", protectUser, confirmStripePayment);
 router.put("/bookings/:id/cancel", protectUser, cancelBooking);
 router.get("/bookings/availability/:showId", checkSeatsAvailability);
 router.post("/bookings/pricing", calculatePricing);
+
+// Aliases for /api/booking/ prefix (ManagerBookings, MyBookings use these)
+router.post("/create", protectUser, createBooking);
+router.post("/confirm-stripe", protectUser, confirmStripePayment);
+router.get("/my-bookings", protectUser, async (req, res) => {
+  try {
+    const bookings = await Booking.find({ user_id: req.user.id })
+      .populate({
+        path: "show_id",
+        populate: [
+          { path: "movie", select: "title poster_path overview" },
+          { path: "theatre", select: "name city location" },
+          { path: "screen", select: "name screenNumber" },
+        ],
+      })
+      .sort({ createdAt: -1 });
+
+    const formatted = bookings.map((b) => ({
+      _id: b._id,
+      show: b.show_id,
+      theatre: b.show_id?.theatre,
+      screen: b.show_id?.screen,
+      bookedSeats: b.seats_booked || [],
+      amount: b.total_amount || 0,
+      isPaid: b.payment_status === "completed",
+      paymentMode: b.payment_method || "stripe",
+      paymentLink: b.payment_link,
+      status: b.status,
+      createdAt: b.createdAt,
+    }));
+
+    res.json({ success: true, bookings: formatted });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+router.get("/bookings", protectUser, async (req, res) => {
+  // For managers: fetch bookings for their theatre's shows
+  try {
+    const user = req.user;
+    let query = {};
+    if (user.role === "manager" && user.managedTheatreId) {
+      // Find shows for this theatre
+      const { default: Show } = await import("../models/show_tbls.js");
+      const showIds = await Show.find({ theatre: user.managedTheatreId }).distinct("_id");
+      query = { show_id: { $in: showIds } };
+    } else if (user.role === "customer") {
+      query = { user_id: user.id };
+    }
+
+    const bookings = await Booking.find(query)
+      .populate("user_id", "name email")
+      .populate({
+        path: "show_id",
+        populate: { path: "movie", select: "title poster_path" },
+      })
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    const formatted = bookings.map((b) => ({
+      _id: b._id,
+      user: b.user_id || { name: "Unknown" },
+      show: b.show_id,
+      bookedSeats: b.seats_booked || [],
+      selectedSeats: b.seats_booked || [],
+      amount: b.total_amount || 0,
+      isPaid: b.payment_status === "completed",
+      status: b.status,
+      createdAt: b.createdAt,
+    }));
+
+    res.json({ success: true, bookings: formatted });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 // ========== THEATER ROUTES ==========
 router.get("/theaters", getAllTheatres);

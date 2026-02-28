@@ -13,7 +13,7 @@ const ManagerMovies = () => {
   const fetchMovies = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/show/movies/available", {
+      const { data } = await axios.get("/api/show/movies/all", {
         headers: getAuthHeaders(),
       });
 

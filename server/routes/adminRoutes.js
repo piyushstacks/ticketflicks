@@ -6,6 +6,11 @@ import {
   getAllTheatres,
   getPendingTheatres,
   approveTheatre,
+  getAllBookings,
+  getAllShows,
+  getAllFeedbacks,
+  getStatistics,
+  getTheatreScreens,
 } from "../controllers/adminController.js";
 import {
   syncMoviesFromTMDB,
@@ -25,7 +30,6 @@ import {
   deleteMovieReview,
   getMovieReviews,
 } from "../controllers/adminMovieController.js";
-import { fetchAllFeedbacks } from "../controllers/feedbackController.js";
 
 const adminRouter = express.Router();
 
@@ -40,11 +44,33 @@ adminRouter.get("/is-admin", protectAdmin, isAdmin);
 adminRouter.get("/dashboard", protectAdmin, fetchDashboardData);
 adminRouter.get("/theatres", protectAdmin, getAllTheatres);
 adminRouter.get("/theatres/pending", protectAdmin, getPendingTheatres);
+adminRouter.get("/theatres/:theatreId/screens", protectAdmin, getTheatreScreens);
 adminRouter.put(
   "/theatres/:theatreId/approve",
   protectAdmin,
   approveTheatre,
 );
+adminRouter.put("/theatres/:theatreId/disable", protectAdmin, async (req, res) => {
+  try {
+    const Theatre = (await import("../models/Theatre.js")).default;
+    await Theatre.findByIdAndUpdate(req.params.theatreId, { disabled: true });
+    res.json({ success: true, message: "Theatre disabled successfully" });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+adminRouter.put("/theatres/:theatreId/enable", protectAdmin, async (req, res) => {
+  try {
+    const Theatre = (await import("../models/Theatre.js")).default;
+    await Theatre.findByIdAndUpdate(req.params.theatreId, { disabled: false });
+    res.json({ success: true, message: "Theatre enabled successfully" });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+adminRouter.put("/theatres/:theatreId", protectAdmin, async (req, res) => {
+  try {
+    const Theatre = (await import("../models/Theatre.js")).default;
+    const updated = await Theatre.findByIdAndUpdate(req.params.theatreId, req.body, { new: true });
+    res.json({ success: true, message: "Theatre updated successfully", theatre: updated });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
 
 // Movie Management Routes
 adminRouter.post("/movies/create", protectAdmin, createMovie);
@@ -99,6 +125,16 @@ adminRouter.post(
 );
 
 // Feedbacks
-adminRouter.get("/feedbacks", protectAdmin, fetchAllFeedbacks);
+adminRouter.get("/feedbacks", protectAdmin, getAllFeedbacks);
+adminRouter.get("/all-feedbacks", protectAdmin, getAllFeedbacks);
+
+// All Bookings (admin view)
+adminRouter.get("/all-bookings", protectAdmin, getAllBookings);
+
+// All Shows (admin view)
+adminRouter.get("/all-shows", protectAdmin, getAllShows);
+
+// Statistics
+adminRouter.get("/statistics", protectAdmin, getStatistics);
 
 export default adminRouter;

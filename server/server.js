@@ -15,6 +15,8 @@ import searchRouter from "./routes/searchRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import managerRouter from "./routes/managerRoutes.js";
 import theatreRouter from "./routes/theatreRoutes.js";
+import userRouter from "./routes/userRoutes.js";
+import bookingRouter from "./routes/bookingRoutes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -38,7 +40,7 @@ app.use(cors());
 // API Routes - NEW SCHEMA IS NOW DEFAULT
 app.get("/", (req, res) => {
   console.log('Root endpoint called');
-  res.json({ 
+  res.json({
     success: true,
     message: "Server is Live! Using New Schema API v2 as default",
     version: "2.0.0",
@@ -51,11 +53,11 @@ app.use("/api/auth", authRouter);
 app.use("/api/public", publicRouter);
 
 // NEW SCHEMA ROUTES - Mounted at standard API paths (default)
-app.use("/api/show", newSchemaRouter);  // Shows, Movies
-app.use("/api/booking", newSchemaRouter);  // Bookings
-app.use("/api/user", newSchemaRouter);  // Users
-app.use("/api/theatre", theatreRouter);  // Theatres
-app.use("/api/search", searchRouter);  // Search (dedicated router)
+app.use("/api/show", newSchemaRouter);    // Shows, Movies
+app.use("/api/booking", bookingRouter);   // Booking routes (create, seats, confirm, cancel)
+app.use("/api/user", userRouter);         // User routes (profile, bookings, feedback, auth)
+app.use("/api/theatre", theatreRouter);   // Theatres
+app.use("/api/search", searchRouter);     // Search (dedicated router)
 
 // Dedicated admin and manager routes with proper middleware
 app.use("/api/admin", adminRouter);  // Admin operations

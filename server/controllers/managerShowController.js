@@ -12,10 +12,21 @@ export const getTheatreScreens = asyncHandler(async (req, res) => {
 });
 
 export const addShow = asyncHandler(async (req, res) => {
-  // Support both { movie, screen } and { movieId, screenId } request formats
   const body = { ...req.body };
+
+  // Normalize field names: movieId → movie, screenId → screen
   if (body.movieId && !body.movie) body.movie = body.movieId;
   if (body.screenId && !body.screen) body.screen = body.screenId;
+
+  // Extract showTime from combined showDateTime if not provided separately
+  // showDateTime format: "2026-03-10T18:00:00" or "2026-03-10T18:00"
+  if (!body.showTime && body.showDateTime) {
+    const timePart = body.showDateTime.split('T')[1];
+    body.showTime = timePart ? timePart.substring(0, 5) : null; // "HH:MM"
+    if (!body.startDate) {
+      body.startDate = body.showDateTime.split('T')[0];
+    }
+  }
 
   const show = await managerShowService.addShow(req.user.id, body);
   res.status(201).json({

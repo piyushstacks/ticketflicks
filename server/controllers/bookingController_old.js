@@ -138,7 +138,7 @@ export const confirmStripePayment = async (req, res) => {
     // Get booking ID from session metadata
     const bookingId = session.metadata?.bookingId;
     console.log("[confirmStripePayment] Booking ID:", bookingId);
-    
+
     if (!bookingId) {
       console.log("[confirmStripePayment] Missing booking ID in session metadata");
       return res.status(400).json({
@@ -155,7 +155,7 @@ export const confirmStripePayment = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error("[confirmStripePayment] Error occurred:", error);
-    
+
     // Handle specific error cases
     if (error.name === 'CastError') {
       return res.status(400).json({
@@ -163,20 +163,20 @@ export const confirmStripePayment = async (req, res) => {
         message: "Invalid session ID format."
       });
     }
-    
+
     if (error.message && error.message.includes('timeout')) {
       return res.status(500).json({
         success: false,
         message: "Payment confirmation is taking too long. Please check your bookings page."
       });
     }
-    
+
     // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to confirm your payment right now. Please check your bookings page." 
+    res.status(500).json({
+      success: false,
+      message: "Unable to confirm your payment right now. Please check your bookings page."
     });
-    
+
   }
 };
 
@@ -246,7 +246,7 @@ export const createBooking = async (req, res) => {
     uniqueSeats.forEach((seat) => {
       const tierInfo = getTierInfoForSeat(showData, seat.seatNumber);
       console.log(`Seat ${seat.seatNumber}: tierInfo =`, tierInfo);
-      
+
       if (!tierInfo) {
         invalidSeats.push(seat.seatNumber);
         return;
@@ -353,7 +353,7 @@ export const createBooking = async (req, res) => {
     // Calculate total amount in paise for verification
     const totalAmountInPaise = Math.round(totalAmount * 100);
     const lineItemsTotal = lineItems.reduce((sum, item) => sum + item.price_data.unit_amount, 0);
-    
+
     // Log for debugging the discrepancy
     console.log("=== STRIPE PAYMENT DEBUG ===");
     console.log("Total Amount Calculated:", totalAmount);
@@ -361,7 +361,7 @@ export const createBooking = async (req, res) => {
     console.log("Line Items Total:", lineItemsTotal);
     console.log("Number of Seats:", bookedSeatsWithTier.length);
     console.log("============================");
-    
+
     // Verify that our calculation matches the line items total
     if (totalAmountInPaise !== lineItemsTotal) {
       console.error("PRICE MISMATCH DETECTED!", {
@@ -404,7 +404,7 @@ export const createBooking = async (req, res) => {
     console.error("[createBooking] Error message:", error.message);
     console.error("[createBooking] Error type:", error.type);
     console.error("[createBooking] Error stack:", error.stack);
-    
+
     // Handle specific error cases
     if (error.name === 'ValidationError') {
       return res.status(400).json({
@@ -412,25 +412,25 @@ export const createBooking = async (req, res) => {
         message: "Invalid booking data provided."
       });
     }
-    
+
     if (error.name === 'CastError') {
       return res.status(400).json({
         success: false,
         message: "Invalid show ID format."
       });
     }
-    
+
     if (error.message && error.message.includes('timeout')) {
       return res.status(500).json({
         success: false,
         message: "Booking is taking too long. Please try again."
       });
     }
-    
+
     // Return actual error message for debugging
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || "Unable to process your booking right now. Please try again in a few minutes." 
+    res.status(500).json({
+      success: false,
+      message: error.message || "Unable to process your booking right now. Please try again in a few minutes."
     });
   }
 };
@@ -460,7 +460,7 @@ export const fetchOccupiedSeats = async (req, res) => {
     });
   } catch (error) {
     console.error("[fetchOccupiedSeats]", error);
-    
+
     // Handle specific error cases
     if (error.name === 'CastError') {
       return res.status(400).json({
@@ -468,58 +468,69 @@ export const fetchOccupiedSeats = async (req, res) => {
         message: "Invalid show ID format."
       });
     }
-    
+
     if (error.message && error.message.includes('timeout')) {
       return res.status(500).json({
         success: false,
         message: "Unable to load seat information right now. Please try again."
       });
     }
-    
+
     // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to load seat information right now. Please try again in a few minutes." 
+    res.status(500).json({
+      success: false,
+      message: "Unable to load seat information right now. Please try again in a few minutes."
     });
   }
 };
 
 export const fetchUserBookings = async (req, res) => {
   try {
-    console.log("[fetchUserBookings] Request received");
-    console.log("[fetchUserBookings] User from middleware:", req.user);
-    
     const userId = req.user.id;
-    const statusFilter = req.query.status;
 
-    console.log("[fetchUserBookings] User ID:", userId);
-    console.log("[fetchUserBookings] Status filter:", statusFilter);
-
-    let query = { user_id: userId };
-
-    console.log("[fetchUserBookings] Query:", query);
-
-    const bookings = await Booking.find(query)
+    const bookings = await Booking.find({ user_id: userId })
       .populate({
         path: "show_id",
         populate: [
-          { path: "movie" },
-          { path: "theatre" },
-          { path: "screen" },
+          { path: "movie", select: "title poster_path backdrop_path genres vote_average runtime overview" },
+          { path: "theatre", select: "name location city address" },
+          { path: "screen", select: "name screenNumber" },
         ],
       })
-      .populate("seats_booked")
       .sort({ createdAt: -1 });
 
-    console.log("[fetchUserBookings] Found bookings:", bookings.length);
-    console.log("[fetchUserBookings] Bookings:", bookings.map(b => ({id: b._id, amount: b.amount, isPaid: b.isPaid, paymentLink: b.paymentLink ? "Yes" : "No"})));
+    const now = Date.now();
+    const TEN_MINUTES = 10 * 60 * 1000;
 
-    res.json({ success: true, bookings });
+    const formatted = bookings.map((b) => {
+      const isPaid = b.payment_status === 'completed';
+      // Only show Pay Now if booking was created within 10 minutes and still unpaid
+      const isWithinPayWindow = (now - new Date(b.createdAt).getTime()) < TEN_MINUTES;
+      const paymentLink = (!isPaid && isWithinPayWindow && b.payment_link) ? b.payment_link : null;
+
+      return {
+        _id: b._id,
+        show: b.show_id,
+        theatre: b.show_id?.theatre || null,
+        screen: b.show_id?.screen || null,
+        bookedSeats: b.seats_booked || [],
+        amount: b.total_amount || 0,
+        isPaid,
+        paymentLink,
+        receiptUrl: b.receiptUrl || null,
+        status: b.status,
+        paymentStatus: b.payment_status,
+        createdAt: b.createdAt,
+        bookingId: b._id,
+      };
+    });
+
+    res.json({ success: true, bookings: formatted });
   } catch (error) {
     console.error("[fetchUserBookings]", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to load your bookings. Please try again." 
+    res.status(500).json({
+      success: false,
+      message: "Unable to load your bookings. Please try again."
     });
   }
 };
@@ -572,7 +583,7 @@ export const cancelBooking = async (req, res) => {
     });
   } catch (error) {
     console.error("[cancelBooking]", error);
-    
+
     // Handle specific error cases
     if (error.name === 'CastError') {
       return res.status(400).json({
@@ -580,18 +591,18 @@ export const cancelBooking = async (req, res) => {
         message: "Invalid booking ID format."
       });
     }
-    
+
     if (error.message && error.message.includes('timeout')) {
       return res.status(500).json({
         success: false,
         message: "Cancellation is taking too long. Please try again."
       });
     }
-    
+
     // Generic error with user-friendly message
-    res.status(500).json({ 
-      success: false, 
-      message: "Unable to cancel your booking right now. Please try again in a few minutes." 
+    res.status(500).json({
+      success: false,
+      message: "Unable to cancel your booking right now. Please try again in a few minutes."
     });
   }
 };

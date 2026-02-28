@@ -63,11 +63,37 @@ function getCurrentWeekDates() {
 }
 
 export const addShow = async (managerId, showData) => {
-  const { movie, screen, showTime, language = "English", startDate, endDate, isActive = true, showDateTime, seatTiers: customSeatTiers } = showData;
+  console.log("[managerShowService.addShow] Raw showData received:", JSON.stringify(showData));
+
+  // Normalize field names: support both {movie,screen} and {movieId,screenId}
+  const movie = showData.movie || showData.movieId;
+  const screen = showData.screen || showData.screenId;
+  const language = showData.language || "English";
+  const startDate = showData.startDate;
+  const endDate = showData.endDate;
+  const isActive = showData.isActive !== undefined ? showData.isActive : true;
+  const showDateTime = showData.showDateTime;
+  const customSeatTiers = showData.seatTiers;
+
+  // Extract showTime from showDateTime if not provided directly
+  // Formats: "14:30", "14:30:00", or from "2026-03-10T14:30:00"
+  let showTime = showData.showTime;
+  if (!showTime && showDateTime) {
+    const parts = showDateTime.split('T');
+    if (parts.length > 1) {
+      showTime = parts[1].substring(0, 5); // "HH:MM"
+    }
+  }
+
   const theatreId = await getManagerTheatre(managerId);
 
+  console.log("[managerShowService.addShow] Normalized:", { movie, screen, showTime, startDate, endDate, showDateTime });
+
   if (!movie || !screen || !showTime) {
-    throw new AppError("Movie, Screen, and Show Time are required", 400);
+    throw new AppError(
+      `Movie, Screen, and Show Time are required. Got: movie=${movie}, screen=${screen}, showTime=${showTime}`,
+      400
+    );
   }
 
   const movieDoc = await Movie.findOne({ _id: movie, isActive: true });
@@ -84,11 +110,13 @@ export const addShow = async (managerId, showData) => {
   const showStartDate = startDate || currentWeek.start;
   const showEndDate = endDate || currentWeek.end;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Allow today's shows — only reject if end date is clearly in the past (>1 day ago)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(23, 59, 59, 999);
 
-  if (new Date(showStartDate) < today || new Date(showEndDate) < today) {
-    throw new AppError("Cannot create shows for past dates. Please select today or a future date.", 400);
+  if (new Date(showEndDate) < yesterday) {
+    throw new AppError("Show end date cannot be more than 1 day in the past.", 400);
   }
 
   // Build showDateTime from startDate + showTime if not provided
@@ -136,9 +164,9 @@ export const addShow = async (managerId, showData) => {
     theatre: theatreId,
     screen,
     showDateTime: showDateTimeObj,
-    showTime,
-    startDate: new Date(showStartDate),
-    endDate: new Date(showEndDate),
+    showTime: showTime,                   // "HH:MM" string
+    startDate: showStartDate,             // "YYYY-MM-DD" string
+    endDate: showEndDate,                 // "YYYY-MM-DD" string
     language,
     basePrice: 150,
     seatTiers: finalSeatTiers,

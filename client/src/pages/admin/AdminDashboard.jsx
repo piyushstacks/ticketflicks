@@ -18,7 +18,7 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const { data } = await axios.get("/api/admin/dashboard-admin", {
+      const { data } = await axios.get("/api/admin/dashboard", {
         headers: getAuthHeaders(),
       });
 

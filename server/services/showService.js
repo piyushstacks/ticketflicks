@@ -174,7 +174,9 @@ export const fetchUpcomingMovies = async () => {
     // Normalize field names for frontend consumption
     overview: movie.overview || movie.description || "",
     runtime: movie.runtime || movie.duration_min || 120,
-    genre_ids: Array.isArray(movie.genres) ? movie.genres.map((g) => g.id).filter(Boolean) : [],
+    genre_ids: Array.isArray(movie.genres)
+      ? movie.genres.map((g) => (g && g.id ? g.id : null)).filter(Boolean)
+      : [],
     adult: false,
     original_language: movie.original_language || "en",
   }));

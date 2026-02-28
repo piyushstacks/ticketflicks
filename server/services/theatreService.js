@@ -5,6 +5,7 @@
 
 import Theatre from "../models/Theatre.js";
 import User from "../models/User.js";
+import ScreenTbl from "../models/ScreenTbl.js";
 import Otp from "../models/Otp.js";
 import sendEmail from "../configs/nodeMailer.js";
 import bcrypt from "bcryptjs";
@@ -232,6 +233,66 @@ export const registerTheatre = async (registrationData) => {
   managerUser.managedTheatreId = theatreDoc._id;
   await managerUser.save();
 
+  // ── Create Screens ──────────────────────────────────────────────────────────
+  const createdScreens = [];
+  for (let i = 0; i < screens.length; i++) {
+    const s = screens[i];
+    const layout = s.layout || {};
+    const rows = layout.rows || 5;
+    const seatsPerRow = layout.seatsPerRow || 10;
+    const totalSeats = layout.totalSeats || rows * seatsPerRow;
+    const layoutArr = layout.layout || Array.from({ length: rows }, () => Array(seatsPerRow).fill('S'));
+
+    // Build seatTiers from pricing object
+    // pricing can be:
+    //  { unified: 150 }                             -> all seats same price
+    //  { S: { price:150 }, D: { price:200 } }       -> short-code keys from SeatLayoutTemplates
+    //  { Standard: 150, Premium: 200 }              -> full-name keys
+    const pricing = s.pricing || { unified: 150 };
+
+    // Map short layout codes → full tierName enum values (ScreenTbl schema)
+    const codeToTierName = { S: 'Standard', D: 'Deluxe', P: 'Premium', R: 'Recliner', C: 'Couple' };
+    // Also accept full names directly
+    const validTierNames = new Set(['Standard', 'Deluxe', 'Premium', 'Recliner', 'Couple']);
+
+    let seatTiers;
+    if (pricing.unified !== undefined) {
+      seatTiers = [{ tierName: 'Standard', price: Number(pricing.unified) || 150 }];
+    } else {
+      seatTiers = Object.entries(pricing)
+        .map(([k, v]) => {
+          const resolvedName = codeToTierName[k] || (validTierNames.has(k) ? k : null);
+          if (!resolvedName) return null;  // skip unknown keys
+          const price = typeof v === 'object' ? (Number(v.price) || 150) : (Number(v) || 150);
+          return { tierName: resolvedName, price };
+        })
+        .filter(Boolean);
+
+      if (seatTiers.length === 0) {
+        seatTiers = [{ tierName: 'Standard', price: 150 }];
+      }
+    }
+
+    const screenDoc = await ScreenTbl.create({
+      name: s.name || `Screen ${i + 1}`,
+      screenNumber: String(i + 1),
+      theatre: theatreDoc._id,
+      seatLayout: {
+        layout: layoutArr,
+        rows,
+        seatsPerRow,
+        totalSeats,
+      },
+      seatTiers,
+      isActive: true,
+      status: 'active',
+      createdBy: managerUser._id,
+    });
+    createdScreens.push(screenDoc._id);
+  }
+  console.log(`[registerTheatre] Created ${createdScreens.length} screens for theatre ${theatreDoc._id}`);
+  // ────────────────────────────────────────────────────────────────────────────
+
   // Delete OTP
   await Otp.deleteOne({ _id: otpRecord._id });
 
@@ -240,6 +301,7 @@ export const registerTheatre = async (registrationData) => {
     message: "Theatre registration submitted for approval",
     theatreId: theatreDoc._id.toString(),
     managerId: managerUser._id.toString(),
+    screensCreated: createdScreens.length,
   };
 };
 
@@ -329,15 +391,27 @@ export const getPendingTheatres = async (skip = 0, limit = 50) => {
 
   return {
     theatres: theatres.map((t) => ({
+      // Keep BOTH _id and id so frontend works regardless of which it reads
+      _id: t._id,
       id: t._id.toString(),
       name: t.name,
       location: t.location,
-      manager: {
-        id: t.manager_id._id.toString(),
-        name: t.manager_id.name,
-        email: t.manager_id.email,
-        phone: t.manager_id.phone,
-      },
+      address: t.address,
+      city: t.city,
+      state: t.state,
+      zipCode: t.zipCode,
+      contact_no: t.contact_no,
+      email: t.email,
+      // Nested manager_id object (matches AdminTheatres.jsx: theatre.manager_id.name)
+      manager_id: t.manager_id
+        ? {
+          _id: t.manager_id._id,
+          name: t.manager_id.name || "N/A",
+          email: t.manager_id.email || "N/A",
+          phone: t.manager_id.phone,
+        }
+        : null,
+      approval_status: t.approval_status,
       approvalStatus: t.approval_status,
       createdAt: t.createdAt,
     })),
@@ -366,9 +440,7 @@ export const approveTheatre = async (theatreId, action, notes = "") => {
     throw new NotFoundError("Theatre");
   }
 
-  if (theatre.approval_status !== "pending") {
-    throw new ValidationError("Theatre has already been processed");
-  }
+  // Allow re-processing (don't block if already approved/declined)
 
   if (action === "approve") {
     theatre.approval_status = "approved";

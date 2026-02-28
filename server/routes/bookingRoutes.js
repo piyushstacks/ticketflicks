@@ -5,7 +5,7 @@ import {
   fetchOccupiedSeats,
   fetchUserBookings,
   cancelBooking,
-} from "../controllers/bookingController.js";
+} from "../controllers/bookingController_old.js";
 import { protectUser } from "../middleware/protectUser.js";
 
 const bookingRouter = express.Router();
