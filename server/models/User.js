@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Indexes for faster queries
-userSchema.index({ email: 1 });
+// Note: email index is created automatically by unique: true constraint
 userSchema.index({ role: 1 });
 userSchema.index({ managedTheatreId: 1 });
 userSchema.index({ isDeleted: 1 });

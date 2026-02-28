@@ -75,7 +75,7 @@ const movieSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Indexes for faster queries
-movieSchema.index({ title: 1 });
+// Note: title index is created automatically by unique: true constraint
 movieSchema.index({ release_date: 1 });
 movieSchema.index({ isDeleted: 1 });
 movieSchema.index({ isActive: 1 });
