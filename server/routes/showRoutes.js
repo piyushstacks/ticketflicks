@@ -12,8 +12,11 @@ import {
   getAllActiveMovies,
   getAllShowsDebug,
   searchMoviesAndShows,
+  getAllMoviesForManager,
+  toggleMovieForTheatre,
 } from "../controllers/showController.js";
 import { protectAdmin } from "../middleware/auth.js";
+import { protectManager } from "../middleware/auth.js";
 
 const showRouter = express.Router();
 
@@ -27,10 +30,16 @@ showRouter.get("/movies-available", getAvailableMoviesForCustomers); // Public: 
 showRouter.get("/movies", getAllActiveMovies); // Public: Get all active movies (fallback when no shows exist)
 showRouter.get("/all-movies", getAllActiveMovies); // Public: Get all movies (alias for /movies)
 showRouter.get("/search", searchMoviesAndShows); // Public: Search movies and shows
+
+// Manager routes
+showRouter.get("/movies/all", protectManager, getAllMoviesForManager); // Manager: Get all movies with per-theatre status
+showRouter.patch("/movies/:movieId", protectManager, toggleMovieForTheatre); // Manager: Toggle movie for their theatre
+
 showRouter.get("/by-movie/:movieId", fetchShowsByMovie); // Get shows grouped by theatre/screen
 // Important: place specific routes before parameter routes to avoid collisions
 showRouter.get("/show/:showId", fetchShow); // Get specific show details
 showRouter.get("/:movieId", fetchShowByMovieId); // Backward compatibility
 
 export default showRouter;
+
 

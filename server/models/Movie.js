@@ -8,52 +8,47 @@ const movieSchema = new mongoose.Schema({
     trim: true,
     minlength: [1, "Title cannot be empty"]
   },
-  // Support both 'overview' and 'description' (overview is primary)
-  overview: {
-    type: String,
-    trim: true,
-    default: ""
-  },
-  description: {
-    type: String,
-    trim: true,
-    default: ""
-  },
-  // Genres as array of objects { id, name } (TMDB style) OR ObjectIds
-  genres: [{
-    id: { type: Number },
-    name: { type: String }
-  }],
+  // Genre IDs (ObjectId refs for internal genres)
   genre_ids: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Genre"
   }],
-  // Language as string (original_language) 
-  original_language: {
-    type: String,
-    trim: true,
-    default: "en"
+  // Genre objects as stored from TMDB { id, name } or string
+  genres: {
+    type: mongoose.Schema.Types.Mixed,
+    default: []
   },
   language_id: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Language"
   }],
-  // Duration in minutes - support both runtime and duration_min
-  runtime: {
-    type: Number,
-    default: 120,
-    min: [1, "Duration must be at least 1 minute"]
+  original_language: {
+    type: String,
+    default: "en"
   },
+  // Duration (both field names for compatibility)
   duration_min: {
     type: Number,
-    default: 120,
-    min: [1, "Duration must be at least 1 minute"]
+    default: 120
+  },
+  runtime: {
+    type: Number,
+    default: 120
   },
   release_date: {
-    type: Date,
-    required: [true, "Release date is required"]
+    type: Date
   },
-  // Poster/backdrop - store as full URL
+  // Description / overview (both kept in sync)
+  description: {
+    type: String,
+    trim: true,
+    default: ""
+  },
+  overview: {
+    type: String,
+    trim: true,
+    default: ""
+  },
   poster_path: {
     type: String,
     trim: true,
@@ -64,7 +59,7 @@ const movieSchema = new mongoose.Schema({
     trim: true,
     default: null
   },
-  // Trailer URL - support both trailer_link and trailer_path
+  // Trailer links (both field names for compatibility)
   trailer_link: {
     type: String,
     trim: true,
@@ -80,23 +75,19 @@ const movieSchema = new mongoose.Schema({
     trim: true,
     default: ""
   },
-  // Cast as array of objects { name, profile_path, character }
-  casts: [{
-    name: { type: String },
-    profile_path: { type: String, default: null },
-    character: { type: String, default: "" }
-  }],
+  // Cast (ObjectId refs)
   cast: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cast"
   }],
-  // Social media reviews (Twitter/X URLs)
-  reviews: [{ type: String }],
+  // Cast as stored from TMDB (array of objects)
+  casts: {
+    type: mongoose.Schema.Types.Mixed,
+    default: []
+  },
   // Rating information
   vote_average: {
     type: Number,
-    min: 0,
-    max: 10,
     default: null
   },
   imdbRating: {
@@ -109,15 +100,24 @@ const movieSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  // Status
+  reviews: {
+    type: mongoose.Schema.Types.Mixed,
+    default: []
+  },
+  // Who added this movie (admin user reference)
+  addedByAdmin: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null
+  },
+  // Status — NOT select:false so queries like { isActive: true } work
   isActive: {
     type: Boolean,
     default: true
   },
   isDeleted: {
     type: Boolean,
-    default: false,
-    select: false
+    default: false
   }
 }, { timestamps: true });
 

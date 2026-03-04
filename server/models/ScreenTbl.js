@@ -1,40 +1,64 @@
 import mongoose from "mongoose";
 
+/**
+ * SCREEN_TBL
+ * One screen belongs to one Theatre.
+ * Seat layout and tier definitions are now normalised into
+ * SEAT_TBL + SEAT_CATEGORY_TBL; this model only stores the structural
+ * grid layout (rows × seatsPerRow) and status.
+ */
 const screenTblSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true }, // e.g., "Screen 1", "Screen 2"
-    screenNumber: { type: String, required: true }, // e.g., "1", "2", "A", "B"
-    theatre: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Theatre" },
+    name: {
+      type: String,
+      required: [true, "Screen name is required"],
+    }, // e.g. "Screen 1"
+    screenNumber: {
+      type: String,
+      required: [true, "Screen number is required"],
+    }, // e.g. "1", "A"
+    theatre: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: [true, "Theatre reference is required"],
+      ref: "Theatre",             // FK → theatres
+    },
+
+    /**
+     * Physical grid description.
+     * Supports two formats:
+     *   - Old (screen_tbl): { layout: [[String]], rows: Number, seatsPerRow: Number, totalSeats: Number }
+     *   - New (screens_new): [[{ seatNumber, tier, isBooked }]]  (array-of-arrays-of-objects)
+     */
     seatLayout: {
-      layout: { type: [[String]], required: true }, // 2D array of seat types
-      rows: { type: Number, required: true }, // Number of rows
-      seatsPerRow: { type: Number, required: true }, // Seats per row
-      totalSeats: { type: Number, required: true }, // Total seats in the screen
+      type: mongoose.Schema.Types.Mixed,
     },
-    seatTiers: [
-      {
-        tierName: { type: String, required: true }, // e.g., "Standard", "Premium", "VIP"
-        price: { type: Number, required: true },
-        rows: [String], // e.g., ["A", "B", "C"] or specific rows for this tier
-        seatsPerRow: { type: Number }, // Optional: if different from default
-      },
-    ],
+
+    /**
+     * Seat tier definitions.
+     * Supports two formats:
+     *   - Old (screen_tbl): [{ tierName, price, rows: [String], seatsPerRow }]
+     *   - New (screens_new): [{ name, price, color }]
+     */
+    seatTiers: {
+      type: mongoose.Schema.Types.Mixed,
+    },
+
     isActive: { type: Boolean, default: true },
-    status: { 
-      type: String, 
-      enum: ['active', 'inactive', 'maintenance'], 
-      default: 'active' 
+    status: {
+      type: String,
+      enum: ["active", "inactive", "maintenance"],
+      default: "active",
     },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Manager who created it
-    lastModifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Last manager to modify
+
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    lastModifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
-  { 
+  {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
-    collection: 'screen_tbl' // Explicitly set collection name
+    collection: "screens_new",
   }
 );
 
-// Add indexes for better query performance
 screenTblSchema.index({ theatre: 1, isActive: 1 });
 screenTblSchema.index({ theatre: 1, status: 1 });
 screenTblSchema.index({ name: 1, theatre: 1 });

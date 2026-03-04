@@ -233,12 +233,21 @@ const AdminShows = () => {
                           <div className="bg-gray-800/40 p-3 rounded-2xl border border-gray-700/50">
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Show Date</p>
                             <p className="text-sm font-black text-gray-200">
-                              {show.showDateTime ? new Date(show.showDateTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A'}
+                              {show.showDateTime ? new Date(show.showDateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                             </p>
                           </div>
                           <div className="bg-gray-800/40 p-3 rounded-2xl border border-gray-700/50">
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Start Time</p>
-                            <p className="text-sm font-black text-gray-200">{show.showTime || 'N/A'}</p>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Start → End</p>
+                            <p className="text-sm font-black text-gray-200">
+                              {show.showDateTime
+                                ? (() => {
+                                    const start = new Date(show.showDateTime);
+                                    const runtime = show.movie?.runtime || show.movie?.duration_min || 120;
+                                    const end = new Date(start.getTime() + runtime * 60000);
+                                    return `${start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })} – ${end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+                                  })()
+                                : 'N/A'}
+                            </p>
                           </div>
                         </div>
 
@@ -404,18 +413,32 @@ const AdminShows = () => {
                       </p>
                     </div>
                     <div className="bg-gray-800/30 p-5 rounded-3xl border border-gray-800/50">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                        <Calendar className="w-3 h-3 text-primary" />
-                        Schedule
-                      </p>
-                      <p className="text-lg font-black text-white leading-tight">
-                        {viewingShow.showDateTime ? new Date(viewingShow.showDateTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}
-                      </p>
-                      <p className="text-sm font-bold text-primary mt-1 flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        {viewingShow.showTime || 'N/A'}
-                      </p>
-                    </div>
+                       <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                         <Calendar className="w-3 h-3 text-primary" />
+                         Schedule
+                       </p>
+                       <p className="text-lg font-black text-white leading-tight">
+                         {viewingShow.showDateTime ? new Date(viewingShow.showDateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}
+                       </p>
+                       {viewingShow.showDateTime && (() => {
+                         const start = new Date(viewingShow.showDateTime);
+                         const runtime = viewingShow.movie?.runtime || viewingShow.movie?.duration_min || 120;
+                         const end = new Date(start.getTime() + runtime * 60000);
+                         return (
+                           <div className="mt-2 space-y-1">
+                             <p className="text-sm font-bold text-primary flex items-center gap-1.5">
+                               <Clock className="w-3.5 h-3.5" />
+                               Start: {start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                             </p>
+                             <p className="text-sm font-bold text-gray-400 flex items-center gap-1.5">
+                               <Clock className="w-3.5 h-3.5" />
+                               End: {end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                             </p>
+                             <p className="text-xs text-gray-600 mt-1">{runtime} min runtime</p>
+                           </div>
+                         );
+                       })()}
+                     </div>
                   </div>
 
                   {/* Booking Statistics */}

@@ -90,6 +90,16 @@ export const approveTheatre = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+/**
+ * Get theatres managed by a specific manager
+ * Called by ManagerNavbar to display the theatre name
+ */
+export const getTheatresByManager = asyncHandler(async (req, res) => {
+  const { managerId } = req.params;
+  const theatres = await theatreService.getTheatresByManager(managerId);
+  res.json({ success: true, theatres });
+});
+
 export default {
   requestTheatreRegistrationOtp,
   verifyTheatreOtp,
@@ -99,4 +109,5 @@ export default {
   searchTheatres,
   getPendingTheatres,
   approveTheatre,
+  getTheatresByManager,
 };

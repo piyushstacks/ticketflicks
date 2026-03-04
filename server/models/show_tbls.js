@@ -20,20 +20,6 @@ const showSchema = new mongoose.Schema({
     type: Date,
     required: [true, "Show date and time is required"]
   },
-  // Human-readable time string e.g. "14:30"
-  showTime: {
-    type: String,
-    trim: true
-  },
-  // Date range for recurring daily shows
-  startDate: {
-    type: String,  // stored as "YYYY-MM-DD"
-    trim: true
-  },
-  endDate: {
-    type: String,  // stored as "YYYY-MM-DD"
-    trim: true
-  },
   language: {
     type: String,
     trim: true,
@@ -45,33 +31,27 @@ const showSchema = new mongoose.Schema({
     default: 150,
     min: [0, "Base price cannot be negative"]
   },
-  // Seat tier configuration with prices
-  seatTiers: [{
-    tierName: {
-      type: String,
-      required: true,
-      enum: ["Standard", "Deluxe", "Premium", "Recliner", "Couple"]
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: [0, "Tier price cannot be negative"]
-    },
-    // For future use if tiers have seat counts
-    totalSeats: {
-      type: Number,
-      default: 0
-    },
-    // Track occupied seats per tier
-    occupiedSeats: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {}
-    }
-  }],
+  // Seat tier configuration — stored as Mixed to support both seeding formats:
+  //   Old format: [{ tierName: "Standard", price: 150, occupiedSeats: {} }]
+  //   New format: [{ name: "Silver",       price: 150, color: "#...", occupiedSeats: {} }]
+  seatTiers: {
+    type: mongoose.Schema.Types.Mixed,
+    default: []
+  },
   // Overall capacity
   totalCapacity: {
     type: Number,
-    min: [1, "Capacity must be at least 1"]
+    min: [0]
+  },
+  // seats_new stores total seat count directly as 'totalSeats'
+  totalSeats: {
+    type: Number,
+    min: [0]
+  },
+  // Booked seat records (used by shows_new seed format)
+  bookedSeats: {
+    type: mongoose.Schema.Types.Mixed,
+    default: []
   },
   // Availability status
   status: {

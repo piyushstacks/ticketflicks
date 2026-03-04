@@ -5,6 +5,13 @@ import toast from "react-hot-toast";
 import { useAuthContext } from "./AuthContext.jsx";
 
 const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000";
+
+// Single axios instance with a sensible timeout so the app never hangs
+const api = axios.create({
+  baseURL,
+  timeout: 10000, // 10-second timeout per request
+});
+// Keep default axios pointing to the same place (for legacy usage in child components)
 axios.defaults.baseURL = baseURL;
 
 export const AppContext = createContext();
@@ -14,46 +21,35 @@ export const AppProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [shows, setShows] = useState([]);
   const [upcomingMovies, setUpcomingMovies] = useState([]);
-  const [trailer, setTrailer] = useState({});
   const [favoriteMovies, setFavoriteMovies] = useState([]);
 
   const imageBaseURL = import.meta.env.VITE_TMDB_IMAGE_BASE_URL;
 
   const { user, getAuthHeaders, token } = useAuthContext();
-  
-  console.log("[AppContext] RENDER - user from AuthContext:", user?.email, "token exists:", !!token);
-
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Reusable error handler
+  // ─── Error handler ────────────────────────────────────────────────────────
   const handleError = (prefix, error, userMessage) => {
-    console.error(`[${prefix}]`, error);
-    // If a custom user message was provided, show it.
     if (userMessage) {
       toast.error(userMessage);
       return;
     }
-
-    // Network or connection errors (no response) indicate backend might be down.
-    if (!error || !error.response) {
-      toast.error("Unable to reach API server. Please ensure the backend is running.");
+    if (!error?.response) {
+      toast.error("Unable to reach server. Please check your connection.");
       return;
     }
-
-    // Otherwise show server-provided message if available.
-    const serverMessage = error.response?.data?.message;
-    if (serverMessage) toast.error(serverMessage);
+    const msg = error.response?.data?.message;
+    if (msg) toast.error(msg);
   };
 
+  // ─── Admin check ──────────────────────────────────────────────────────────
   const fetchIsAdmin = async () => {
     try {
-      const { data } = await axios.get("/api/user/is-admin", {
+      const { data } = await api.get("/api/user/is-admin", {
         headers: getAuthHeaders(),
       });
-
       setIsAdmin(data.isAdmin);
-
       if (!data.isAdmin && location.pathname.startsWith("/admin")) {
         navigate("/");
         toast.error("You are not authorized to access the admin dashboard");
@@ -63,107 +59,79 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // ─── Movies ───────────────────────────────────────────────────────────────
+  // Single fetch: gets shows-with-showtimes AND all active movies in one parallel call.
+  // Result is merged and de-duped. Replaces the old broken 3-tier waterfall + separate fetchUpcomingMovies.
   const fetchShows = async () => {
     try {
-      console.log("[AppContext] Fetching shows from /api/show/all...");
-      // First try to get shows (movies with future showtimes)
-      const { data } = await axios.get("/api/show/shows/all");
-      console.log("[AppContext] Shows API response:", data);
-      
-      if (data.success && data.shows && data.shows.length > 0) {
-        console.log("[AppContext] Setting shows:", data.shows);
-        setShows(data.shows || []);
-      } else {
-        console.log("[AppContext] No shows found, falling back to movies...");
-        // If no shows exist, fall back to getting all active movies
-        const moviesResponse = await axios.get("/api/show/movies/available");
-        console.log("[AppContext] Movies API response:", moviesResponse.data);
-        
-        if (moviesResponse.data.success && moviesResponse.data.movies) {
-          setShows(moviesResponse.data.movies);
-        } else {
-          setShows([]);
-        }
-      }
+      const [showsRes, allMoviesRes] = await Promise.allSettled([
+        api.get("/api/show/shows/all"),
+        api.get("/api/show/upcoming-movies"),
+      ]);
+
+      const moviesWithShows =
+        showsRes.status === "fulfilled" &&
+        showsRes.value.data.success &&
+        Array.isArray(showsRes.value.data.shows)
+          ? showsRes.value.data.shows
+          : [];
+
+      const allMovies =
+        allMoviesRes.status === "fulfilled" &&
+        allMoviesRes.value.data.success &&
+        Array.isArray(allMoviesRes.value.data.movies)
+          ? allMoviesRes.value.data.movies
+          : [];
+
+      // Merge: bookable movies first, rest of catalogue after
+      const showIds = new Set(moviesWithShows.map((m) => (m._id || m.id)?.toString()));
+      const merged = [
+        ...moviesWithShows.map((m) => ({ ...m, hasShows: true })),
+        ...allMovies
+          .filter((m) => !showIds.has((m._id || m.id)?.toString()))
+          .map((m) => ({ ...m, hasShows: false })),
+      ];
+
+      setShows(merged);
+      // Also keep upcomingMovies in sync (no second API call needed)
+      setUpcomingMovies(allMovies);
     } catch (error) {
-      console.error("[AppContext] Error fetching shows:", error);
       handleError("fetchShows", error);
-      // On error, try fallback to movies
-      try {
-        const moviesResponse = await axios.get("/api/show/movies/available");
-        if (moviesResponse.data.success && moviesResponse.data.movies) {
-          setShows(moviesResponse.data.movies);
-        }
-      } catch (movieError) {
-        console.error("Failed to fetch movies as fallback:", movieError);
-      }
     }
   };
 
+  // Kept for backward-compat (pages that call fetchUpcomingMovies directly)
   const fetchUpcomingMovies = async () => {
     try {
-      const { data } = await axios.get("/api/show/upcoming-movies");
+      const { data } = await api.get("/api/show/upcoming-movies");
       if (data.success) {
-        const movies = (data.movies || []).map((m) => ({
-          ...m,
-          genre_ids: Array.isArray(m.genres) ? m.genres.map((g) => g.id) : [],
-        }));
-        setUpcomingMovies(movies);
+        setUpcomingMovies(data.movies || []);
       }
     } catch (error) {
       handleError("fetchUpcomingMovies", error);
     }
   };
 
-  const fetchAllTrailers = async () => {
-    if (!upcomingMovies.length) return;
-
-    const trailersMap = { ...trailer };
-    
-    // Fetch trailers for each upcoming movie
-    for (const movie of upcomingMovies) {
-      if (!trailersMap[movie.id]) {
-        try {
-          const { data } = await axios.get(`/api/show/trailer/${movie.id}`);
-          if (data.success) {
-            trailersMap[movie.id] = { url: data.trailer_url, key: data.video_key };
-          } else {
-            // If no trailer found, use a fallback
-            trailersMap[movie.id] = { url: "", key: null };
-          }
-        } catch (error) {
-          console.error(`Error fetching trailer for movie ${movie.id}:`, error);
-          // Use empty fallback on error
-          trailersMap[movie.id] = { url: "", key: null };
-        }
-      }
-    }
-    
-    setTrailer(trailersMap);
-  };
-
+  // ─── Favourites ───────────────────────────────────────────────────────────
   const fetchFavoriteMovies = async () => {
     try {
-      const { data } = await axios.get("/api/user/favorites", {
+      const { data } = await api.get("/api/user/favorites", {
         headers: getAuthHeaders(),
       });
-
       if (data.success) {
         setFavoriteMovies(data.movies);
-      } else {
-        toast.error(data.message || "Failed to load favorites");
       }
     } catch (error) {
       handleError("fetchFavoriteMovies", error);
     }
   };
 
-  // Load shows and upcoming movies once
+  // ─── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        await Promise.all([fetchShows(), fetchUpcomingMovies()]);
+        await fetchShows(); // one call, covers both shows + upcoming
       } catch (error) {
         handleError("InitialLoad", error, "Error loading movies.");
       } finally {
@@ -174,12 +142,7 @@ export const AppProvider = ({ children }) => {
     loadInitialData();
   }, []);
 
-  // Fetch trailers when upcoming movies change
-  useEffect(() => {
-    fetchAllTrailers();
-  }, [upcomingMovies]);
-
-  // Fetch user-based data
+  // User-specific data after login
   useEffect(() => {
     if (user) {
       fetchIsAdmin();
@@ -187,12 +150,12 @@ export const AppProvider = ({ children }) => {
     }
   }, [user]);
 
+  // ─── Context value ────────────────────────────────────────────────────────
   const value = {
-    axios,
+    axios: api,
     fetchIsAdmin,
     user,
     getAuthHeaders,
-    // Provide a getToken helper for components that expect it.
     getToken: async () => token,
     navigate,
     isAdmin,
@@ -203,7 +166,8 @@ export const AppProvider = ({ children }) => {
     upcomingMovies,
     fetchUpcomingMovies,
     loading,
-    trailer,
+    // trailer kept for legacy compat — now just empty object (trailers loaded in MovieDetails directly)
+    trailer: {},
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

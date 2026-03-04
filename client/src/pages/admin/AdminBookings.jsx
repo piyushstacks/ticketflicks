@@ -16,7 +16,7 @@ const AdminBookings = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/booking/bookings", {
+      const { data } = await axios.get("/api/admin/all-bookings", {
         headers: getAuthHeaders(),
       });
 
@@ -49,6 +49,34 @@ const AdminBookings = () => {
 
     return matchesSearch && matchesStatus;
   });
+
+  const theatreStats = filteredBookings.reduce((acc, b) => {
+    const tId = b.show?.theatre?._id || "unknown";
+    const tName = b.show?.theatre?.name || "Unknown Theatre";
+    
+    if (!acc[tId]) {
+      acc[tId] = {
+        id: tId,
+        name: tName,
+        totalBookings: 0,
+        paidBookings: 0,
+        unpaidBookings: 0,
+        revenue: 0,
+      };
+    }
+    
+    acc[tId].totalBookings++;
+    if (b.isPaid) {
+      acc[tId].paidBookings++;
+      acc[tId].revenue += (b.amount || 0);
+    } else {
+      acc[tId].unpaidBookings++;
+    }
+    
+    return acc;
+  }, {});
+
+  const theatreStatsArray = Object.values(theatreStats).sort((a, b) => b.revenue - a.revenue);
 
   if (loading) {
     return (
@@ -133,6 +161,41 @@ const AdminBookings = () => {
             <MapPin className="w-8 h-8 text-purple-500" />
           </div>
         </div>
+      </div>
+
+      {/* Theatre Performance List */}
+      <h2 className="text-xl font-bold mt-8 mb-4">Theatre Performance</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {theatreStatsArray.map((theatre) => (
+          <div key={theatre.id} className="bg-gray-900/30 border border-gray-700 rounded-lg p-5">
+            <h3 className="font-bold text-lg text-primary mb-3">
+              {theatre.name}
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Total Bookings:</span>
+                <span className="font-semibold">{theatre.totalBookings}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Paid Bookings:</span>
+                <span className="font-semibold text-green-400">{theatre.paidBookings}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Unpaid Bookings:</span>
+                <span className="font-semibold text-orange-400">{theatre.unpaidBookings}</span>
+              </div>
+              <div className="flex justify-between pt-2 mt-2 border-t border-gray-800">
+                <span className="text-gray-400">Total Revenue:</span>
+                <span className="font-bold text-base">{currency}{theatre.revenue.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+        {theatreStatsArray.length === 0 && (
+          <div className="col-span-full py-8 text-center text-gray-400 bg-gray-900/30 rounded-lg border border-gray-700">
+            No theatre data available
+          </div>
+        )}
       </div>
 
       {/* Bookings Table */}

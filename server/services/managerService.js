@@ -18,28 +18,14 @@ export const getManagerTheatre = async (managerId) => {
     throw new UnauthorizedError("Manager access required");
   }
 
-  let theatre = null;
-
-  // Try using managedTheatreId first (most reliable)
-  if (manager.managedTheatreId) {
-    theatre = await Theatre.findOne({
-      _id: manager.managedTheatreId,
-      approval_status: "approved",
-      disabled: { $ne: true },
-    });
-  }
-
-  // Fallback to manager_id lookup
-  if (!theatre) {
-    theatre = await Theatre.findOne({
-      manager_id: managerId,
-      approval_status: "approved",
-      disabled: { $ne: true },
-    });
-  }
+  const theatre = await Theatre.findOne({
+    manager_id: managerId,
+    approval_status: "approved",
+    disabled: false,
+  });
 
   if (!theatre) {
-    throw new NotFoundError("Approved theatre assigned to manager");
+    throw new NotFoundError("Theatre assigned to manager");
   }
 
   return theatre;
@@ -89,14 +75,18 @@ export const getDashboardData = async (managerId) => {
   );
 
   return {
-    theatreId: theatre._id,
-    theatreName: theatre.name,
-    theatreCity: theatre.city,
-    theatreLocation: theatre.location,
-    activeShows,
-    todayBookings,
-    monthRevenue,
-    totalBookings: monthBookings.length,
+    theatre: {
+      id: theatre._id.toString(),
+      name: theatre.name,
+      location: theatre.location,
+      city: theatre.city,
+    },
+    stats: {
+      activeShows,
+      todayBookings,
+      monthRevenue,
+      totalBookings: monthBookings.length,
+    },
   };
 };
 
@@ -107,7 +97,7 @@ export const getTheatreShows = async (managerId, skip = 0, limit = 50) => {
   const theatre = await getManagerTheatre(managerId);
 
   const shows = await Show.find({ theatre: theatre._id })
-    .populate("movie", "title poster_path duration_min")
+    .populate("movie", "title poster_path duration_min runtime")
     .populate("screen", "name")
     .skip(skip)
     .limit(limit)

@@ -26,7 +26,7 @@ const Theatres = () => {
         const theatresWithShowsData = await Promise.all(
           theatresList.map(async (theatre) => {
             try {
-              const showsResponse = await axios.get(`/api/public/shows/by-theatre/${theatre._id}`)
+              const showsResponse = await axios.get(`/api/public/shows/by-theatre/${theatre.id || theatre._id}`)
               const showsData = showsResponse.data.success ? showsResponse.data.shows || [] : []
               return { ...theatre, shows: showsData }
             } catch (error) {
@@ -141,7 +141,7 @@ const Theatres = () => {
         <div className="flex flex-col gap-6">
           {filteredTheatres.map((theatre) => (
             <div
-              key={theatre._id}
+              key={theatre.id || theatre._id}
               className="card overflow-hidden"
             >
               {/* Theatre Header */}

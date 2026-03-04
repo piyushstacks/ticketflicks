@@ -49,37 +49,23 @@ export const getShowsByTheatre = async (req, res) => {
       return res.json({ success: false, message: "Theatre not found or not available" });
     }
 
-    // Get all shows for this theatre – only for active (non-disabled) movies
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    // Only shows AFTER current moment — past shows (even earlier today) are excluded
+    const now = new Date();
+
     const shows = await ShowTbls.find({
       theatre: theatreId,
       isActive: true,
-      showDateTime: { $gte: startOfToday }
+      showDateTime: { $gte: now },           // ← strict current-time filter
     })
-      .populate("movie", "title poster_path backdrop_path isActive")
+      .populate("movie", "title poster_path backdrop_path isActive runtime duration_min")
       .populate("theatre", "name location city")
-      .populate("screen", "screenNumber name seatTiers")
+      .populate({ path: "screen", model: "ScreenTbl", select: "screenNumber name seatTiers seatLayout" })
       .sort({ showDateTime: 1 });
 
-    console.log("Total shows found for theatre:", theatreId, shows.length);
-
-    // Debug: Log each show and its movie status
-    shows.forEach((show, index) => {
-      console.log(`Show ${index + 1}:`, {
-        showId: show._id,
-        movieId: show.movie?._id,
-        movieTitle: show.movie?.title,
-        movieIsActive: show.movie?.isActive,
-        showDateTime: show.showDateTime
-      });
-    });
-
+    // Filter out inactive movies
     const showsForActiveMovies = shows.filter(
       (s) => s.movie && s.movie.isActive === true
     );
-
-    console.log("Shows for active movies:", theatreId, showsForActiveMovies.length);
 
     res.json({ success: true, shows: showsForActiveMovies });
   } catch (error) {
@@ -92,9 +78,12 @@ export const getShowsByTheatre = async (req, res) => {
 export const getShowsByMovie = async (req, res) => {
   try {
     const { movieId } = req.params;
+    console.log(`[getShowsByMovie] Called with movieId: ${movieId}`);
 
     // Validate movie exists and is active (not disabled by admin)
     const movie = await Movie.findById(movieId);
+    console.log(`[getShowsByMovie] Movie.findById result:`, !!movie, movie ? movie._id : null);
+
     if (!movie) {
       return res.json({ success: false, message: "Movie not found" });
     }
@@ -107,35 +96,26 @@ export const getShowsByMovie = async (req, res) => {
       });
     }
 
-    // Get all shows for this movie (only from approved theatres)
-    // A show is valid if its endDate is today or in the future,
-    // OR if it has no endDate but showDateTime >= today
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    // Only shows strictly after current moment
+    const now = new Date();
 
     const shows = await ShowTbls.find({
       movie: movieId,
       isActive: true,
-      $or: [
-        { endDate: { $gte: startOfToday } },              // has endDate and it's today or future
-        { endDate: null, showDateTime: { $gte: startOfToday } }, // no endDate, showDateTime >= today
-        { endDate: { $exists: false }, showDateTime: { $gte: startOfToday } } // field absent
-      ]
+      showDateTime: { $gte: now },           // strict current-time filter
     })
       .populate({
         path: "theatre",
         match: { approval_status: 'approved', disabled: { $ne: true } },
         select: "name location city"
       })
-      .populate("screen", "screenNumber name seatLayout seatTiers")
-      .populate("movie", "title poster_path backdrop_path")
+      .populate({ path: "screen", model: "ScreenTbl", select: "screenNumber name seatLayout seatTiers" })
+      .populate("movie", "title poster_path backdrop_path runtime duration_min")
       .sort({ showDateTime: 1 });
 
-    console.log("Found shows for movie:", movieId, shows.length);
-
     // Filter out shows with null theatres (due to populate match)
-    const validShows = shows.filter(show => show.theatre != null);
-    console.log("Valid shows after filtering:", validShows.length);
+    const validShows = shows.filter(show => show.theatre != null && show.screen != null);
+
 
     // Group shows by theatre -> screen -> shows
     const groupedShows = {};

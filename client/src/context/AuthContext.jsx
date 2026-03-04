@@ -79,8 +79,24 @@ export const AuthProvider = ({ children }) => {
 
   const getTheatresByManager = async (managerId) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const { data } = await axios.get(`/api/theatre/theaters/manager/${managerId}`, { headers });
-    return data;
+    try {
+      // Use /api/manager/dashboard which returns theatre info for the logged-in manager
+      const { data } = await axios.get(`/api/manager/dashboard`, { headers });
+      if (data.success && (data.data?.theatreName || data.dashboardData?.theatreName)) {
+        const d = data.data || data.dashboardData;
+        return {
+          success: true,
+          theatres: [{
+            _id: d.theatreId || managerId,
+            name: d.theatreName || "My Theatre",
+            city: d.theatreCity || "",
+          }],
+        };
+      }
+      return { success: false, theatres: [] };
+    } catch {
+      return { success: false, theatres: [] };
+    }
   };
 
   const resendLogin = async (payload) => {

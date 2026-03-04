@@ -1,53 +1,65 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { Route, Routes, useLocation, Navigate } from "react-router-dom";
-import Home from "./pages/Home";
-import Movies from "./pages/Movies";
-import MovieDetails from "./pages/MovieDetails";
-import SeatLayout from "./pages/SeatLayout";
-import SeatLayoutNew from "./pages/SeatLayout_New";
-import BuyTicketsFlow from "./pages/BuyTicketsFlow";
-import MovieShowSelector from "./components/MovieShowSelector";
-import MyBooking from "./pages/MyBookings";
-import Favorite from "./pages/Favorite";
 import { Toaster } from "react-hot-toast";
-import Layout from "./pages/admin/Layout";
-import Dashboard from "./pages/admin/Dashboard";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminTheatres from "./pages/admin/AdminTheatres";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminMovies from "./pages/admin/AdminMovies";
-import AdminShows from "./pages/admin/AdminShows";
-import AdminBookings from "./pages/admin/AdminBookings";
-import AdminPaymentsList from "./pages/admin/AdminPaymentsList";
-import AddShows from "./pages/admin/AddShows";
-import ListShows from "./pages/admin/ListShows";
-import ListBookings from "./pages/admin/ListBookings";
 import { useAppContext } from "./context/AppContext";
 import Loading from "./components/Loading";
-import Upcoming from "./pages/Upcoming";
-import UpcomingMovieDetails from "./pages/UpcomingMovieDetails";
-import ListFeedbacks from "./pages/admin/ListFeedbacks";
-import FeedbackForm from "./pages/FeedbackForm";
-import Theatre from "./pages/Theatres";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import VerifyOtp from "./pages/VerifyOtp";
-import ResetPassword from "./pages/ResetPassword";
-import ChangePassword from "./pages/ChangePassword";
-import VerifyEmail from "./pages/VerifyEmail";
-import Profile from "./pages/Profile";
-import EditProfile from "./pages/EditProfile";
-import TheatreVerifyWrapper from "./pages/TheatreVerifyWrapper";
-import RegistrationPending from "./pages/RegistrationPending";
-import ManagerLayout from "./pages/manager/ManagerLayout";
-import ManagerDashboard from "./pages/manager/ManagerDashboard";
-import ManagerMovies from "./pages/manager/ManagerMovies";
-import ManagerShows from "./pages/manager/ManagerShows";
-import ManagerScreens from "./pages/manager/ManagerScreens";
-import ManagerBookings from "./pages/manager/ManagerBookings";
+
+// ── Lazy-loaded pages (code-split per route) ────────────────────────────────
+const Home                  = lazy(() => import("./pages/Home"));
+const Movies                = lazy(() => import("./pages/Movies"));
+const MovieDetails          = lazy(() => import("./pages/MovieDetails"));
+const SeatLayout            = lazy(() => import("./pages/SeatLayout"));
+const SeatLayoutNew         = lazy(() => import("./pages/SeatLayout_New"));
+const BuyTicketsFlow        = lazy(() => import("./pages/BuyTicketsFlow"));
+const MovieShowSelector     = lazy(() => import("./components/MovieShowSelector"));
+const MyBooking             = lazy(() => import("./pages/MyBookings_New"));
+const Favorite              = lazy(() => import("./pages/Favorite"));
+const Upcoming              = lazy(() => import("./pages/Upcoming"));
+const UpcomingMovieDetails  = lazy(() => import("./pages/UpcomingMovieDetails"));
+const FeedbackForm          = lazy(() => import("./pages/FeedbackForm"));
+const Theatre               = lazy(() => import("./pages/Theatres"));
+const Login                 = lazy(() => import("./pages/Login"));
+const Signup                = lazy(() => import("./pages/Signup"));
+const ForgotPassword        = lazy(() => import("./pages/ForgotPassword"));
+const VerifyOtp             = lazy(() => import("./pages/VerifyOtp"));
+const ResetPassword         = lazy(() => import("./pages/ResetPassword"));
+const ChangePassword        = lazy(() => import("./pages/ChangePassword"));
+const VerifyEmail           = lazy(() => import("./pages/VerifyEmail"));
+const Profile               = lazy(() => import("./pages/Profile"));
+const EditProfile           = lazy(() => import("./pages/EditProfile"));
+const TheatreVerifyWrapper  = lazy(() => import("./pages/TheatreVerifyWrapper"));
+const RegistrationPending   = lazy(() => import("./pages/RegistrationPending"));
+
+// Admin
+const Layout                = lazy(() => import("./pages/admin/Layout"));
+const AdminDashboard        = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminTheatres         = lazy(() => import("./pages/admin/AdminTheatres"));
+const AdminPayments         = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminMovies           = lazy(() => import("./pages/admin/AdminMovies"));
+const AdminShows            = lazy(() => import("./pages/admin/AdminShows"));
+const AdminBookings         = lazy(() => import("./pages/admin/AdminBookings"));
+const AdminPaymentsList     = lazy(() => import("./pages/admin/AdminPaymentsList"));
+const AddShows              = lazy(() => import("./pages/admin/AddShows"));
+const ListShows             = lazy(() => import("./pages/admin/ListShows"));
+const ListBookings          = lazy(() => import("./pages/admin/ListBookings"));
+const ListFeedbacks         = lazy(() => import("./pages/admin/ListFeedbacks"));
+
+// Manager
+const ManagerLayout         = lazy(() => import("./pages/manager/ManagerLayout"));
+const ManagerDashboard      = lazy(() => import("./pages/manager/ManagerDashboard"));
+const ManagerMovies         = lazy(() => import("./pages/manager/ManagerMovies"));
+const ManagerShows          = lazy(() => import("./pages/manager/ManagerShows"));
+const ManagerScreens        = lazy(() => import("./pages/manager/ManagerScreens"));
+const ManagerBookings       = lazy(() => import("./pages/manager/ManagerBookings"));
+
+// Shared page-level Suspense fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-[80vh]">
+    <Loading />
+  </div>
+);
 
 const App = () => {
   const location = useLocation();
@@ -60,6 +72,7 @@ const App = () => {
     <>
       <Toaster />
       {!isAdminRoute && !isManagerRoute && <Navbar />}
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
@@ -140,6 +153,7 @@ const App = () => {
           <Route path="bookings" element={<ManagerBookings />} />
         </Route>
       </Routes>
+      </Suspense>
       {!isAdminRoute && !isManagerRoute && <Footer />}
     </>
   );

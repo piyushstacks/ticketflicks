@@ -12,29 +12,51 @@ export const getManagerTheatre = async (managerId) => {
     throw new AppError("Unauthorized - Manager access required", 403);
   }
 
-  if (!manager.managedTheatreId) {
-    throw new AppError("Manager has no theatre assigned", 400);
+  // Primary: use managedTheatreId on User if set
+  if (manager.managedTheatreId) {
+    return manager.managedTheatreId;
   }
 
-  return manager.managedTheatreId;
+  // Fallback: find theatre by manager_id FK on Theatre model
+  const theatre = await Theatre.findOne({
+    manager_id: managerId,
+    approval_status: "approved",
+  });
+
+  if (!theatre) {
+    throw new AppError("No approved theatre assigned to this manager", 400);
+  }
+
+  return theatre._id;
 };
 
-// Get all active movies available for managers to schedule shows
-export const getAvailableMovies = async (managerId) => {
-  // Verify manager exists
-  await getManagerTheatre(managerId);
 
-  // Return all active movies from DB
-  const movies = await Movie.find({ isActive: true })
-    .select("title overview description poster_path backdrop_path release_date vote_average runtime duration_min genres genre_ids original_language isActive _id trailer_link trailer_path")
+export const getAvailableMovies = async (managerId) => {
+  const theatreId = await getManagerTheatre(managerId);
+
+  const movies = await Movie.find({
+    isActive: true,
+  })
+    .select(
+      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language isActive theatres excludedTheatres _id"
+    )
     .sort({ createdAt: -1 });
 
-  return movies.map((movie) => ({
-    ...movie.toObject(),
-    // Normalize field names for frontend
-    overview: movie.overview || movie.description || "",
-    runtime: movie.runtime || movie.duration_min || 120,
-  }));
+  return movies.map((movie) => {
+    const isTheatreExcluded =
+      movie.excludedTheatres && movie.excludedTheatres.includes(theatreId);
+    const isTheatreIncluded =
+      movie.theatres && movie.theatres.includes(theatreId);
+
+    const isActiveForTheatre =
+      !isTheatreExcluded &&
+      (isTheatreIncluded || movie.excludedTheatres.length === 0);
+
+    return {
+      ...movie.toObject(),
+      isActive: isActiveForTheatre,
+    };
+  });
 };
 
 export const getTheatreScreens = async (managerId) => {
@@ -51,10 +73,8 @@ function getCurrentWeekDates() {
   const today = new Date();
   const currentDay = today.getDay();
   const diff = today.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
-  const monday = new Date(today);
-  monday.setDate(diff);
-  const sunday = new Date(today);
-  sunday.setDate(diff + 6);
+  const monday = new Date(today.setDate(diff));
+  const sunday = new Date(today.setDate(diff + 6));
 
   return {
     start: monday.toISOString().split("T")[0],
@@ -63,37 +83,11 @@ function getCurrentWeekDates() {
 }
 
 export const addShow = async (managerId, showData) => {
-  console.log("[managerShowService.addShow] Raw showData received:", JSON.stringify(showData));
-
-  // Normalize field names: support both {movie,screen} and {movieId,screenId}
-  const movie = showData.movie || showData.movieId;
-  const screen = showData.screen || showData.screenId;
-  const language = showData.language || "English";
-  const startDate = showData.startDate;
-  const endDate = showData.endDate;
-  const isActive = showData.isActive !== undefined ? showData.isActive : true;
-  const showDateTime = showData.showDateTime;
-  const customSeatTiers = showData.seatTiers;
-
-  // Extract showTime from showDateTime if not provided directly
-  // Formats: "14:30", "14:30:00", or from "2026-03-10T14:30:00"
-  let showTime = showData.showTime;
-  if (!showTime && showDateTime) {
-    const parts = showDateTime.split('T');
-    if (parts.length > 1) {
-      showTime = parts[1].substring(0, 5); // "HH:MM"
-    }
-  }
-
+  const { movie, screen, showTime, language = "English", startDate, endDate, isActive = true } = showData;
   const theatreId = await getManagerTheatre(managerId);
 
-  console.log("[managerShowService.addShow] Normalized:", { movie, screen, showTime, startDate, endDate, showDateTime });
-
   if (!movie || !screen || !showTime) {
-    throw new AppError(
-      `Movie, Screen, and Show Time are required. Got: movie=${movie}, screen=${screen}, showTime=${showTime}`,
-      400
-    );
+    throw new AppError("Movie, Screen, and Show Time are required", 400);
   }
 
   const movieDoc = await Movie.findOne({ _id: movie, isActive: true });
@@ -101,7 +95,11 @@ export const addShow = async (managerId, showData) => {
     throw new AppError("Movie not found or is inactive", 404);
   }
 
-  const screenDoc = await ScreenTbl.findOne({ _id: screen, theatre: theatreId });
+  const screenDoc = await ScreenTbl.findOne({
+    _id: screen,
+    theatre: theatreId,
+  });
+
   if (!screenDoc) {
     throw new AppError("Screen not found for this theatre", 404);
   }
@@ -110,66 +108,50 @@ export const addShow = async (managerId, showData) => {
   const showStartDate = startDate || currentWeek.start;
   const showEndDate = endDate || currentWeek.end;
 
-  // Allow today's shows — only reject if end date is clearly in the past (>1 day ago)
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  yesterday.setHours(23, 59, 59, 999);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  if (new Date(showEndDate) < yesterday) {
-    throw new AppError("Show end date cannot be more than 1 day in the past.", 400);
+  if (new Date(showStartDate) < today || new Date(showEndDate) < today) {
+    throw new AppError(
+      "Cannot create shows for past dates. Please select today or a future date.",
+      400
+    );
   }
 
-  // Build showDateTime from startDate + showTime if not provided
-  const showDateTimeStr = showDateTime || `${showStartDate}T${showTime}:00`;
-  const showDateTimeObj = new Date(showDateTimeStr);
-
-  if (isNaN(showDateTimeObj.getTime())) {
-    throw new AppError("Invalid show date/time", 400);
-  }
-
-  // Check for duplicate
   const existingShow = await ShowTbls.findOne({
     movie,
     screen,
-    showDateTime: showDateTimeObj,
+    showDateTime: new Date(`${showStartDate} ${showTime}`),
     theatre: theatreId,
   });
 
   if (existingShow) {
-    throw new AppError("Show already exists for this time slot and date range", 409);
-  }
-
-  // Build seatTiers - use custom if provided, else use screen defaults
-  let finalSeatTiers;
-  if (customSeatTiers && customSeatTiers.length > 0) {
-    finalSeatTiers = customSeatTiers.map((tier) => ({
-      tierName: tier.tierName,
-      price: tier.price,
-      totalSeats: tier.totalSeats || 0,
-      occupiedSeats: {},
-    }));
-  } else {
-    finalSeatTiers = screenDoc.seatTiers.map((tier) => ({
-      tierName: tier.tierName,
-      price: tier.price,
-      seatsPerRow: tier.seatsPerRow || screenDoc.seatLayout.seatsPerRow,
-      rowCount: tier.rows ? tier.rows.length : 0,
-      totalSeats: (tier.seatsPerRow || screenDoc.seatLayout.seatsPerRow) * (tier.rows ? tier.rows.length : 0),
-      occupiedSeats: {},
-    }));
+    throw new AppError(
+      "Show already exists for this time slot and date range",
+      409
+    );
   }
 
   const show = await ShowTbls.create({
     movie,
     theatre: theatreId,
     screen,
-    showDateTime: showDateTimeObj,
-    showTime: showTime,                   // "HH:MM" string
-    startDate: showStartDate,             // "YYYY-MM-DD" string
-    endDate: showEndDate,                 // "YYYY-MM-DD" string
+    showDateTime: new Date(`${showStartDate} ${showTime}`),
+    showTime,
+    startDate: new Date(showStartDate),
+    endDate: new Date(showEndDate),
     language,
     basePrice: 150,
-    seatTiers: finalSeatTiers,
+    seatTiers: screenDoc.seatTiers.map((tier) => ({
+      tierName: tier.tierName,
+      price: tier.price,
+      seatsPerRow: tier.seatsPerRow || screenDoc.seatLayout.seatsPerRow,
+      rowCount: tier.rows.length,
+      totalSeats:
+        (tier.seatsPerRow || screenDoc.seatLayout.seatsPerRow) *
+        tier.rows.length,
+      occupiedSeats: {},
+    })),
     totalCapacity: screenDoc.seatLayout.totalSeats,
     isActive,
   });
@@ -178,12 +160,18 @@ export const addShow = async (managerId, showData) => {
   return show;
 };
 
-export const getTheatreShows = async (managerId, movieId = null, status = "all") => {
+export const getTheatreShows = async (
+  managerId,
+  movieId = null,
+  status = "all"
+) => {
   const theatreId = await getManagerTheatre(managerId);
 
   let query = { theatre: theatreId };
 
-  if (movieId) query.movie = movieId;
+  if (movieId) {
+    query.movie = movieId;
+  }
 
   if (status === "upcoming") {
     query.showDateTime = { $gte: new Date() };
@@ -192,7 +180,7 @@ export const getTheatreShows = async (managerId, movieId = null, status = "all")
   }
 
   const shows = await ShowTbls.find(query)
-    .populate("movie", "_id title poster_path overview description")
+    .populate("movie", "_id title poster_path overview runtime duration_min")
     .populate("screen", "_id screenNumber name")
     .sort({ showDateTime: -1 });
 
@@ -208,12 +196,17 @@ export const getTheatreShows = async (managerId, movieId = null, status = "all")
 export const updateShow = async (managerId, showId, updateData) => {
   const theatreId = await getManagerTheatre(managerId);
 
-  const show = await ShowTbls.findOne({ _id: showId, theatre: theatreId });
-  if (!show) throw new AppError("Show not found for this theatre", 404);
+  const show = await ShowTbls.findOne({
+    _id: showId,
+    theatre: theatreId,
+  });
+
+  if (!show) {
+    throw new AppError("Show not found for this theatre", 404);
+  }
 
   const updatedShow = await ShowTbls.findByIdAndUpdate(showId, updateData, {
     new: true,
-    runValidators: false,
   }).populate("movie screen");
 
   return updatedShow;
@@ -222,10 +215,17 @@ export const updateShow = async (managerId, showId, updateData) => {
 export const deleteShow = async (managerId, showId) => {
   const theatreId = await getManagerTheatre(managerId);
 
-  const show = await ShowTbls.findOne({ _id: showId, theatre: theatreId });
-  if (!show) throw new AppError("Show not found for this theatre", 404);
+  const show = await ShowTbls.findOne({
+    _id: showId,
+    theatre: theatreId,
+  });
+
+  if (!show) {
+    throw new AppError("Show not found for this theatre", 404);
+  }
 
   await ShowTbls.findByIdAndDelete(showId);
+
   return { message: "Show deleted successfully" };
 };
 
@@ -233,13 +233,18 @@ export const toggleShowStatus = async (managerId, showId, isActive) => {
   const theatreId = await getManagerTheatre(managerId);
 
   const show = await ShowTbls.findById(showId);
-  if (!show) throw new AppError("Show not found", 404);
+
+  if (!show) {
+    throw new AppError("Show not found", 404);
+  }
+
   if (show.theatre.toString() !== theatreId.toString()) {
     throw new AppError("Not authorized to manage this show", 403);
   }
 
   show.isActive = isActive;
   await show.save();
+
   return show;
 };
 
@@ -252,7 +257,10 @@ export const getDashboardData = async (managerId) => {
     isActive: true,
   });
 
-  const totalShows = await ShowTbls.countDocuments({ theatre: theatreId });
+  const totalShows = await ShowTbls.countDocuments({
+    theatre: theatreId,
+  });
+
   const theatre = await Theatre.findById(theatreId);
 
   return {
@@ -264,7 +272,13 @@ export const getDashboardData = async (managerId) => {
   };
 };
 
-export const repeatShowsForNextWeek = async (managerId, currentWeekStart, currentWeekEnd, nextWeekStart, nextWeekEnd) => {
+export const repeatShowsForNextWeek = async (
+  managerId,
+  currentWeekStart,
+  currentWeekEnd,
+  nextWeekStart,
+  nextWeekEnd
+) => {
   const theatreId = await getManagerTheatre(managerId);
 
   const currentShows = await ShowTbls.find({
@@ -288,12 +302,11 @@ export const repeatShowsForNextWeek = async (managerId, currentWeekStart, curren
     });
 
     if (!existingShow) {
-      const nextShowDateTime = new Date(`${nextWeekStart}T${show.showTime || "10:00"}:00`);
       await ShowTbls.create({
         theatre: theatreId,
         movie: show.movie._id,
         screen: show.screen._id,
-        showDateTime: nextShowDateTime,
+        showDateTime: new Date(`${nextWeekStart} ${show.showTime}`),
         showTime: show.showTime,
         startDate: new Date(nextWeekStart),
         endDate: new Date(nextWeekEnd),

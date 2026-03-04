@@ -109,7 +109,7 @@ const BuyTicketsFlow = () => {
       )}
 
       {/* Date & Time Picker Section */}
-      <DateTimePicker movieId={id} />
+      <DateTimePicker movieId={id} movie={movie} />
     </div>
   );
 };

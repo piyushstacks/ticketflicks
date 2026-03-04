@@ -32,21 +32,21 @@ const ManagerMovies = () => {
     fetchMovies();
   }, []);
 
-  const handleToggleStatus = async (movieId, currentStatus) => {
-    const action = currentStatus === 'disabled' ? 'enable' : 'disable';
-    const confirmMessage = `Are you sure you want to ${action} this movie?`;
+  const handleToggleStatus = async (movieId, isCurrentlyEnabled) => {
+    const action = isCurrentlyEnabled ? 'disable' : 'enable';
+    const confirmMessage = `Are you sure you want to ${action} this movie for your theatre only? This does not affect other theatres.`;
     
     if (!window.confirm(confirmMessage)) return;
 
     try {
       const { data } = await axios.patch(`/api/show/movies/${movieId}`, {
-        isActive: action === 'enable'
+        isActive: !isCurrentlyEnabled   // new desired state
       }, {
         headers: getAuthHeaders()
       });
 
       if (data.success) {
-        toast.success(`Movie ${action}d successfully`);
+        toast.success(data.message || `Movie ${action}d for your theatre`);
         fetchMovies();
       } else {
         toast.error(data.message);
@@ -91,7 +91,7 @@ const ManagerMovies = () => {
               <div
                 key={movie._id}
                 className={`bg-gray-800/50 border rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 ${
-                  !movie.isActive ? 'border-gray-700 opacity-60' : 'border-gray-600'
+                  !movie.isEnabledForTheatre ? 'border-gray-700 opacity-60' : 'border-gray-600'
                 }`}
               >
                 <div className="relative">
@@ -110,12 +110,12 @@ const ManagerMovies = () => {
                       <Film className="w-12 h-12 text-gray-500" />
                     </div>
                   )}
-                  {!movie.isActive && (
+                  {!movie.isEnabledForTheatre && (
                     <div className="absolute top-3 right-3 px-3 py-1 bg-red-600/90 text-white text-xs rounded-full font-medium backdrop-blur-sm">
-                      Inactive
+                      Disabled (This Theatre)
                     </div>
                   )}
-                  {movie.isActive && (
+                  {movie.isEnabledForTheatre && (
                     <div className="absolute top-3 right-3 px-3 py-1 bg-green-600/90 text-white text-xs rounded-full font-medium backdrop-blur-sm">
                       Active
                     </div>
@@ -175,22 +175,22 @@ const ManagerMovies = () => {
                       View
                     </button>
                     <button
-                      onClick={() => handleToggleStatus(movie._id, movie.isActive ? 'active' : 'disabled')}
+                      onClick={() => handleToggleStatus(movie._id, movie.isEnabledForTheatre)}
                       className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm font-medium ${
-                        !movie.isActive
+                        !movie.isEnabledForTheatre
                           ? 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
                           : 'bg-orange-600/20 hover:bg-orange-600/30 text-orange-400'
                       }`}
                     >
-                      {!movie.isActive ? (
+                      {!movie.isEnabledForTheatre ? (
                         <>
                           <Power className="w-4 h-4" />
-                          Enable
+                          Enable for Theatre
                         </>
                       ) : (
                         <>
                           <PowerOff className="w-4 h-4" />
-                          Disable
+                          Disable for Theatre
                         </>
                       )}
                     </button>

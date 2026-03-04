@@ -39,8 +39,9 @@ export const protect = async (req, res, next) => {
       throw new UnauthorizedError("Invalid or expired token");
     }
 
-    // Verify user exists in DB
-    const user = await User.findById(decoded.id);
+    // Support both userId (new) and id (legacy) in JWT payload
+    const userId = decoded.userId || decoded.id;
+    const user = await User.findById(userId);
     if (!user) {
       throw new UnauthorizedError("User not found");
     }
@@ -75,7 +76,9 @@ export const protectAdmin = async (req, res, next) => {
       throw new UnauthorizedError("Admin access required");
     }
 
-    const user = await User.findById(decoded.id);
+    // Support both userId (new) and id (legacy) in JWT payload
+    const userId = decoded.userId || decoded.id;
+    const user = await User.findById(userId);
     if (!user || user.role !== "admin") {
       throw new UnauthorizedError("Admin access required");
     }
@@ -110,7 +113,9 @@ export const protectManager = async (req, res, next) => {
       throw new UnauthorizedError("Manager access required");
     }
 
-    const user = await User.findById(decoded.id);
+    // Support both userId (new) and id (legacy) in JWT payload
+    const userId = decoded.userId || decoded.id;
+    const user = await User.findById(userId);
     if (!user || user.role !== "manager") {
       throw new UnauthorizedError("Manager access required");
     }
@@ -145,7 +150,9 @@ export const protectCustomer = async (req, res, next) => {
       throw new UnauthorizedError("Customer access required");
     }
 
-    const user = await User.findById(decoded.id);
+    // Support both userId (new) and id (legacy) in JWT payload
+    const userId = decoded.userId || decoded.id;
+    const user = await User.findById(userId);
     if (!user || user.role !== "customer") {
       throw new UnauthorizedError("Customer access required");
     }

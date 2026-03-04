@@ -61,28 +61,15 @@ export const getAllMovies = async (filters = {}, skip = 0, limit = 50) => {
 export const getMovieById = async (movieId) => {
   const movie = await Movie.findById(movieId)
     .populate("genre_ids", "name")
-    .populate("language_id", "name")
-    .populate("cast", "name role");
+    .populate("language_id", "name");
 
   if (!movie) {
     throw new NotFoundError("Movie");
   }
 
-  return {
-    id: movie._id.toString(),
-    title: movie.title,
-    description: movie.description,
-    duration: movie.duration_min,
-    releaseDate: movie.release_date,
-    poster: movie.poster_path,
-    backdrop: movie.backdrop_path,
-    trailer: movie.trailer_link,
-    genres: movie.genre_ids || [],
-    languages: movie.language_id || [],
-    cast: movie.cast || [],
-    rating: movie.imdbRating,
-    reviews: movie.reviewCount,
-  };
+  // Return the actual movie document (new schema fields like poster_path, casts)
+  // because the frontend (MovieDetails.jsx) expects the unmapped schema fields.
+  return movie.toObject ? movie.toObject() : movie;
 };
 
 /**

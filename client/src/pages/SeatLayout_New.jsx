@@ -36,20 +36,36 @@ const SeatLayout = () => {
   const MAX_SEATS = 10;
   const REFRESH_INTERVAL = 30000; // 30 seconds
 
+  // ── Tier helpers for screens_new format ──────────────────────────────
+  // screens_new stores tiers as { name: 'Silver', price: 150, color: '#...' }
+  // We normalise them into a name→pricing map used by the seat renderer.
+  const screensTierMap = useMemo(() => {
+    const m = {}; // tierName (e.g. 'Silver') → { price, color }
+    const rawTiers = show?.screen?.seatTiers;
+    if (!rawTiers) return m;
+
+    const tiers = Array.isArray(rawTiers) ? rawTiers : Object.values(rawTiers);
+    tiers.forEach((t) => {
+      const name = t.name || t.tierName;
+      if (name) {
+        m[name] = {
+          price: t.price || 150,
+          color: t.color || "#94a3b8",
+        };
+      }
+    });
+    return m;
+  }, [show]);
+
   // Build tier pricing map from show/screen data
   const tierPricingMap = useMemo(() => {
     const map = {};
 
-    // First, try to get prices from show's seatTiers
+    // First, try to get prices from show's seatTiers (old format: {tierName, price})
     if (show?.seatTiers && Array.isArray(show.seatTiers)) {
       show.seatTiers.forEach((tier) => {
-        // Map tierName back to code
         const nameToCode = {
-          Standard: "S",
-          Deluxe: "D",
-          Premium: "P",
-          Recliner: "R",
-          Couple: "C",
+          Standard: "S", Deluxe: "D", Premium: "P", Recliner: "R", Couple: "C",
         };
         const code = nameToCode[tier.tierName];
         if (code) {
@@ -62,87 +78,32 @@ const SeatLayout = () => {
       });
     }
 
-    // Then try screen's seatTiers if show doesn't have pricing
+    // Try screen's seatTiers — works for old {tierName,price,rows} AND new {name,price,color} formats
     if (
       Object.keys(map).length === 0 &&
-      show?.screen?.seatTiers &&
-      Array.isArray(show.screen.seatTiers)
+      show?.screen?.seatTiers
     ) {
-      show.screen.seatTiers.forEach((tier) => {
+      const rawTiers = Array.isArray(show.screen.seatTiers)
+        ? show.screen.seatTiers
+        : Object.values(show.screen.seatTiers);
+
+      rawTiers.forEach((tier) => {
+        const tierName = tier.tierName || tier.name;
+        if (!tierName) return;
+
+        // Map well-known names to single-letter codes for the grid renderer
         const nameToCode = {
-          Standard: "S",
-          Deluxe: "D",
-          Premium: "P",
-          Recliner: "R",
-          Couple: "C",
+          Standard: "S", Deluxe: "D", Premium: "P", Recliner: "R", Couple: "C",
+          // screens_new tier names
+          Silver: "S", Gold: "D", Platinum: "P",
         };
-        const code = nameToCode[tier.tierName];
-        if (code) {
-          map[code] = {
-            name: tier.tierName,
-            price: tier.price,
-            color: SEAT_TIERS[code]?.color || "#94a3b8",
-          };
-        }
+        const code = nameToCode[tierName] || "S";
+        map[code] = {
+          name: tierName,
+          price: tier.price,
+          color: tier.color || SEAT_TIERS[code]?.color || "#94a3b8",
+        };
       });
-    }
-
-    // Try embedded theatre.screens pricing as fallback
-    if (
-      Object.keys(map).length === 0 &&
-      show?.theatre?.screens &&
-      Array.isArray(show.theatre.screens)
-    ) {
-      const screenId = show.screen?._id?.toString();
-      const screenNumber = show.screen?.screenNumber;
-      const screenName = show.screen?.name;
-
-      const embeddedScreen = show.theatre.screens.find((s) => {
-        return (
-          s._id?.toString() === screenId ||
-          s.screenNumber === screenNumber ||
-          s.name === screenName
-        );
-      });
-
-      if (embeddedScreen?.pricing) {
-        const pricing = embeddedScreen.pricing;
-
-        // Handle unified pricing
-        if (pricing.unified !== undefined) {
-          const price = parseFloat(pricing.unified) || 150;
-          // Apply to all seat types in layout
-          if (embeddedScreen.layout?.layout) {
-            const codesInLayout = new Set();
-            embeddedScreen.layout.layout.flat().forEach((code) => {
-              if (code && code !== "") codesInLayout.add(code);
-            });
-
-            codesInLayout.forEach((code) => {
-              const tier = SEAT_TIERS[code];
-              if (tier) {
-                map[code] = {
-                  name: tier.name,
-                  price: price,
-                  color: tier.color,
-                };
-              }
-            });
-          }
-        } else {
-          // Handle tier-based pricing
-          Object.entries(pricing).forEach(([code, config]) => {
-            const tier = SEAT_TIERS[code];
-            if (tier && config) {
-              map[code] = {
-                name: tier.name,
-                price: parseFloat(config.price || config) || tier.basePrice,
-                color: tier.color,
-              };
-            }
-          });
-        }
-      }
     }
 
     // Fallback to default SEAT_TIERS if no pricing found
@@ -157,40 +118,51 @@ const SeatLayout = () => {
     }
 
     return map;
-  }, [show]);
+  }, [show, screensTierMap]);
 
-  // Get seat layout from screen (with fallback to embedded theatre.screens)
+  // ── Normalize seat layout ──────────────────────────────────────────────
+  // Handles two different seatLayout formats:
+  //   Format A (screen_tbl):  { layout: [["S","S",...]], rows, seatsPerRow, totalSeats }
+  //   Format B (screens_new): [[{ seatNumber:"A1", tier:"Silver", isBooked:false }, ...]]
   const seatLayout = useMemo(() => {
-    const screenLayout = show?.screen?.seatLayout;
+    const rawLayout = show?.screen?.seatLayout;
+    if (!rawLayout) return null;
 
-    // Check if layout exists and has data
+    // ── Format A: already has a `.layout` sub-key with string codes ──────
     if (
-      screenLayout &&
-      screenLayout.layout &&
-      Array.isArray(screenLayout.layout) &&
-      screenLayout.layout.length > 0
+      rawLayout.layout &&
+      Array.isArray(rawLayout.layout) &&
+      rawLayout.layout.length > 0
     ) {
-      return screenLayout;
+      return rawLayout; // {layout: [[String]], rows, seatsPerRow, totalSeats}
     }
 
-    // Fallback: Try to find screen in embedded theatre.screens array
-    if (show?.theatre?.screens && Array.isArray(show.theatre.screens)) {
-      const screenId = show.screen?._id?.toString();
-      const screenNumber = show.screen?.screenNumber;
-      const screenName = show.screen?.name;
+    // ── Format B: rawLayout is itself a 2-D array of objects/strings ─────
+    if (Array.isArray(rawLayout) && rawLayout.length > 0) {
+      // Check if first element is an array (2-D)
+      if (Array.isArray(rawLayout[0])) {
+        // Build the unified tier→code mapping
+        const tierToCode = {
+          Standard: "S", Deluxe: "D", Premium: "P", Recliner: "R", Couple: "C",
+          Silver: "S", Gold: "D", Platinum: "P",
+        };
 
-      // Try to find matching screen by ID, number, or name
-      const embeddedScreen = show.theatre.screens.find((s) => {
-        return (
-          s._id?.toString() === screenId ||
-          s.screenNumber === screenNumber ||
-          s.name === screenName
+        // Convert each cell: if it's an object {seatNumber,tier,...} → letter code
+        const layout = rawLayout.map((row) =>
+          row.map((cell) => {
+            if (!cell) return "";
+            if (typeof cell === "string") return cell; // already a code
+            const tierName = cell.tier || cell.tierName || "Standard";
+            return tierToCode[tierName] || "S";
+          })
         );
-      });
 
-      if (embeddedScreen?.layout) {
-        // Return the embedded screen's layout
-        return embeddedScreen.layout;
+        return {
+          layout,
+          rows: layout.length,
+          seatsPerRow: layout[0]?.length || 0,
+          totalSeats: layout.reduce((sum, r) => sum + r.filter(Boolean).length, 0),
+        };
       }
     }
 
@@ -351,9 +323,6 @@ const SeatLayout = () => {
 
       if (data.success && data.show) {
         setShow(data.show);
-        console.log("Show loaded:", data.show);
-        console.log("Screen seatTiers:", data.show.screen?.seatTiers);
-        console.log("Show seatTiers:", data.show.seatTiers);
       } else {
         setError(data.message || "Show not found");
       }
@@ -501,7 +470,7 @@ const SeatLayout = () => {
             transition-all duration-200 ease-out flex items-center justify-center
             ${
               isSelected
-                ? "ring-2 ring-white ring-offset-1 ring-offset-gray-900 scale-110 z-10 shadow-lg"
+                ? "ring-2 ring-white ring-offset-1 scale-110 z-10 shadow-lg"
                 : "hover:scale-105"
             }
             ${
@@ -551,7 +520,7 @@ const SeatLayout = () => {
           key={rowIndex}
           className="flex items-center justify-center gap-1 md:gap-1.5 mb-1.5"
         >
-          <span className="w-5 text-right text-xs text-gray-500 font-semibold">
+          <span className="w-5 text-right text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
             {rowLetter}
           </span>
           <div className="flex gap-1 md:gap-1.5">
@@ -559,7 +528,7 @@ const SeatLayout = () => {
               renderSeat(code, rowIndex, colIndex),
             )}
           </div>
-          <span className="w-5 text-left text-xs text-gray-500 font-semibold">
+          <span className="w-5 text-left text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
             {rowLetter}
           </span>
         </div>
@@ -625,9 +594,6 @@ const SeatLayout = () => {
       });
 
       const token = await getToken();
-      console.log("Booking request token:", token);
-      console.log("Booking request seatsWithTier:", seatsWithTier);
-      console.log("Booking request showId:", showId);
       
       const { data } = await axios.post(
         "/api/booking/create",
@@ -640,13 +606,11 @@ const SeatLayout = () => {
         }
       );
       
-      console.log("Booking response:", data);
       
       if (data.success) {
         // Backend returns data.url (Stripe session) or data.paymentLink
         const redirectUrl = data.url || data.paymentLink;
         if (redirectUrl) {
-          console.log("[SeatLayout] Redirecting to Stripe:", redirectUrl);
           window.location.href = redirectUrl;
         } else {
           toast.success("Booking created! No payment required.");
@@ -696,8 +660,8 @@ const SeatLayout = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-6">
         <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
-        <h2 className="text-2xl font-bold text-white mb-2">Error</h2>
-        <p className="text-gray-400 text-center mb-6">{error}</p>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Error</h2>
+        <p className="text-center mb-6" style={{ color: "var(--text-muted)" }}>{error}</p>
         <button
           onClick={() => navigate(-1)}
           className="px-6 py-3 bg-primary hover:bg-primary-dull rounded-lg transition"
@@ -713,8 +677,8 @@ const SeatLayout = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-6">
         <AlertCircle className="w-16 h-16 text-yellow-500 mb-4" />
-        <h2 className="text-2xl font-bold text-white mb-2">Show Not Found</h2>
-        <p className="text-gray-400 text-center mb-6">
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Show Not Found</h2>
+        <p className="text-center mb-6" style={{ color: "var(--text-muted)" }}>
           The show you're looking for doesn't exist or has been removed.
         </p>
         <button
@@ -769,7 +733,7 @@ const SeatLayout = () => {
         {/* Seat Categories Legend */}
     <div className="glass-card backdrop-blur-lg rounded-xl p-5 mb-6 border border-white/10 shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
               <Info className="w-4 h-4 text-gray-400" />
               Seat Categories & Pricing
             </h3>
@@ -799,7 +763,7 @@ const SeatLayout = () => {
                   {tier.code}
                 </div>
                 <div className="text-sm">
-                  <span className="text-gray-300 font-medium">{tier.name}</span>
+                  <span className="font-medium" style={{ color: "var(--text-secondary)" }}>{tier.name}</span>
                   <span className="text-primary ml-2 font-semibold">
                     ₹{tier.price}
                   </span>
@@ -808,18 +772,18 @@ const SeatLayout = () => {
             ))}
           </div>
 
-          <div className="flex justify-center gap-6 pt-3 border-t border-gray-700">
+          <div className="flex justify-center gap-6 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-md border-2 border-gray-500 bg-gray-500/30" />
-              <span className="text-xs text-gray-400">Available</span>
+              <div className="w-5 h-5 rounded-md border-2" style={{ borderColor: "var(--text-muted)", backgroundColor: "var(--bg-elevated)" }} />
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Available</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-md border-2 border-primary bg-primary shadow-lg shadow-primary/30" />
-              <span className="text-xs text-gray-400">Selected</span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Selected</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-md border-2 border-gray-600 bg-gray-700 opacity-50" />
-              <span className="text-xs text-gray-400">Booked</span>
+              <div className="w-5 h-5 rounded-md border-2 opacity-40" style={{ borderColor: "var(--text-muted)", backgroundColor: "var(--bg-secondary)" }} />
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Booked</span>
             </div>
           </div>
         </div>
@@ -839,12 +803,13 @@ const SeatLayout = () => {
               )}
 
               {/* Column numbers */}
-              <div className="flex items-center justify-center gap-1 md:gap-1.5 mt-4 pt-3 border-t border-gray-700">
+              <div className="flex items-center justify-center gap-1 md:gap-1.5 mt-4 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                 <span className="w-5" />
                 {seatLayout.layout[0]?.map((_, colIndex) => (
                   <span
                     key={colIndex}
-                    className="w-8 md:w-9 text-center text-[10px] text-gray-500"
+                    className="w-8 md:w-9 text-center text-[10px]"
+                    style={{ color: "var(--text-muted)" }}
                   >
                     {colIndex + 1}
                   </span>
@@ -855,7 +820,7 @@ const SeatLayout = () => {
           ) : (
             <div className="text-center py-12">
               <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-              <p className="text-gray-400">Seat layout not available</p>
+              <p style={{ color: "var(--text-muted)" }}>Seat layout not available</p>
             </div>
           )}
         </div>
@@ -893,7 +858,7 @@ const SeatLayout = () => {
 
         {/* Price Breakdown & Booking */}
     <div className="glass-card backdrop-blur-lg rounded-xl p-6 border border-white/10 shadow-lg">
-          <h2 className="text-xl font-bold text-white mb-6">Booking Summary</h2>
+        <h2 className="text-xl font-bold mb-6" style={{ color: "var(--text-primary)" }}>Booking Summary</h2>
 
           {selectedSeats.size > 0 ? (
             <>
@@ -909,19 +874,22 @@ const SeatLayout = () => {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: info.color }}
                       />
-                      <span className="text-gray-400">
+                      <span style={{ color: "var(--text-muted)" }}>
                         {tier} × {info.count}
                       </span>
                     </div>
-                    <span className="text-white font-medium">
+                    <span className="font-medium" style={{ color: "var(--text-primary)" }}>
                       ₹{info.total}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-between items-center py-4 border-t border-gray-700 mb-6">
-                <span className="text-lg font-semibold text-white">Total</span>
+              <div
+                className="flex justify-between items-center py-4 mb-6"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                <span className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Total</span>
                 <span className="text-2xl font-bold text-primary">
                   ₹{totalPrice}
                 </span>
@@ -952,11 +920,11 @@ const SeatLayout = () => {
             </>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-400 text-lg mb-2">No seats selected</p>
-              <p className="text-gray-500 text-sm">
+              <p className="text-lg mb-2" style={{ color: "var(--text-muted)" }}>No seats selected</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 Select seats from the layout above to continue
               </p>
-              <p className="text-gray-600 text-xs mt-3">
+              <p className="text-xs mt-3" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
                 Maximum {MAX_SEATS} seats allowed
               </p>
             </div>
@@ -965,9 +933,8 @@ const SeatLayout = () => {
 
         {/* Last refresh info */}
         {lastRefresh && (
-          <p className="text-center text-gray-600 text-xs mt-4">
-            Last updated: {lastRefresh.toLocaleTimeString()} • Auto-refreshes
-            every 30s
+          <p className="text-center text-xs mt-4" style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+            Last updated: {lastRefresh.toLocaleTimeString()} • Auto-refreshes every 30s
           </p>
         )}
       </div>

@@ -110,10 +110,10 @@ export const calculateSeatPricing = (show, selectedSeats) => {
   for (const seat of normalizedSeats) {
     let seatPrice = show.basePrice || 150;
 
-    // Try to find tier price
+    // Try to find tier price — support both {tierName} (old) and {name} (screens_new) formats
     if (show.seatTiers && Array.isArray(show.seatTiers)) {
       const tierName = seat.tierName || "Standard";
-      const tier = show.seatTiers.find((t) => t.tierName === tierName);
+      const tier = show.seatTiers.find((t) => (t.tierName || t.name) === tierName);
       if (tier && tier.price) {
         seatPrice = tier.price;
       }
@@ -155,13 +155,16 @@ export const createBooking = async (userId, showId, selectedSeats) => {
     throw new NotFoundError("Show");
   }
 
-  // Check if show is cancelled
-  if (show.status === "cancelled" || !show.isActive) {
+  // Check if show is explicitly cancelled or deactivated
+  if (show.status === "cancelled" || show.isActive === false) {
     throw new ValidationError("This show is no longer available");
   }
 
-  // Check if show is in the past
-  if (new Date() > show.showDateTime) {
+  // Check if show has fully ended — for multi-day shows use endDate, otherwise showDateTime
+  const showEndTime = show.endDate
+    ? new Date(show.endDate + "T23:59:59")
+    : show.showDateTime;
+  if (showEndTime && new Date() > showEndTime) {
     throw new ValidationError("Cannot book for past shows");
   }
 

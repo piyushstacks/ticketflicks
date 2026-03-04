@@ -19,7 +19,7 @@ import {
   Trash2,
   Link,
 } from "lucide-react";
-import { composeValidators, dateNotPast, dateRequired, errorId, maxLength, numberMin, optional, required, url as urlValidator } from "../../lib/validation.js";
+import { composeValidators, dateRequired, errorId, maxLength, numberMin, optional, required, url as urlValidator } from "../../lib/validation.js";
 
 const AdminMovies = () => {
   const { axios, getAuthHeaders } = useAppContext();
@@ -52,7 +52,8 @@ const AdminMovies = () => {
   const validators = useMemo(
     () => ({
       title: composeValidators(required("Movie title"), maxLength("Movie title", 120)),
-      release_date: composeValidators(dateRequired("Release date"), dateNotPast("Release date")),
+      // Allow any valid date (past OR future) so admins can edit historical movies
+      release_date: dateRequired("Release date"),
       overview: composeValidators(required("Movie overview"), maxLength("Movie overview", 2000)),
       poster_path: optional(urlValidator("Poster URL")),
       backdrop_path: optional(urlValidator("Backdrop URL")),
@@ -466,20 +467,30 @@ const AdminMovies = () => {
       {/* Form Modal */}
       {showForm && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ backgroundColor: "var(--overlay)" }}
           onClick={(e) => {
             if (e.target === e.currentTarget) handleCancel();
           }}
         >
-          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div
+            className="rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+            style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
+          >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex items-center justify-between z-10">
-              <h2 className="text-xl font-bold">
+            <div
+              className="sticky top-0 p-4 flex items-center justify-between z-10"
+              style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}
+            >
+              <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
                 {editingId ? "Edit Movie" : "Add New Movie"}
               </h2>
               <button
                 onClick={handleCancel}
-                className="p-2 hover:bg-gray-800 rounded-lg transition"
+                className="p-2 rounded-lg transition"
+                style={{ color: "var(--text-secondary)" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-elevated)"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -508,7 +519,7 @@ const AdminMovies = () => {
                     aria-invalid={touched.title && fieldErrors.title ? "true" : undefined}
                     aria-describedby={touched.title && fieldErrors.title ? errorId(formId, "title") : undefined}
                     required
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                    className="input-field pr-10"
                   />
                   {touched.title && fieldErrors.title && (
                     <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
@@ -537,9 +548,8 @@ const AdminMovies = () => {
                     onBlur={handleBlur}
                     aria-invalid={touched.release_date && fieldErrors.release_date ? "true" : undefined}
                     aria-describedby={touched.release_date && fieldErrors.release_date ? errorId(formId, "release_date") : undefined}
-                    min={getTodayString()}
                     required
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                    className="input-field pr-10"
                   />
                   {touched.release_date && fieldErrors.release_date && (
                     <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
@@ -569,7 +579,7 @@ const AdminMovies = () => {
                     onBlur={handleBlur}
                     aria-invalid={touched.poster_path && fieldErrors.poster_path ? "true" : undefined}
                     aria-describedby={touched.poster_path && fieldErrors.poster_path ? errorId(formId, "poster_path") : undefined}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                    className="input-field"
                   />
                   {touched.poster_path && fieldErrors.poster_path && (
                     <p id={errorId(formId, "poster_path")} className="field-error-text" role="alert">
@@ -610,7 +620,7 @@ const AdminMovies = () => {
                     onBlur={handleBlur}
                     aria-invalid={touched.backdrop_path && fieldErrors.backdrop_path ? "true" : undefined}
                     aria-describedby={touched.backdrop_path && fieldErrors.backdrop_path ? errorId(formId, "backdrop_path") : undefined}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                    className="input-field"
                   />
                   {touched.backdrop_path && fieldErrors.backdrop_path && (
                     <p id={errorId(formId, "backdrop_path")} className="field-error-text" role="alert">
@@ -650,7 +660,7 @@ const AdminMovies = () => {
                   onBlur={handleBlur}
                   aria-invalid={touched.trailer_path && fieldErrors.trailer_path ? "true" : undefined}
                   aria-describedby={touched.trailer_path && fieldErrors.trailer_path ? errorId(formId, "trailer_path") : undefined}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  className="input-field"
                 />
                 {touched.trailer_path && fieldErrors.trailer_path && (
                   <p id={errorId(formId, "trailer_path")} className="field-error-text mt-1" role="alert">
@@ -676,7 +686,7 @@ const AdminMovies = () => {
                   aria-invalid={touched.runtime && fieldErrors.runtime ? "true" : undefined}
                   aria-describedby={touched.runtime && fieldErrors.runtime ? errorId(formId, "runtime") : undefined}
                   min="1"
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  className="input-field"
                 />
                 {touched.runtime && fieldErrors.runtime && (
                   <p id={errorId(formId, "runtime")} className="field-error-text mt-1" role="alert">
@@ -701,7 +711,7 @@ const AdminMovies = () => {
                   onBlur={handleBlur}
                   aria-invalid={touched.tagline && fieldErrors.tagline ? "true" : undefined}
                   aria-describedby={touched.tagline && fieldErrors.tagline ? errorId(formId, "tagline") : undefined}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  className="input-field"
                 />
                 {touched.tagline && fieldErrors.tagline && (
                   <p id={errorId(formId, "tagline")} className="field-error-text mt-1" role="alert">
@@ -721,7 +731,7 @@ const AdminMovies = () => {
                   name="original_language"
                   value={formData.original_language}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  className="input-field"
                 >
                   {languages.length > 0 ? (
                     languages.map((lang) => (
@@ -763,7 +773,7 @@ const AdminMovies = () => {
                 aria-describedby={touched.overview && fieldErrors.overview ? errorId(formId, "overview") : undefined}
                 required
                 rows={4}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="input-field"
               />
               {touched.overview && fieldErrors.overview && (
                 <p id={errorId(formId, "overview")} className="field-error-text mt-1" role="alert">
@@ -818,7 +828,7 @@ const AdminMovies = () => {
                       onChange={(e) =>
                         handleCastChange(index, "name", e.target.value)
                       }
-                      className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                      className="input-field"
                     />
                   </div>
                   <div className="flex-1">
@@ -837,7 +847,7 @@ const AdminMovies = () => {
                         onChange={(e) =>
                           handleCastChange(index, "profile_path", e.target.value)
                         }
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                        className="input-field"
                       />
                       {cast.profile_path && (
                         <div className="flex items-center gap-2">
@@ -867,7 +877,7 @@ const AdminMovies = () => {
               <button
                 type="button"
                 onClick={addCastField}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm"
+                className="btn-secondary text-sm"
               >
                 Add Cast Member
               </button>
@@ -942,7 +952,7 @@ const AdminMovies = () => {
               <button
                 type="button"
                 onClick={addReviewField}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm"
+                className="btn-secondary flex items-center gap-2 text-sm"
               >
                 <Plus className="w-4 h-4" />
                 Add Review URL
@@ -953,7 +963,7 @@ const AdminMovies = () => {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-medium"
+                className="btn-secondary font-medium"
               >
                 Cancel
               </button>

@@ -11,13 +11,28 @@ import { asyncHandler } from "../middleware/errorHandler.js";
  */
 export const dashboardManagerData = asyncHandler(async (req, res) => {
   const raw = await managerService.getDashboardData(req.user.id);
-  // Also get screen count
-  const ScreenTbl = (await import("../models/ScreenTbl.js")).default;
-  const screens = await ScreenTbl.countDocuments({ theatre: raw.theatreId, isActive: true });
 
-  const data = { ...raw, screens };
+  // managerService returns { theatre: {...}, stats: { activeShows, todayBookings, monthRevenue, totalBookings } }
+  // flatten to the shape ManagerDashboard.jsx expects
+  const ScreenTbl = (await import("../models/ScreenTbl.js")).default;
+  const theatreId = raw.theatre?.id || raw.stats?.theatreId;
+  const screens = theatreId
+    ? await ScreenTbl.countDocuments({ theatre: theatreId, isActive: true })
+    : 0;
+
+  const data = {
+    activeShows: raw.stats?.activeShows ?? 0,
+    todayBookings: raw.stats?.todayBookings ?? 0,
+    monthRevenue: raw.stats?.monthRevenue ?? 0,
+    totalBookings: raw.stats?.totalBookings ?? 0,
+    screens,
+    theatreName: raw.theatre?.name || "N/A",
+    theatreCity: raw.theatre?.city || "",
+  };
+
   res.json({ success: true, data, dashboardData: data });
 });
+
 
 /**
  * Get theatre shows

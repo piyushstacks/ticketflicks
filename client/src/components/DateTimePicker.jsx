@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, MapPin, Clock, CalendarDays, Film } from "lu
 import { useAppContext } from "../context/AppContext";
 import toast from "react-hot-toast";
 
-const DateTimePicker = ({ movieId }) => {
+const DateTimePicker = ({ movieId, movie }) => {
   const navigate = useNavigate();
   const { axios, getAuthHeaders } = useAppContext();
 
@@ -281,7 +281,7 @@ const DateTimePicker = ({ movieId }) => {
                                 },
                               });
                             }}
-                            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95"
+                            className="flex flex-col items-center justify-center gap-0.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95"
                             style={{
                               backgroundColor: "var(--color-accent-soft)",
                               color: "var(--color-accent)",
@@ -296,12 +296,23 @@ const DateTimePicker = ({ movieId }) => {
                               e.currentTarget.style.color = "var(--color-accent)";
                             }}
                           >
-                            <Clock className="w-3.5 h-3.5" />
-                            {new Date(show.showDateTime).toLocaleTimeString("en-US", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: true,
-                            })}
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5" />
+                              {new Date(show.showDateTime).toLocaleTimeString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </span>
+                            {movie && (movie.runtime || movie.duration_min) && (
+                              <span className="text-[10px] font-medium opacity-80" style={{ color: "var(--text-secondary)" }}>
+                                until {new Date(new Date(show.showDateTime).getTime() + (movie.runtime || movie.duration_min) * 60000).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>

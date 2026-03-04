@@ -9,7 +9,7 @@ import { composeValidators, email as emailValidator, errorId, matchesField, minL
 // doesn't get re-created on every render of TheatreRegistration.
 const InputField = React.memo(({ formId, label, name, type = "text", value, onChange, onBlur, error, placeholder, help }) => (
   <div>
-    <label className="block text-sm font-semibold text-white mb-2" htmlFor={`${formId}-${name}`}>
+    <label className="block text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }} htmlFor={`${formId}-${name}`}>
       {label} *
     </label>
     <div className="relative group">
@@ -24,7 +24,7 @@ const InputField = React.memo(({ formId, label, name, type = "text", value, onCh
         title={`Enter your ${label.toLowerCase()}`}
         aria-invalid={error ? "true" : undefined}
         aria-describedby={error ? errorId(formId, name) : undefined}
-        className={`w-full px-4 py-3 bg-gray-800 border rounded-lg focus:outline-none transition-all duration-200 placeholder-gray-500 text-white hover:bg-gray-750 ${
+        className={`w-full px-4 py-3 input-field border ${
           error ? "border-red-500" : "border-gray-700 focus:border-primary"
         }`}
       />
@@ -442,26 +442,26 @@ const TheatreRegistration = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4" style={{ backgroundColor: "var(--overlay)" }}>
+      <div className="rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 px-6 py-4 flex items-center justify-between z-10" style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}>
           <div>
-            <h2 className="text-2xl font-bold text-white">Register Your Theatre</h2>
-            <p className="text-sm text-gray-400 mt-1">Step {step} of 4</p>
+            <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Register Your Theatre</h2>
+            <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Step {step} of 4</p>
           </div>
           {import.meta.env.DEV && (
             <button
               type="button"
               onClick={fillDemoData}
-              className="hidden sm:inline-flex px-3 py-2 text-xs font-semibold rounded-lg bg-gray-800 hover:bg-gray-700 text-white border border-gray-700"
+              className="btn-secondary hidden sm:inline-flex text-xs"
             >
               Use Demo Data
             </button>
           )}
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="transition-colors hover:opacity-70"
           >
             <X className="w-6 h-6" />
           </button>
@@ -473,14 +473,14 @@ const TheatreRegistration = ({ onClose }) => {
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold text-white mb-4">Manager Information</h3>
-                <p className="text-gray-400 mb-6">Please provide your personal details for the theatre manager account.</p>
+                <h3 className="text-xl font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Manager Information</h3>
+                <p className="mb-6" style={{ color: "var(--text-muted)" }}>Please provide your personal details for the theatre manager account.</p>
               </div>
               {import.meta.env.DEV && (
                 <button
                   type="button"
                   onClick={fillDemoData}
-                  className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-lg transition active:scale-95 border border-gray-700"
+                  className="btn-secondary w-full py-2 font-semibold active:scale-95"
                 >
                   Use Demo Data
                 </button>
@@ -519,7 +519,7 @@ const TheatreRegistration = ({ onClose }) => {
                 help="Must be 10 digits"
               />
               <div>
-                <label className="block text-sm font-semibold text-white mb-2" htmlFor="theatre-manager-password">
+                <label className="block text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }} htmlFor="theatre-manager-password">
                   Password *
                 </label>
                 <input
@@ -532,7 +532,7 @@ const TheatreRegistration = ({ onClose }) => {
                   placeholder="Min 8 chars, 1 upper, 1 lower, 1 digit, 1 special"
                   aria-invalid={managerTouched.password && managerErrors.password ? "true" : undefined}
                   aria-describedby={managerTouched.password && managerErrors.password ? errorId("theatre-manager", "password") : undefined}
-                  className={`w-full px-4 py-3 bg-gray-800 border rounded-lg focus:outline-none transition placeholder-gray-500 text-white ${
+                  className={`w-full px-4 py-3 input-field border ${
                     managerTouched.password && managerErrors.password ? "border-red-500" : "border-gray-700 focus:border-primary"
                   }`}
                 />
@@ -572,7 +572,7 @@ const TheatreRegistration = ({ onClose }) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-white mb-2" htmlFor="theatre-manager-confirmPassword">
+                <label className="block text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }} htmlFor="theatre-manager-confirmPassword">
                   Confirm Password *
                 </label>
                 <input
@@ -585,7 +585,7 @@ const TheatreRegistration = ({ onClose }) => {
                   placeholder="Re-enter your password"
                   aria-invalid={managerTouched.confirmPassword && managerErrors.confirmPassword ? "true" : undefined}
                   aria-describedby={managerTouched.confirmPassword && managerErrors.confirmPassword ? errorId("theatre-manager", "confirmPassword") : undefined}
-                  className={`w-full px-4 py-3 bg-gray-800 border rounded-lg focus:outline-none transition placeholder-gray-500 text-white ${
+                  className={`w-full px-4 py-3 input-field border ${
                     managerTouched.confirmPassword && managerErrors.confirmPassword
                       ? "border-red-500" 
                       : managerData.confirmPassword && !passwordsMatch
@@ -625,7 +625,7 @@ const TheatreRegistration = ({ onClose }) => {
                 <button
                   type="button"
                   onClick={fillDemoData}
-                  className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-lg transition active:scale-95 border border-gray-700"
+                  className="btn-secondary w-full py-2 font-semibold active:scale-95"
                 >
                   Use Demo Data
                 </button>
@@ -720,7 +720,7 @@ const TheatreRegistration = ({ onClose }) => {
               <div className="flex gap-4">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-lg transition active:scale-95"
+                  className="btn-secondary flex-1 py-3 font-semibold active:scale-95"
                 >
                   ← Back
                 </button>
@@ -739,15 +739,15 @@ const TheatreRegistration = ({ onClose }) => {
           {step === 3 && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold text-white mb-4">Legal Documents</h3>
-                <p className="text-gray-400 mb-6">Paste a Google Drive link to your verification PDF.</p>
+                <h3 className="text-xl font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Legal Documents</h3>
+                <p className="mb-6" style={{ color: "var(--text-muted)" }}>Paste a Google Drive link to your verification PDF.</p>
               </div>
 
               {import.meta.env.DEV && (
                 <button
                   type="button"
                   onClick={fillDemoData}
-                  className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-lg transition active:scale-95 border border-gray-700"
+                  className="btn-secondary w-full py-2 font-semibold active:scale-95"
                 >
                   Use Demo Data
                 </button>
@@ -776,7 +776,7 @@ const TheatreRegistration = ({ onClose }) => {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-white mb-2" htmlFor="theatre-legal-step3_pdf_url">
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }} htmlFor="theatre-legal-step3_pdf_url">
                       Google Drive Link (Verification PDF) *
                     </label>
                     <input
@@ -795,7 +795,7 @@ const TheatreRegistration = ({ onClose }) => {
                           ? errorId("theatre-legal", "step3_pdf_url")
                           : undefined
                       }
-                      className={`w-full px-4 py-3 bg-gray-800 border rounded-lg focus:outline-none transition-all duration-200 placeholder-gray-500 text-white hover:bg-gray-750 ${
+                      className={`w-full px-4 py-3 input-field border ${
                         legalTouched && validateDriveUrl(theatreData.step3_pdf_url)
                           ? "border-red-500"
                           : "border-gray-700 focus:border-primary"

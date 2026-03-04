@@ -33,7 +33,7 @@ export const fetchDashboardData = asyncHandler(async (req, res) => {
     showDateTime: { $gte: new Date() },
     isActive: true,
   })
-    .populate("movie", "title poster_path")
+    .populate("movie", "title poster_path runtime duration_min")
     .populate("theatre", "name city");
 
   const totalUsers = await User.countDocuments({ role: "customer" });
@@ -212,22 +212,36 @@ export const getStatistics = asyncHandler(async (req, res) => {
  */
 export const getAllBookings = asyncHandler(async (req, res) => {
   const bookings = await Booking.find()
-    .populate("user_id", "name email")
+    .populate("user_id", "name email phone")
     .populate({
       path: "show_id",
-      populate: { path: "movie", select: "title poster_path" },
+      populate: [
+        { path: "movie", select: "title poster_path" },
+        { path: "theatre", select: "name city" },
+        { path: "screen", model: "ScreenTbl", select: "name screenNumber" },
+      ],
     })
     .sort({ createdAt: -1 })
     .limit(200);
+
+  // Batch load payment records
+  const Payment = (await import("../models/Payment.js")).default;
+  const bookingIds = bookings.map((b) => b._id);
+  const paymentRecords = await Payment.find({ booking_id: { $in: bookingIds } });
+  const payMap = {};
+  paymentRecords.forEach((p) => { payMap[p.booking_id.toString()] = p; });
 
   const formatted = bookings.map((b) => ({
     _id: b._id,
     user: b.user_id || { name: "Unknown", email: "" },
     show: b.show_id || { movie: { title: "Unknown" }, showDateTime: null },
-    bookedSeats: b.booked_seats || b.selectedSeats || [],
-    amount: b.total_amount || b.amount || 0,
-    isPaid: b.payment_status === "completed" || b.isPaid || false,
+    bookedSeats: b.seats_booked || [],
+    amount: b.total_amount || 0,
+    isPaid: b.payment_status === "completed",
     status: b.status,
+    paymentStatus: b.payment_status,
+    paymentMethod: payMap[b._id.toString()]?.method || b.payment_method || null,
+    transactionId: payMap[b._id.toString()]?.transaction_id || b.payment_id || null,
     createdAt: b.createdAt,
   }));
 
@@ -239,7 +253,7 @@ export const getAllBookings = asyncHandler(async (req, res) => {
  */
 export const getAllShows = asyncHandler(async (req, res) => {
   const shows = await Show.find()
-    .populate("movie", "title poster_path overview genres")
+    .populate("movie", "title poster_path overview genres runtime duration_min")
     .populate("theatre")  // populate all theatre fields
     .populate("screen", "name screenNumber seatLayout seatTiers")
     .sort({ showDateTime: -1 })

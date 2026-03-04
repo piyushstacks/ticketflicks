@@ -1,11 +1,12 @@
 import express from "express";
 import { protectUser } from "../middleware/protectUser.js";
+import { protectManager } from "../middleware/auth.js";
 
 // Controllers
 import showController from "../controllers/showController.js";
 import bookingController from "../controllers/bookingController.js";
 import screenController from "../controllers/managerScreenTblController.js";
-import movieController from "../controllers/adminMovieController.js";
+import movieController from "../controllers/adminMovieController.js"; // admin only
 import authController from "../controllers/authController.js";
 import {
   getAllUsers,
@@ -30,6 +31,7 @@ import {
 
 // Import auth controller for password routes
 import {
+  requestSignupOtp,
   forgotPasswordRequest,
   resetPasswordWithOtp,
   changePassword,
@@ -45,8 +47,8 @@ import {
   cancelBooking,
   checkSeatsAvailability,
   calculatePricing,
+  getMyBookings,
 } from "../controllers/bookingController.js";
-import Booking from "../models/Booking.js";
 
 const router = express.Router();
 
@@ -55,39 +57,29 @@ router.post("/request-otp", requestTheatreRegistrationOtp);
 router.post("/register", registerTheatre);
 
 // ========== SHOW ROUTES ==========
-router.post("/shows", protectUser, showController.addShow);
+router.post("/shows", showController.addShow);
 router.get("/shows", showController.fetchShows);
 router.get("/shows/all", showController.fetchShows); // Frontend expects /all endpoint
 router.get("/shows/:showId", showController.fetchShow);
 router.get("/show/:showId", showController.fetchShow); // Alias for /shows/:showId
 router.get("/shows/movie/:movieId", showController.fetchShowsByMovie);
-router.put("/shows/:showId", protectUser, showController.updateShow);
-router.delete("/shows/:showId", protectUser, showController.deleteShow);
-router.patch("/shows/:showId/status", protectUser, showController.toggleShowStatus);
-// Repeat shows for next week - accessible by both managers and admins
-router.post("/shows/repeat-week", protectUser, async (req, res) => {
-  try {
-    const managerShowService = await import("../services/managerShowService.js");
-    const { currentWeekStart, currentWeekEnd, nextWeekStart, nextWeekEnd } = req.body;
-    const result = await managerShowService.repeatShowsForNextWeek(
-      req.user.id,
-      currentWeekStart, currentWeekEnd, nextWeekStart, nextWeekEnd
-    );
-    res.json({ success: true, message: result.message, count: result.count });
-  } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
-  }
+router.put("/shows/:showId", showController.updateShow);
+router.delete("/shows/:showId", showController.deleteShow);
+router.patch("/shows/:showId/status", showController.toggleShowStatus);
+router.get("/movies/available", showController.getAvailableMovies);
+// Public routes — no auth required
+router.get("/upcoming-movies", showController.fetchUpcomingMovies); // Public: list all active movies
+router.get("/trailer/:movieId", showController.getMovieTrailer); // Public: get trailer for a movie
+// Manager routes — auth required
+router.get("/movies/all", protectManager, showController.getAllMoviesForManager); // Manager: all movies with per-theatre toggle
+router.patch("/movies/:movieId", protectManager, showController.toggleMovieForTheatre); // Manager: toggle movie
+router.post("/shows/repeat-week", protectManager, (req, res, next) => {
+  // Forward to managerShowController.repeatShowsForNextWeek via import
+  import("../controllers/managerShowController.js").then(m => m.repeatShowsForNextWeek(req, res, next)).catch(next);
 });
-router.get("/movies/available", showController.getAvailableMoviesForCustomers); // Public - for home page
-router.get("/movies/all-active", showController.getAllActiveMovies); // Public - all active movies  
-router.get("/movies/all", showController.getAllMoviesForManager); // All active movies (for manager scheduling)
-router.get("/upcoming-movies", showController.fetchUpcomingMovies); // Frontend expects this
-router.get("/trailer/:movieId", showController.getMovieTrailer); // Trailer by movie ID
-router.get("/trailer/:id", showController.getMovieTrailer); // Alias
-router.get("/movies/:movieId/details", showController.fetchShowByMovieId); // Movie + showtimes
 
 // ========== BOOKING ROUTES ==========
-// Standard booking routes
+// Standard paths (when mounted at /api/show)
 router.post("/bookings", protectUser, createBooking);
 router.get("/bookings/:id", getBookingDetails);
 router.post("/bookings/confirm", protectUser, confirmStripePayment);
@@ -95,81 +87,15 @@ router.put("/bookings/:id/cancel", protectUser, cancelBooking);
 router.get("/bookings/availability/:showId", checkSeatsAvailability);
 router.post("/bookings/pricing", calculatePricing);
 
-// Aliases for /api/booking/ prefix (ManagerBookings, MyBookings use these)
-router.post("/create", protectUser, createBooking);
-router.post("/confirm-stripe", protectUser, confirmStripePayment);
-router.get("/my-bookings", protectUser, async (req, res) => {
-  try {
-    const bookings = await Booking.find({ user_id: req.user.id })
-      .populate({
-        path: "show_id",
-        populate: [
-          { path: "movie", select: "title poster_path overview" },
-          { path: "theatre", select: "name city location" },
-          { path: "screen", select: "name screenNumber" },
-        ],
-      })
-      .sort({ createdAt: -1 });
-
-    const formatted = bookings.map((b) => ({
-      _id: b._id,
-      show: b.show_id,
-      theatre: b.show_id?.theatre,
-      screen: b.show_id?.screen,
-      bookedSeats: b.seats_booked || [],
-      amount: b.total_amount || 0,
-      isPaid: b.payment_status === "completed",
-      paymentMode: b.payment_method || "stripe",
-      paymentLink: b.payment_link,
-      status: b.status,
-      createdAt: b.createdAt,
-    }));
-
-    res.json({ success: true, bookings: formatted });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-router.get("/bookings", protectUser, async (req, res) => {
-  // For managers: fetch bookings for their theatre's shows
-  try {
-    const user = req.user;
-    let query = {};
-    if (user.role === "manager" && user.managedTheatreId) {
-      // Find shows for this theatre
-      const { default: Show } = await import("../models/show_tbls.js");
-      const showIds = await Show.find({ theatre: user.managedTheatreId }).distinct("_id");
-      query = { show_id: { $in: showIds } };
-    } else if (user.role === "customer") {
-      query = { user_id: user.id };
-    }
-
-    const bookings = await Booking.find(query)
-      .populate("user_id", "name email")
-      .populate({
-        path: "show_id",
-        populate: { path: "movie", select: "title poster_path" },
-      })
-      .sort({ createdAt: -1 })
-      .limit(100);
-
-    const formatted = bookings.map((b) => ({
-      _id: b._id,
-      user: b.user_id || { name: "Unknown" },
-      show: b.show_id,
-      bookedSeats: b.seats_booked || [],
-      selectedSeats: b.seats_booked || [],
-      amount: b.total_amount || 0,
-      isPaid: b.payment_status === "completed",
-      status: b.status,
-      createdAt: b.createdAt,
-    }));
-
-    res.json({ success: true, bookings: formatted });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+// ========== BOOKING ALIAS ROUTES (when mounted at /api/booking) ==========
+// Frontend SeatLayout.jsx calls these:
+router.get("/seats/:showId", checkSeatsAvailability);        // GET /api/booking/seats/:showId
+router.post("/seats/:showId", checkSeatsAvailability);       // POST /api/booking/seats/:showId
+router.post("/create", protectUser, createBooking);          // POST /api/booking/create
+router.get("/my-bookings", protectUser, getMyBookings);      // GET /api/booking/my-bookings
+router.put("/:bookingId/cancel", protectUser, cancelBooking); // PUT /api/booking/:id/cancel
+router.post("/confirm-stripe", protectUser, confirmStripePayment); // POST /api/booking/confirm-stripe
+router.get("/bookings", protectUser, getMyBookings);         // GET /api/booking/bookings (ManagerBookings fallback)
 
 // ========== THEATER ROUTES ==========
 router.get("/theaters", getAllTheatres);
@@ -198,8 +124,8 @@ router.post("/movies/tmdb/import/:tmdbId", movieController.importMovieFromTMDB);
 // Auth routes (from authController)
 router.post("/signup", authController.signup);
 router.post("/login", authController.login);
-router.post("/signup/request-otp", otpRateLimiter(), authController.requestSignupOtp);
 router.post("/signup/complete", authController.completeSignupWithOtp);
+router.post("/signup/request-otp", requestSignupOtp); // OTP before completing signup
 
 // Password management routes
 router.post("/forgot-password", otpRateLimiter(), forgotPasswordRequest);

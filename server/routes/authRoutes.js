@@ -1,11 +1,11 @@
 import express from "express";
 import {
-	login,
-	signup,
-	forgotPasswordRequest,
-	resetPasswordWithOtp,
-	changePassword,
- 	resendForgotOtp,
+    login,
+    signup,
+    forgotPasswordRequest,
+    resetPasswordWithOtp,
+    changePassword,
+    resendForgotOtp,
 } from "../controllers/authController.js";
 import { protectUser } from "../middleware/protectUser.js";
 import { otpRateLimiter } from "../middleware/otpRateLimiter.js";
@@ -13,7 +13,7 @@ import { otpRateLimiter } from "../middleware/otpRateLimiter.js";
 const authRouter = express.Router();
 
 authRouter.post("/signup", signup);
-authRouter.post("/login", login); // Direct password-based login (no OTP)
+authRouter.post("/login", login);
 
 // Forgot/reset password (OTP required)
 authRouter.post("/forgot-password", otpRateLimiter(), forgotPasswordRequest);
@@ -24,4 +24,3 @@ authRouter.post("/reset-password", resetPasswordWithOtp);
 authRouter.post("/change-password", protectUser, changePassword);
 
 export default authRouter;
-

@@ -49,13 +49,13 @@ html:not(.dark) {
   --border: #e4e4e7;
   --border-hover: #d4d4d8;
   --ring: rgba(248, 69, 101, 0.25);
-  --shadow-color: rgba(0, 0, 0, 0.08);
-  --overlay: rgba(255, 255, 255, 0.7);
-  --skeleton-from: #f4f4f5;
-  --skeleton-to: #e4e4e7;
+  --shadow-color: rgba(0, 0, 0, 0.10);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --skeleton-from: #e4e4e7;
+  --skeleton-to: #d4d4d8;
   --scrollbar-thumb: #d4d4d8;
   --scrollbar-track: #f4f4f5;
-  --blur-glow-opacity: 0.12;
+  --blur-glow-opacity: 0.10;
   --logo-filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18))
     drop-shadow(0 0 2px rgba(0, 0, 0, 0.22));
 }
@@ -399,6 +399,10 @@ input::-webkit-inner-spin-button {
 
 ::-webkit-calendar-picker-indicator {
   filter: invert(0);
+}
+
+html:not(.dark) ::-webkit-calendar-picker-indicator {
+  filter: invert(0.4);
 }
 
 /* ===== FOCUS STYLES ===== */

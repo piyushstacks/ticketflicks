@@ -65,7 +65,7 @@ const EditProfile = () => {
         phone: values.phone.trim(),
       };
 
-      const response = await axios.put(`/api/user/users/${user._id}`, updateData, { 
+      const response = await axios.put(`/api/user/profile`, updateData, { 
         headers: getAuthHeaders() 
       });
 

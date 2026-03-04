@@ -65,7 +65,7 @@ const MovieDetails = () => {
     try {
       if (!user) return toast.error("Please login to proceed");
       const { data } = await axios.post(
-        "/api/user/update-favorite",
+        "/api/user/favorites",
         { movieId: id },
         { headers: { Authorization: `Bearer ${await getToken()}` } },
       );
@@ -106,6 +106,8 @@ const MovieDetails = () => {
           alt={show.movie.title || "Movie Poster"}
           className="max-md:mx-auto rounded-xl h-[420px] max-w-[280px] object-cover"
           style={{ border: "1px solid var(--border)" }}
+          fetchpriority="high"
+          decoding="async"
         />
 
         <div className="relative flex flex-col gap-3 flex-1">
@@ -167,7 +169,7 @@ const MovieDetails = () => {
               {show.movie.casts.slice(0, 16).map((cast, index) => (
                 <div key={index} className="flex flex-col items-center text-center w-20">
                   <img
-                    src={imageBaseURL + cast.profile_path}
+                    src={(cast.profile_path || "").startsWith("http") ? cast.profile_path : imageBaseURL + cast.profile_path}
                     alt={cast.name}
                     className="rounded-full h-16 w-16 object-cover"
                     style={{ border: "2px solid var(--border)" }}
@@ -182,7 +184,7 @@ const MovieDetails = () => {
       )}
 
       <div id="trailer">
-        <TrailerSection id={id} />
+        <TrailerSection url={show.movie.trailer_link || show.movie.trailer_path} />
       </div>
 
       {show.movie.reviews && show.movie.reviews.length > 0 && (
