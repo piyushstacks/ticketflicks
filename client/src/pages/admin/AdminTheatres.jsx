@@ -175,7 +175,7 @@ const AdminTheatres = () => {
   };
 
   const handleDisable = async (theatreId) => {
-    if (!window.confirm("Are you sure you want to disable this theatre?")) return;
+    if (!window.confirm("Are you sure you want to disable this theatre? Its shows will also be deactivated.")) return;
 
     try {
       const { data } = await axios.put(
@@ -188,16 +188,17 @@ const AdminTheatres = () => {
         toast.success("Theatre disabled successfully");
         fetchTheatres();
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to disable theatre");
       }
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Failed to disable theatre");
+      const msg = error?.response?.data?.message || error.message || "Failed to disable theatre";
+      console.error("[handleDisable] Error:", msg);
+      toast.error(msg);
     }
   };
 
   const handleEnable = async (theatreId) => {
-    if (!window.confirm("Are you sure you want to enable this theatre?")) return;
+    if (!window.confirm("Are you sure you want to re-enable this theatre?")) return;
 
     try {
       const { data } = await axios.put(
@@ -210,11 +211,12 @@ const AdminTheatres = () => {
         toast.success("Theatre enabled successfully");
         fetchTheatres();
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to enable theatre");
       }
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Failed to enable theatre");
+      const msg = error?.response?.data?.message || error.message || "Failed to enable theatre";
+      console.error("[handleEnable] Error:", msg);
+      toast.error(msg);
     }
   };
 
@@ -689,37 +691,85 @@ const AdminTheatres = () => {
                       </div>
 
                       {/* Screen Layout Preview */}
-                      {screen.seatLayout?.layout && (
-                        <div className="bg-gray-900/50 rounded-lg p-4">
-                          <h4 className="font-semibold text-primary mb-3">Seat Layout Preview</h4>
-                          <div className="flex justify-center">
-                            <div className="inline-block">
-                              {screen.seatLayout.layout.slice(0, 6).map((row, rIdx) => (
-                                <div key={rIdx} className="flex justify-center gap-1 mb-1">
-                                  {row.slice(0, 8).map((seat, cIdx) => (
-                                    <div
-                                      key={cIdx}
-                                      className={`w-2 h-2 rounded-sm ${
-                                        seat === '' 
-                                          ? 'invisible' 
-                                          : 'bg-gray-600'
-                                      }`}
-                                      title={seat}
-                                    />
+                      {(() => {
+                        const lArr = Array.isArray(screen.seatLayout) ? screen.seatLayout : (screen.seatLayout?.layout || []);
+                        if (!lArr || lArr.length === 0) return null;
+                        
+                        let uniqueTiers = [];
+                        if (screen.seatTiers && screen.seatTiers.length > 0) {
+                          uniqueTiers = screen.seatTiers.map(t => t.tierName || t.name);
+                        } else if (lArr.length > 0) {
+                          uniqueTiers = Array.from(new Set(lArr.flat().filter(s => s && s.tier).map(s => s.tier)));
+                        }
+
+                        const rowsCount = lArr.length;
+                        const colsCount = rowsCount > 0 ? lArr[0].length : 0;
+                        const totalSeatsCount = lArr.flat().filter(s => s && (s.seatNumber || (typeof s === 'string' && s !== ''))).length;
+
+                        return (
+                          <div className="bg-gray-900/50 rounded-lg p-4">
+                            <h4 className="font-semibold text-primary mb-3">Seat Layout Preview</h4>
+                            <div className="flex justify-center mb-4">
+                              <div className="inline-block">
+                                {lArr.slice(0, 6).map((row, rIdx) => (
+                                  <div key={rIdx} className="flex justify-center gap-1 mb-1">
+                                    {row.slice(0, 8).map((seat, cIdx) => (
+                                      <div
+                                        key={cIdx}
+                                        className={`w-2 h-2 rounded-sm ${
+                                          !seat || seat === '' || (typeof seat === 'object' && !seat.seatNumber)
+                                            ? 'invisible' 
+                                            : 'bg-gray-600'
+                                        }`}
+                                        title={typeof seat === 'object' ? seat.seatNumber : seat}
+                                      />
+                                    ))}
+                                  </div>
+                                ))}
+                                {lArr.length > 6 && (
+                                  <div className="text-center text-gray-500 text-xs mt-1">...and more rows</div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 text-sm mt-4 border-t border-gray-700/50 pt-3">
+                              <div>
+                                <span className="text-gray-400">Total Seats:</span>
+                                <span className="ml-2 text-gray-300">{totalSeatsCount}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Layout:</span>
+                                <span className="ml-2 text-gray-300">
+                                  {rowsCount} rows × {colsCount} cols
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {screen.seatTiers && screen.seatTiers.length > 0 ? (
+                              <div className="mt-3">
+                                <h5 className="text-gray-400 text-sm mb-1">Seat Tiers</h5>
+                                <div className="space-y-1">
+                                  {screen.seatTiers.map((tier, idx) => (
+                                    <div key={idx} className="flex justify-between text-sm">
+                                      <span className="text-gray-300">{tier.tierName}:</span>
+                                      <span className="text-primary font-medium">₹{tier.price}</span>
+                                    </div>
                                   ))}
                                 </div>
-                              ))}
-                              {screen.seatLayout.layout.length > 6 && (
-                                <div className="text-center text-gray-500 text-xs mt-1">...and more rows</div>
-                              )}
-                            </div>
+                              </div>
+                            ) : uniqueTiers.length > 0 ? (
+                              <div className="mt-3">
+                                <h5 className="text-gray-400 text-sm mb-1">Detected Tiers</h5>
+                                <div className="text-sm text-gray-300">{uniqueTiers.join(', ')}</div>
+                              </div>
+                            ) : null}
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Screen Details */}
                       <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-2 gap-4 text-sm mt-2">
                           <div>
                             <span className="text-gray-400">Screen Number:</span>
                             <span className="ml-2 text-gray-300">{screen.screenNumber}</span>
@@ -731,35 +781,6 @@ const AdminTheatres = () => {
                             </span>
                           </div>
                         </div>
-
-                        {screen.seatLayout && (
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-400">Total Seats:</span>
-                              <span className="ml-2 text-gray-300">{screen.seatLayout.totalSeats}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-400">Layout:</span>
-                              <span className="ml-2 text-gray-300">
-                                {screen.seatLayout.rows} rows × {screen.seatLayout.seatsPerRow} seats
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {screen.seatTiers && screen.seatTiers.length > 0 && (
-                          <div>
-                            <h5 className="font-semibold text-primary mb-2">Seat Tiers</h5>
-                            <div className="space-y-1">
-                              {screen.seatTiers.map((tier, idx) => (
-                                <div key={idx} className="flex justify-between text-sm">
-                                  <span className="text-gray-400">{tier.tierName}:</span>
-                                  <span className="text-gray-300">₹{tier.price}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

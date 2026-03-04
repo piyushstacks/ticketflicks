@@ -20,6 +20,7 @@ const MovieDetails = () => {
 
   const { id } = useParams();
   const [show, setShow] = useState(null);
+  const [twitterReviews, setTwitterReviews] = useState([]);
 
   const {
     shows: allShows,
@@ -61,6 +62,21 @@ const MovieDetails = () => {
     }
   };
 
+  const getTwitterReviews = async () => {
+    try {
+      const { data } = await axios.get(`/api/reviews/twitter/${id}`);
+      if (data?.success && data?.reviews) {
+        // Extract tweet URLs from the reviews
+        const urls = data.reviews
+          .filter(r => r.tweet_url)
+          .map(r => r.tweet_url);
+        setTwitterReviews(urls);
+      }
+    } catch (error) {
+      console.error("Error fetching Twitter reviews:", error);
+    }
+  };
+
   const handleFavorite = async () => {
     try {
       if (!user) return toast.error("Please login to proceed");
@@ -92,6 +108,7 @@ const MovieDetails = () => {
 
   useEffect(() => {
     getShow();
+    getTwitterReviews();
   }, [id]);
 
   return show && show.movie ? (
@@ -187,8 +204,9 @@ const MovieDetails = () => {
         <TrailerSection url={show.movie.trailer_link || show.movie.trailer_path} />
       </div>
 
-      {show.movie.reviews && show.movie.reviews.length > 0 && (
-        <TwitterReviews reviews={show.movie.reviews} />
+      {/* Twitter Reviews */}
+      {twitterReviews.length > 0 && (
+        <TwitterReviews reviews={twitterReviews} />
       )}
 
       {/* Related */}

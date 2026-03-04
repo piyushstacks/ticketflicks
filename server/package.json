@@ -17,6 +17,7 @@
   "dependencies": {
     "@babel/plugin-proposal-decorators": "^7.28.6",
     "@clerk/express": "^1.7.60",
+    "archiver": "^7.0.1",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.8.0",

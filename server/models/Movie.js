@@ -115,6 +115,11 @@ const movieSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  status: {
+    type: String,
+    enum: ["now_showing", "upcoming"],
+    default: "now_showing"
+  },
   isDeleted: {
     type: Boolean,
     default: false

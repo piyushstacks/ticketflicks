@@ -21,7 +21,7 @@ const ManagerBookings = () => {
       if (data.success) {
         setBookings(data.bookings || []);
         const revenue = (data.bookings || []).reduce(
-          (sum, b) => sum + (b.amount || 0),
+          (sum, b) => (b.isPaid && b.status === "confirmed") ? sum + (b.totalAmount || b.amount || 0) : sum,
           0
         );
         setTotalRevenue(revenue);

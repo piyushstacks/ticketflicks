@@ -5,37 +5,56 @@ import { PlayCircleIcon } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
 const TrailersSection = () => {
-  const { upcomingMovies, trailer } = useAppContext();
+  const { shows, loading } = useAppContext();
 
   const trailersData = useMemo(() => {
-    return upcomingMovies
+    if (!shows || loading) return [];
+    return shows
+      .filter((movie) => movie && (movie.trailer_path || movie.trailer_link))
       .map((movie) => {
-        const trailerInfo = trailer[movie.id];
-        if (trailerInfo && trailerInfo.key) {
-          return {
-            id: movie.id,
-            title: movie.title,
-            videoUrl: trailerInfo.url,
-            image: `https://i.ytimg.com/vi/${trailerInfo.key}/hqdefault.jpg`,
-          };
+        const videoUrl = movie.trailer_path || movie.trailer_link;
+        // Try to extract YouTube ID for thumbnail
+        let ytId = null;
+        if (videoUrl && videoUrl.includes('youtube.com/watch?v=')) {
+          ytId = videoUrl.split('v=')[1]?.split('&')[0];
+        } else if (videoUrl && videoUrl.includes('youtu.be/')) {
+          ytId = videoUrl.split('youtu.be/')[1]?.split('?')[0];
         }
-        return null;
-      })
-      .filter(Boolean);
-  }, [upcomingMovies, trailer]);
+        
+        return {
+          id: movie._id || movie.id,
+          title: movie.title,
+          videoUrl,
+          image: ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : movie.backdrop_path || movie.poster_path,
+        };
+      });
+  }, [shows, loading]);
 
   const [currentTrailer, setCurrentTrailer] = useState(null);
 
   useEffect(() => {
-    if (trailersData.length > 0 && (!currentTrailer || !trailersData.some((t) => t.id === currentTrailer.id))) {
+    if (trailersData.length > 0 && !currentTrailer) {
       setCurrentTrailer(trailersData[0]);
     }
-  }, [trailersData]);
+  }, [trailersData, currentTrailer]);
 
   const thumbnailTrailers = useMemo(() => {
     if (!currentTrailer) return [];
     return trailersData.filter((item) => item.id !== currentTrailer.id).slice(0, 4);
   }, [currentTrailer, trailersData]);
+
+  if (loading) {
+    return (
+      <section className="px-4 sm:px-6 md:px-12 lg:px-20 xl:px-36 py-20 max-md:pb-0 overflow-hidden">
+        <h2 className="font-semibold text-xl" style={{ color: "var(--text-primary)" }}>
+          Trailers
+        </h2>
+        <div className="relative mt-6 flex items-center justify-center h-64 rounded-xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading trailers...</p>
+        </div>
+      </section>
+    );
+  }
 
   if (!trailersData || trailersData.length === 0 || !currentTrailer) {
     return null;

@@ -8,7 +8,7 @@ import {
   Calendar,
   CreditCard,
   TrendingUp,
-  DollarSign,
+  IndianRupee,
   Activity,
 } from "lucide-react";
 
@@ -20,7 +20,7 @@ const AdminPaymentsList = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [viewingPayment, setViewingPayment] = useState(null);
-  const currency = import.meta.env.VITE_CURRENCY || "$";
+  const currency = import.meta.env.VITE_CURRENCY || "₹";
 
   const fetchPayments = async () => {
     try {
@@ -170,7 +170,7 @@ const AdminPaymentsList = () => {
                 {totalRevenue.toFixed(2)}
               </p>
             </div>
-            <DollarSign className="w-8 h-8 text-green-500" />
+            <IndianRupee className="w-8 h-8 text-green-500" />
           </div>
         </div>
         <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">

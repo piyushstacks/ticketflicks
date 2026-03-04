@@ -60,41 +60,32 @@ export const AppProvider = ({ children }) => {
   };
 
   // ─── Movies ───────────────────────────────────────────────────────────────
-  // Single fetch: gets shows-with-showtimes AND all active movies in one parallel call.
-  // Result is merged and de-duped. Replaces the old broken 3-tier waterfall + separate fetchUpcomingMovies.
+  // Fetches now-showing movies and upcoming movies independently.
   const fetchShows = async () => {
     try {
-      const [showsRes, allMoviesRes] = await Promise.allSettled([
+      const [showsRes, upcomingRes] = await Promise.allSettled([
         api.get("/api/show/shows/all"),
         api.get("/api/show/upcoming-movies"),
       ]);
 
-      const moviesWithShows =
+      // Now-showing: deduplicated movies that have active shows
+      const nowShowingMovies =
         showsRes.status === "fulfilled" &&
         showsRes.value.data.success &&
         Array.isArray(showsRes.value.data.shows)
-          ? showsRes.value.data.shows
+          ? showsRes.value.data.shows.map((m) => ({ ...m, hasShows: true }))
           : [];
 
-      const allMovies =
-        allMoviesRes.status === "fulfilled" &&
-        allMoviesRes.value.data.success &&
-        Array.isArray(allMoviesRes.value.data.movies)
-          ? allMoviesRes.value.data.movies
+      // Upcoming: from the dedicated UpcomingMovie model
+      const upcoming =
+        upcomingRes.status === "fulfilled" &&
+        upcomingRes.value.data.success &&
+        Array.isArray(upcomingRes.value.data.movies)
+          ? upcomingRes.value.data.movies
           : [];
 
-      // Merge: bookable movies first, rest of catalogue after
-      const showIds = new Set(moviesWithShows.map((m) => (m._id || m.id)?.toString()));
-      const merged = [
-        ...moviesWithShows.map((m) => ({ ...m, hasShows: true })),
-        ...allMovies
-          .filter((m) => !showIds.has((m._id || m.id)?.toString()))
-          .map((m) => ({ ...m, hasShows: false })),
-      ];
-
-      setShows(merged);
-      // Also keep upcomingMovies in sync (no second API call needed)
-      setUpcomingMovies(allMovies);
+      setShows(nowShowingMovies);
+      setUpcomingMovies(upcoming);
     } catch (error) {
       handleError("fetchShows", error);
     }

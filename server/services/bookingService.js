@@ -162,10 +162,14 @@ export const createBooking = async (userId, showId, selectedSeats) => {
 
   // Check if show has fully ended — for multi-day shows use endDate, otherwise showDateTime
   const showEndTime = show.endDate
-    ? new Date(show.endDate + "T23:59:59")
+    ? new Date(show.endDate)
     : show.showDateTime;
   if (showEndTime && new Date() > showEndTime) {
-    throw new ValidationError("Cannot book for past shows");
+    throw new ValidationError("Cannot book for past shows or shows past their end date");
+  }
+
+  if (show.startDate && new Date() < new Date(show.startDate)) {
+    throw new ValidationError("Booking for this show hasn't started yet");
   }
 
   // Check seat availability

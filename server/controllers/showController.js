@@ -148,18 +148,18 @@ export const toggleMovieForTheatre = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: "No theatre assigned to this manager" });
   }
 
-  const disabledSet = new Set((theatre.disabledMovies || []).map(id => id.toString()));
-
+  // Use atomic operators to avoid triggering async validators on .save()
   if (isActive) {
     // Enable: remove from disabled list
-    disabledSet.delete(movieId);
+    await Theatre.findByIdAndUpdate(theatre._id, {
+      $pull: { disabledMovies: movieId }
+    });
   } else {
-    // Disable: add to disabled list
-    disabledSet.add(movieId);
+    // Disable: add to disabled list (addToSet prevents duplicates)
+    await Theatre.findByIdAndUpdate(theatre._id, {
+      $addToSet: { disabledMovies: movieId }
+    });
   }
-
-  theatre.disabledMovies = Array.from(disabledSet);
-  await theatre.save();
 
   const action = isActive ? "enabled" : "disabled";
   res.json({ success: true, message: `Movie ${action} for your theatre` });

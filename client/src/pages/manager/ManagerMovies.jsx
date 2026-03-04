@@ -18,7 +18,13 @@ const ManagerMovies = () => {
       });
 
       if (data.success) {
-        setMovies(data.movies || []);
+        // Sort: enabled movies first, disabled at bottom
+        const sorted = (data.movies || []).sort((a, b) => {
+          const aEnabled = a.isEnabledForTheatre !== false ? 1 : 0;
+          const bEnabled = b.isEnabledForTheatre !== false ? 1 : 0;
+          return bEnabled - aEnabled;
+        });
+        setMovies(sorted);
       }
     } catch (error) {
       console.error("Error fetching movies:", error);

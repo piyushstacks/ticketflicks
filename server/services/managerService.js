@@ -18,6 +18,13 @@ export const getManagerTheatre = async (managerId) => {
     throw new UnauthorizedError("Manager access required");
   }
 
+  // Primary: use the cached managedTheatreId on the User document
+  if (manager.managedTheatreId) {
+    const theatre = await Theatre.findOne({ _id: manager.managedTheatreId, disabled: false, approval_status: "approved" });
+    if (theatre) return theatre;
+  }
+
+  // Fallback: look up the Theatre whose manager_id matches this user
   const theatre = await Theatre.findOne({
     manager_id: managerId,
     approval_status: "approved",
@@ -27,6 +34,9 @@ export const getManagerTheatre = async (managerId) => {
   if (!theatre) {
     throw new NotFoundError("Theatre assigned to manager");
   }
+
+  // Cache it back
+  await User.findByIdAndUpdate(managerId, { managedTheatreId: theatre._id });
 
   return theatre;
 };
@@ -67,6 +77,7 @@ export const getDashboardData = async (managerId) => {
     },
     createdAt: { $gte: monthStart },
     payment_status: "completed",
+    status: "confirmed",
   });
 
   const monthRevenue = monthBookings.reduce(

@@ -37,27 +37,40 @@
 
 /* Light mode */
 html:not(.dark) {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f4f4f5;
+  /* Site variables */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
   --bg-card: #ffffff;
-  --bg-card-hover: #fafafa;
-  --bg-elevated: #f4f4f5;
-  --bg-input: #f4f4f5;
-  --text-primary: #09090b;
-  --text-secondary: #52525b;
-  --text-muted: #a1a1aa;
-  --border: #e4e4e7;
-  --border-hover: #d4d4d8;
-  --ring: rgba(248, 69, 101, 0.25);
-  --shadow-color: rgba(0, 0, 0, 0.10);
-  --overlay: rgba(0, 0, 0, 0.6);
-  --skeleton-from: #e4e4e7;
-  --skeleton-to: #d4d4d8;
-  --scrollbar-thumb: #d4d4d8;
-  --scrollbar-track: #f4f4f5;
-  --blur-glow-opacity: 0.10;
-  --logo-filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18))
-    drop-shadow(0 0 2px rgba(0, 0, 0, 0.22));
+  --bg-card-hover: #f1f5f9;
+  --bg-elevated: #ffffff;
+  --bg-input: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border: #cbd5e1;
+  --border-hover: #94a3b8;
+  --ring: rgba(248, 69, 101, 0.4);
+  --shadow-color: rgba(0, 0, 0, 0.08);
+  --overlay: rgba(0, 0, 0, 0.5);
+  --skeleton-from: #e2e8f0;
+  --skeleton-to: #cbd5e1;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-track: #f1f5f9;
+  --blur-glow-opacity: 0.15;
+  --logo-filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+
+  /* Globably invert Tailwind's gray scale so hardcoded dark classes look good in light mode */
+  --color-gray-50: #111827;
+  --color-gray-100: #1f2937;
+  --color-gray-200: #374151;
+  --color-gray-300: #4b5563;
+  --color-gray-400: #6b7280;
+  --color-gray-500: #9ca3af;
+  --color-gray-600: #d1d5db;
+  --color-gray-700: #e5e7eb;
+  --color-gray-800: #f3f4f6;
+  --color-gray-900: #f9fafb;
+  --color-gray-950: #ffffff;
 }
 
 /* ===== GLOBAL RESETS ===== */
@@ -81,6 +94,69 @@ body,
   transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
+/* ===== LIGHT MODE: FIX ADMIN/MANAGER PAGES ===== */
+/* Admin and Manager dashboard pages use hardcoded Tailwind `text-white`, `text-gray-*`, etc.
+   In light mode we need to adapt these so text stays readable on light backgrounds.
+   We do NOT touch dark-mode (default), only html:not(.dark). */
+
+html:not(.dark) .text-white {
+  color: var(--text-primary) !important;
+}
+
+/* Soft text colors → use site secondary text */
+html:not(.dark) .text-gray-400,
+html:not(.dark) .text-gray-500 {
+  color: var(--text-muted) !important;
+}
+
+html:not(.dark) .text-gray-300 {
+  color: var(--text-secondary) !important;
+}
+
+/* Dark backgrounds → use site card/elevated backgrounds */
+html:not(.dark) .bg-gray-900\/30,
+html:not(.dark) .bg-gray-900\/50,
+html:not(.dark) .bg-gray-900\/80 {
+  background-color: var(--bg-card) !important;
+}
+
+html:not(.dark) .bg-gray-800\/30,
+html:not(.dark) .bg-gray-800\/40,
+html:not(.dark) .bg-gray-800\/50 {
+  background-color: var(--bg-secondary) !important;
+}
+
+html:not(.dark) .bg-gray-800 {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Borders */
+html:not(.dark) .border-gray-700,
+html:not(.dark) .border-gray-700\/50 {
+  border-color: var(--border) !important;
+}
+
+html:not(.dark) .border-gray-600 {
+  border-color: var(--border-hover) !important;
+}
+
+/* Hover states for dark tables/rows */
+html:not(.dark) .hover\:bg-gray-800\/30:hover {
+  background-color: var(--bg-elevated) !important;
+}
+
+html:not(.dark) .hover\:bg-gray-800:hover,
+html:not(.dark) .hover\:bg-gray-700:hover {
+  background-color: var(--bg-elevated) !important;
+}
+
+/* Table head */
+html:not(.dark) thead.bg-gray-800\/50,
+html:not(.dark) .bg-gray-800\/50 {
+  background-color: var(--bg-secondary) !important;
+}
+
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
   width: 8px;
@@ -103,6 +179,7 @@ body,
 .no-scrollbar {
   scrollbar-width: none;
 }
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -134,11 +211,13 @@ body,
   cursor: pointer;
   border: none;
 }
+
 .btn-primary:hover {
   background-color: var(--color-accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(248, 69, 101, 0.25);
 }
+
 .btn-primary:active {
   transform: translateY(0);
 }
@@ -159,6 +238,7 @@ body,
   transition: all 0.2s ease;
   cursor: pointer;
 }
+
 .btn-secondary:hover {
   background-color: var(--bg-card-hover);
   border-color: var(--border-hover);
@@ -181,6 +261,7 @@ body,
   transition: all 0.2s ease;
   cursor: pointer;
 }
+
 .btn-ghost:hover {
   background-color: var(--bg-elevated);
   color: var(--text-primary);
@@ -198,33 +279,40 @@ body,
   outline: none;
   transition: all 0.2s ease;
 }
+
 .input-field:focus {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--ring);
 }
+
 .input-field[aria-invalid="true"] {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.22);
 }
+
 .input-field[aria-invalid="true"]:focus {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.22);
 }
+
 input[aria-invalid="true"]:not(.input-field),
 select[aria-invalid="true"],
 textarea[aria-invalid="true"] {
   border-color: #ef4444 !important;
 }
+
 .field-error-text {
   font-size: 0.75rem;
   line-height: 1rem;
   color: #ef4444;
 }
+
 .field-help-text {
   font-size: 0.75rem;
   line-height: 1rem;
   color: var(--text-muted);
 }
+
 .input-field::placeholder {
   color: var(--text-muted);
 }
@@ -236,6 +324,7 @@ textarea[aria-invalid="true"] {
   border-radius: 1rem;
   transition: all 0.2s ease;
 }
+
 .card:hover {
   border-color: var(--border-hover);
   box-shadow: 0 8px 24px var(--shadow-color);
@@ -244,6 +333,7 @@ textarea[aria-invalid="true"] {
 .card-hover {
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
+
 .card-hover:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 32px var(--shadow-color);
@@ -255,6 +345,7 @@ textarea[aria-invalid="true"] {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -266,6 +357,7 @@ textarea[aria-invalid="true"] {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -277,6 +369,7 @@ textarea[aria-invalid="true"] {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -287,15 +380,19 @@ textarea[aria-invalid="true"] {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.5;
   }
+
   50% {
     opacity: 1;
   }
@@ -305,6 +402,7 @@ textarea[aria-invalid="true"] {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -374,7 +472,7 @@ html:not(.dark) .seat-available {
   justify-content: center;
 }
 
-.twitter-embed > * {
+.twitter-embed>* {
   max-width: 100% !important;
 }
 

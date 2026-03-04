@@ -1,6 +1,6 @@
 import {
   ChartLineIcon,
-  CircleDollarSignIcon,
+  IndianRupee,
   PlayCircleIcon,
   StarIcon,
   UsersIcon,
@@ -49,7 +49,7 @@ const Dashboard = () => {
     {
       title: "Total Revenue",
       value: currency + (dashboardData.totalRevenue || "0"),
-      icon: CircleDollarSignIcon,
+      icon: IndianRupee,
       color: "text-green-500",
     },
     {

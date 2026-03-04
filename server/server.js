@@ -13,6 +13,7 @@ import searchRouter from "./routes/searchRoutes.js";
 import adminRouter from "./routes/adminRoutes.js";
 import managerRouter from "./routes/managerRoutes.js";
 import theatreRouter from "./routes/theatreRoutes.js";
+import reviewRouter from "./routes/reviewRoutes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -67,6 +68,7 @@ app.use("/api/theatre", theatreRouter);   // Theatres
 app.use("/api/search", searchRouter);    // Search
 app.use("/api/admin", adminRouter);     // Admin operations
 app.use("/api/manager", managerRouter);   // Manager operations
+app.use("/api/reviews", reviewRouter);    // Reviews
 
 // ── Error Handling ────────────────────────────────────────────────────────
 app.use(notFoundHandler);

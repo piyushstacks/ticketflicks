@@ -11,7 +11,14 @@ import {
   getStatistics,
   getAllFeedbacks,
   getTheatreScreens,
+  disableTheatre,
+  enableTheatre,
 } from "../controllers/adminController.js";
+import {
+  getAnalyticsData,
+  downloadReport,
+  downloadCharts,
+} from "../controllers/analyticsController.js";
 import {
   syncMoviesFromTMDB,
   getAllAvailableMovies,
@@ -47,12 +54,19 @@ adminRouter.get("/theatres", protectAdmin, getAllTheatres);
 adminRouter.get("/theatres/pending", protectAdmin, getPendingTheatres);
 adminRouter.put("/theatres/:theatreId/approve", protectAdmin, approveTheatre);
 adminRouter.get("/theatres/:theatreId/screens", protectAdmin, getTheatreScreens);
+adminRouter.put("/theatres/:theatreId/disable", protectAdmin, disableTheatre);
+adminRouter.put("/theatres/:theatreId/enable", protectAdmin, enableTheatre);
 
 // Bookings, Shows, Stats (used by Admin Bookings & Payments pages)
 adminRouter.get("/all-bookings", protectAdmin, getAllBookings);
 adminRouter.get("/all-shows", protectAdmin, getAllShows);
 adminRouter.get("/statistics", protectAdmin, getStatistics);
 adminRouter.get("/feedbacks", protectAdmin, getAllFeedbacks);
+
+// Analytics Routes
+adminRouter.get("/analytics", protectAdmin, getAnalyticsData);
+adminRouter.get("/analytics/download-report", protectAdmin, downloadReport);
+adminRouter.get("/analytics/download-charts", protectAdmin, downloadCharts);
 
 // Movie Management Routes
 adminRouter.post("/movies/create", protectAdmin, createMovie);

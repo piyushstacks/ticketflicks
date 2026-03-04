@@ -6,6 +6,9 @@ import {
   Bookmark,
   Film,
   Monitor,
+  Download,
+  FileSpreadsheet,
+  BarChart3,
 } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -15,6 +18,60 @@ const AdminDashboard = () => {
   const { axios, getAuthHeaders, user } = useAppContext();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const [downloadingCharts, setDownloadingCharts] = useState(false);
+
+  const handleDownloadReport = async () => {
+    setDownloadingReport(true);
+    try {
+      const response = await axios.get("/api/admin/analytics/download-report", {
+        headers: getAuthHeaders(),
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `ticketflicks_analytics_${new Date().toISOString().split("T")[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Report downloaded successfully!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download report. Please try again.");
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
+  const handleDownloadCharts = async () => {
+    setDownloadingCharts(true);
+    try {
+      const response = await axios.get("/api/admin/analytics/download-charts", {
+        headers: getAuthHeaders(),
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `ticketflicks_charts_${new Date().toISOString().split("T")[0]}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Charts downloaded successfully!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download charts. Please try again.");
+    } finally {
+      setDownloadingCharts(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -152,6 +209,85 @@ const AdminDashboard = () => {
             Monitor system performance and user activity statistics
           </p>
         </div>
+      </div>
+
+      {/* Analytics Report Section */}
+      <div className="bg-gradient-to-br from-cyan-600/20 to-cyan-900/20 border border-cyan-500/30 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-cyan-400" />
+            <div>
+              <h2 className="text-xl font-bold">Analytics & Reports</h2>
+              <p className="text-gray-400 text-sm">Generate comprehensive analytics reports</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Download Excel Report */}
+          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 hover:border-cyan-500/50 transition">
+            <div className="flex items-center gap-4">
+              <div className="bg-cyan-500/20 p-3 rounded-lg">
+                <FileSpreadsheet className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Excel Report</h3>
+                <p className="text-gray-400 text-sm">Complete data with all sheets</p>
+              </div>
+              <button
+                onClick={handleDownloadReport}
+                disabled={downloadingReport}
+                className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-600/50 text-white px-4 py-2 rounded-lg transition"
+              >
+                {downloadingReport ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Download Charts */}
+          <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 hover:border-cyan-500/50 transition">
+            <div className="flex items-center gap-4">
+              <div className="bg-pink-500/20 p-3 rounded-lg">
+                <BarChart3 className="w-6 h-6 text-pink-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Visual Charts</h3>
+                <p className="text-gray-400 text-sm">All charts as PNG images</p>
+              </div>
+              <button
+                onClick={handleDownloadCharts}
+                disabled={downloadingCharts}
+                className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 disabled:bg-pink-600/50 text-white px-4 py-2 rounded-lg transition"
+              >
+                {downloadingCharts ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-gray-500 text-xs mt-4">
+          Note: Reports are generated from live MongoDB data. Generation may take a few seconds.
+        </p>
       </div>
 
       {/* Info Section */}

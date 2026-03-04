@@ -66,6 +66,17 @@ export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, ses
   }
 
   // ── 3. Update booking document ───────────────────────────────────────────
+  // Extract shipping address from Stripe session
+  const shippingAddress = session.shipping_details?.address || session.customer_details?.address;
+  const addressData = shippingAddress ? {
+    line1: shippingAddress.line1 || null,
+    line2: shippingAddress.line2 || null,
+    city: shippingAddress.city || null,
+    state: shippingAddress.state || null,
+    postal_code: shippingAddress.postal_code || null,
+    country: shippingAddress.country || null,
+  } : null;
+
   await Booking.findByIdAndUpdate(bookingId, {
     payment_status: "completed",
     status: "confirmed",
@@ -73,6 +84,7 @@ export async function markSeatsAndCompleteBooking(stripeInstance, bookingId, ses
     payment_method: "stripe",
     payment_id: paymentIntentId || session.id,
     ...(receiptUrl && { receiptUrl }),
+    ...(addressData && { shipping_address: addressData }),
   });
 
   // ── 4. Write to payments table (PAYMENT_TBL) ────────────────────────────

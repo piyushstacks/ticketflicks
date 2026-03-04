@@ -52,15 +52,6 @@ const HeroSection = () => {
             Explore Movies
             <ArrowRight className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => {
-              navigate("/upcoming-movies");
-              scrollTo(0, 0);
-            }}
-            className="px-6 py-3 text-sm font-medium rounded-xl text-white/90 border border-white/20 hover:bg-white/10 transition-all duration-200 cursor-pointer"
-          >
-            Upcoming
-          </button>
         </div>
       </div>
 

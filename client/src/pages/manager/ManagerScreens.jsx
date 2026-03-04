@@ -214,28 +214,40 @@ const ManagerScreens = () => {
                 </span>
               </div>
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-gray-400">
-                  <span>Total Seats:</span>
-                  <span className="text-gray-200">{screen.seatLayout?.totalSeats || 0}</span>
-                </div>
-                <div className="flex justify-between text-gray-400">
-                  <span>Layout:</span>
-                  <span className="text-gray-200">
-                    {screen.seatLayout?.rows || 0} rows × {screen.seatLayout?.seatsPerRow || 0} cols
-                  </span>
-                </div>
-                <div className="flex justify-between text-gray-400">
-                  <span>Pricing Type:</span>
-                  <span className="text-gray-200">
-                    {screen.seatTiers?.length === 1 
-                      ? 'Unified' 
-                      : screen.seatTiers?.length > 1 
-                        ? screen.seatTiers.map(t => t.tierName).join(', ')
-                        : 'Not Set'}
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const layoutArray = Array.isArray(screen.seatLayout) ? screen.seatLayout : (screen.seatLayout?.layout || []);
+                const rowsCount = layoutArray.length;
+                const colsCount = rowsCount > 0 ? layoutArray[0].length : 0;
+                const totalSeatsCount = layoutArray.flat().filter(s => s && s.seatNumber).length;
+                
+                let uniqueTiers = [];
+                if (screen.seatTiers && screen.seatTiers.length > 0) {
+                   uniqueTiers = screen.seatTiers.map(t => t.tierName || t.name);
+                } else if (rowsCount > 0) {
+                   uniqueTiers = Array.from(new Set(layoutArray.flat().filter(s => s && s.tier).map(s => s.tier)));
+                }
+
+                return (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between text-gray-400">
+                      <span>Total Seats:</span>
+                      <span className="text-gray-200">{totalSeatsCount}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-400">
+                      <span>Layout:</span>
+                      <span className="text-gray-200">
+                        {rowsCount} rows × {colsCount} cols
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-gray-400">
+                      <span>Pricing Tiers:</span>
+                      <span className="text-gray-200">
+                        {uniqueTiers.length === 0 ? 'Not Set' : uniqueTiers.join(', ')}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="flex gap-2 pt-4 border-t border-gray-700/50">
                 <button
@@ -349,38 +361,55 @@ const ManagerScreens = () => {
                 </button>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Layout Stats</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Total Seats:</span>
-                      <span className="text-white font-medium">{viewingScreen.seatLayout?.totalSeats || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Dimensions:</span>
-                      <span className="text-white font-medium">
-                        {viewingScreen.seatLayout?.rows?.length || 0} × {viewingScreen.seatLayout?.seatsPerRow || 0}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              {(() => {
+                const layoutArray = Array.isArray(viewingScreen.seatLayout) ? viewingScreen.seatLayout : (viewingScreen.seatLayout?.layout || []);
+                const rowsCount = layoutArray.length;
+                const colsCount = rowsCount > 0 ? layoutArray[0].length : 0;
+                const totalSeatsCount = layoutArray.flat().filter(s => s && s.seatNumber).length;
+                
+                let tiersData = [];
+                if (viewingScreen.seatTiers && viewingScreen.seatTiers.length > 0) {
+                   tiersData = viewingScreen.seatTiers;
+                } else if (rowsCount > 0) {
+                   const uniqueTiers = Array.from(new Set(layoutArray.flat().filter(s => s && s.tier).map(s => s.tier)));
+                   tiersData = uniqueTiers.map(name => ({ tierName: name, price: "Default Setting" }));
+                }
 
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Pricing</h3>
-                  <div className="space-y-2 text-sm">
-                    {viewingScreen.seatTiers?.map((tier, idx) => (
-                      <div key={idx} className="flex justify-between">
-                        <span className="text-gray-400">{tier.tierName}:</span>
-                        <span className="text-white font-medium">${tier.price}</span>
+                return (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Layout Stats</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Total Seats:</span>
+                          <span className="text-white font-medium">{totalSeatsCount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Dimensions:</span>
+                          <span className="text-white font-medium">
+                            {rowsCount} × {colsCount}
+                          </span>
+                        </div>
                       </div>
-                    ))}
-                    {(!viewingScreen.seatTiers || viewingScreen.seatTiers.length === 0) && (
-                      <div className="text-gray-500 italic">No pricing configured</div>
-                    )}
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-primary mb-3 uppercase tracking-wider">Pricing</h3>
+                      <div className="space-y-2 text-sm">
+                        {tiersData.map((tier, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span className="text-gray-400">{tier.tierName || tier.name}:</span>
+                            <span className="text-white font-medium">{tier.price === "Default Setting" ? tier.price : `₹${tier.price}`}</span>
+                          </div>
+                        ))}
+                        {tiersData.length === 0 && (
+                          <div className="text-gray-500 italic">No pricing configured</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Visual Seat Map Preview */}
               <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700/50">
@@ -388,17 +417,17 @@ const ManagerScreens = () => {
                 <div className="flex justify-center overflow-x-auto pb-4">
                   <div className="space-y-1">
                     <div className="w-full h-1 bg-gray-700 mb-8 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.1)] mx-auto max-w-[80%]"></div>
-                    {viewingScreen.seatLayout?.layout?.map((row, rIdx) => (
+                    {(Array.isArray(viewingScreen.seatLayout) ? viewingScreen.seatLayout : (viewingScreen.seatLayout?.layout || [])).map((row, rIdx) => (
                       <div key={rIdx} className="flex justify-center gap-1">
                         {row.map((seat, cIdx) => (
                           <div
                             key={cIdx}
                             className={`w-3 h-3 rounded-[2px] ${
-                              seat === '' 
+                              !seat || seat === '' 
                                 ? 'invisible' 
                                 : 'bg-gray-600'
                             }`}
-                            title={seat}
+                            title={seat.seatNumber || seat}
                           />
                         ))}
                       </div>

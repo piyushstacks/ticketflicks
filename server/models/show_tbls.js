@@ -20,6 +20,18 @@ const showSchema = new mongoose.Schema({
     type: Date,
     required: [true, "Show date and time is required"]
   },
+  showTime: {
+    type: String,
+    required: false
+  },
+  startDate: {
+    type: Date,
+    required: false
+  },
+  endDate: {
+    type: Date,
+    required: false
+  },
   language: {
     type: String,
     trim: true,

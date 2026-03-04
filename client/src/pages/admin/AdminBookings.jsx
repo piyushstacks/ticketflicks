@@ -11,7 +11,7 @@ const AdminBookings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewingBooking, setViewingBooking] = useState(null);
-  const currency = import.meta.env.VITE_CURRENCY || "$";
+  const currency = import.meta.env.VITE_CURRENCY || "₹";
 
   const fetchBookings = async () => {
     try {
@@ -66,9 +66,12 @@ const AdminBookings = () => {
     }
     
     acc[tId].totalBookings++;
-    if (b.isPaid) {
+    if (b.isPaid && b.status === "confirmed") {
       acc[tId].paidBookings++;
       acc[tId].revenue += (b.amount || 0);
+    } else if (b.status !== "confirmed" && b.isPaid) {
+      // it is paid but e.g. cancelled/failed, count as unpaid/other or just don't add to paid bookings
+      acc[tId].unpaidBookings++;
     } else {
       acc[tId].unpaidBookings++;
     }
@@ -153,7 +156,7 @@ const AdminBookings = () => {
               <p className="text-2xl font-bold mt-1">
                 {currency}
                 {bookings
-                  .filter((b) => b.isPaid)
+                  .filter((b) => b.isPaid && b.status === "confirmed")
                   .reduce((sum, b) => sum + (b.amount || 0), 0)
                   .toFixed(2)}
               </p>

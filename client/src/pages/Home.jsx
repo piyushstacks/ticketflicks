@@ -9,8 +9,8 @@ const Home = () => {
     <>
       <HeroSection />
       <FeaturedSection />
-      <UpcomingFeaturedSection />
       <TrailersSection />
+      <UpcomingFeaturedSection />
     </>
   );
 };

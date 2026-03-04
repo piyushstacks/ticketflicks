@@ -56,6 +56,8 @@ export const getShowsByTheatre = async (req, res) => {
       theatre: theatreId,
       isActive: true,
       showDateTime: { $gte: now },           // ← strict current-time filter
+      startDate: { $lte: now },
+      endDate: { $gte: now }
     })
       .populate("movie", "title poster_path backdrop_path isActive runtime duration_min")
       .populate("theatre", "name location city")
@@ -103,6 +105,8 @@ export const getShowsByMovie = async (req, res) => {
       movie: movieId,
       isActive: true,
       showDateTime: { $gte: now },           // strict current-time filter
+      startDate: { $lte: now },
+      endDate: { $gte: now }
     })
       .populate({
         path: "theatre",

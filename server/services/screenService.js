@@ -81,8 +81,23 @@ export const getManagerTheatre = async (managerId) => {
     throw new AppError("Unauthorized - Manager access required", 403);
   }
 
-  return manager.managedTheatreId;
+  // Primary: use the cached managedTheatreId on the User document
+  if (manager.managedTheatreId) {
+    return manager.managedTheatreId;
+  }
+
+  // Fallback: look up the Theatre whose manager_id matches this user
+  const theatre = await Theatre.findOne({ manager_id: managerId }).select("_id");
+  if (!theatre) {
+    throw new AppError("No theatre is assigned to this manager account", 404);
+  }
+
+  // Cache it back so future calls are fast
+  await User.findByIdAndUpdate(managerId, { managedTheatreId: theatre._id });
+
+  return theatre._id;
 };
+
 
 export const getTheatreScreens = async (managerId) => {
   const theatreId = await getManagerTheatre(managerId);

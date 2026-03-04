@@ -80,6 +80,15 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // Shipping/Billing address from Stripe
+  shipping_address: {
+    line1: { type: String, default: null },
+    line2: { type: String, default: null },
+    city: { type: String, default: null },
+    state: { type: String, default: null },
+    postal_code: { type: String, default: null },
+    country: { type: String, default: null }
+  },
   isDeleted: {
     type: Boolean,
     default: false,

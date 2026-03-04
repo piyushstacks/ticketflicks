@@ -118,6 +118,22 @@ export const addShow = async (managerId, showData) => {
     );
   }
 
+  // Count active unique movies for this theatre currently
+  const activeMovieIds = await ShowTbls.distinct("movie", {
+    theatre: theatreId,
+    isActive: true,
+    endDate: { $gte: today }
+  });
+
+  const isExistingMovie = activeMovieIds.some(id => id.toString() === movie.toString());
+
+  if (!isExistingMovie && activeMovieIds.length >= 3) {
+    throw new AppError(
+      "Limit reached: You can only map a maximum of 3 movies per theatre at any given time. Please delete or disable existing shows for another movie first.",
+      400
+    );
+  }
+
   const existingShow = await ShowTbls.findOne({
     movie,
     screen,

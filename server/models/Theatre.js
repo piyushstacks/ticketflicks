@@ -1,24 +1,24 @@
 import mongoose from "mongoose";
 
 const theaterSchema = new mongoose.Schema({
-  name: { 
-    type: String, 
+  name: {
+    type: String,
     required: [true, "Theatre name is required"],
     trim: true,
     minlength: [2, "Name must be at least 2 characters"]
   },
-  location: { 
-    type: String, 
+  location: {
+    type: String,
     required: [true, "Location is required"],
     trim: true
   },
-  manager_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "User", 
+  manager_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     required: [true, "Manager ID is required"],
     validate: {
       isAsync: true,
-      validator: async function(v) {
+      validator: async function (v) {
         if (!v) return false;
         const user = await mongoose.model("User").findById(v);
         return user && user.role === "manager";
@@ -26,12 +26,12 @@ const theaterSchema = new mongoose.Schema({
       message: "Manager ID must reference a manager user"
     }
   },
-  contact_no: { 
+  contact_no: {
     type: String,
     trim: true,
     default: null,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         return !v || /^\d{10}$/.test(v);
       },
       message: "Contact number must be 10 digits"
@@ -64,7 +64,7 @@ const theaterSchema = new mongoose.Schema({
     trim: true,
     default: null,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         return !v || /^\d{5,10}$/.test(v);
       },
       message: "Zip code must be 5-10 digits"
@@ -77,13 +77,13 @@ const theaterSchema = new mongoose.Schema({
     default: null
   },
   // Approval workflow
-  approval_status: { 
-    type: String, 
+  approval_status: {
+    type: String,
     enum: {
       values: ["pending", "approved", "declined"],
       message: "Status must be pending, approved, or declined"
     },
-    default: "pending" 
+    default: "pending"
   },
   approval_date: {
     type: Date,
@@ -94,9 +94,9 @@ const theaterSchema = new mongoose.Schema({
     default: null
   },
   // Operational status
-  disabled: { 
-    type: Boolean, 
-    default: false 
+  disabled: {
+    type: Boolean,
+    default: false
   },
   disabled_reason: {
     type: String,
@@ -107,11 +107,16 @@ const theaterSchema = new mongoose.Schema({
     default: null
   },
   // Soft delete
-  isDeleted: { 
-    type: Boolean, 
+  isDeleted: {
+    type: Boolean,
     default: false,
     select: false
-  }
+  },
+  // Per-theatre movie disabling (manager can disable movies for their theatre only)
+  disabledMovies: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Movie"
+  }]
 }, { timestamps: true });
 
 // Indexes for faster queries
@@ -122,7 +127,7 @@ theaterSchema.index({ city: 1 });
 theaterSchema.index({ isDeleted: 1 });
 
 // Query middleware to exclude deleted theatres by default
-theaterSchema.pre(/^find/, function() {
+theaterSchema.pre(/^find/, function () {
   if (this.getOptions()?.includeDeleted !== true) {
     this.where({ isDeleted: { $ne: true } });
   }

@@ -77,27 +77,32 @@ const getTierNameForSeat = (rawLayout, seatNumber) => {
 };
 
 // ── Resolve price for a seat ───────────────────────────────────────
-const resolveSeatPrice = (seatNumber, tierName, showTierMap, screenTierMap, clientPrice, basePrice) => {
-  // 1. Lookup by tier name in show.seatTiers
-  if (tierName && showTierMap[tierName]) return { tierName, price: showTierMap[tierName] };
+const resolveSeatPrice = (seatNumber, backendTierName, showTierMap, screenTierMap, clientSeat, basePrice) => {
+  const clientTierName = clientSeat?.tierName;
+  const clientPrice = clientSeat?.price;
 
-  // 2. Lookup by tier name in screen.seatTiers
-  if (tierName && screenTierMap[tierName]) return { tierName, price: screenTierMap[tierName] };
+  // We have potentially two tier names: one derived from the seat map (e.g. "Premium" from "P"), 
+  // and one provided by the frontend payload (e.g. "Platinum"). We should check both.
+  const tierNamesToCheck = [backendTierName, clientTierName].filter(Boolean);
 
-  // 3. Map tier name to a letter code price (SEAT_CODE_PRICES)
-  if (tierName) {
+  for (const tName of tierNamesToCheck) {
+    if (showTierMap[tName]) return { tierName: tName, price: showTierMap[tName] };
+    if (screenTierMap[tName]) return { tierName: tName, price: screenTierMap[tName] };
+  }
+
+  // Map tier name to a letter code price
+  for (const tName of tierNamesToCheck) {
     const codeForTier = { Silver: "S", Gold: "D", Platinum: "P", Standard: "S", Deluxe: "D", Premium: "P", Recliner: "R", Couple: "C" };
-    const code = codeForTier[tierName];
-    if (code && SEAT_CODE_PRICES[code]) return { tierName, price: SEAT_CODE_PRICES[code] };
+    const code = codeForTier[tName];
+    if (code && SEAT_CODE_PRICES[code]) return { tierName: tName, price: SEAT_CODE_PRICES[code] };
   }
 
-  // 4. Use client-supplied price (if reasonable — non-zero and below 10000)
+  // Use client-supplied price (if reasonable)
   if (clientPrice && Number(clientPrice) > 0 && Number(clientPrice) < 10000) {
-    return { tierName: tierName || "Standard", price: Number(clientPrice) };
+    return { tierName: clientTierName || backendTierName || "Standard", price: Number(clientPrice) };
   }
 
-  // 5. Absolute fallback
-  return { tierName: tierName || "Standard", price: basePrice || 150 };
+  return { tierName: backendTierName || clientTierName || "Standard", price: basePrice || 150 };
 };
 
 /**
@@ -152,6 +157,14 @@ export const createBooking = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: "Cannot book for a show that has already ended" });
   }
 
+  if (showRaw.endDate && new Date() > new Date(showRaw.endDate)) {
+    return res.status(400).json({ success: false, message: "Booking for this show is disabled as its run has ended." });
+  }
+
+  if (showRaw.startDate && new Date() < new Date(showRaw.startDate)) {
+    return res.status(400).json({ success: false, message: "Booking for this show hasn't started yet." });
+  }
+
   // Movie availability check
   if (showRaw.movie?.isActive === false) {
     return res.status(400).json({ success: false, message: "This movie is not available for booking" });
@@ -174,10 +187,10 @@ export const createBooking = asyncHandler(async (req, res) => {
     // Get tier name directly from the layout cell
     const tierName = getTierNameForSeat(rawLayout, seat.seatNumber);
     // Find price using all available sources
-    const clientSeat = selectedSeats.find(s => (typeof s === "string" ? s : s?.seatNumber) === seat.seatNumber);
-    const clientPrice = typeof clientSeat === "object" ? clientSeat?.price : null;
+    const clientSeatInner = selectedSeats.find(s => (typeof s === "string" ? s : s?.seatNumber) === seat.seatNumber);
+    const clientSeatObj = typeof clientSeatInner === "object" ? clientSeatInner : { seatNumber: seat.seatNumber };
     const { tierName: resolvedTierName, price } = resolveSeatPrice(
-      seat.seatNumber, tierName, showTierMap, screenTierMap, clientPrice, showRaw.basePrice
+      seat.seatNumber, tierName, showTierMap, screenTierMap, clientSeatObj, showRaw.basePrice
     );
     console.log(`[createBooking] Seat ${seat.seatNumber}: tier=${resolvedTierName}, price=₹${price}`);
     bookedSeatsWithTier.push({ seatNumber: seat.seatNumber, tierName: resolvedTierName, price });
@@ -269,6 +282,9 @@ export const createBooking = asyncHandler(async (req, res) => {
     line_items: lineItems,
     mode: "payment",
     billing_address_collection: "required",
+    shipping_address_collection: {
+      allowed_countries: ["IN"],
+    },
     metadata: {
       bookingId: booking._id.toString(),
       customerName: userData.name || "",

@@ -10,6 +10,7 @@ import Theatre from "../models/Theatre.js";
 import theatreService from "../services/theatreService.js";
 import userService from "../services/userService.js";
 import { asyncHandler } from "../middleware/errorHandler.js";
+import { NotFoundError } from "../services/errorService.js";
 
 /**
  * Check if user is admin
@@ -246,6 +247,54 @@ export const getAllBookings = asyncHandler(async (req, res) => {
   }));
 
   res.json({ success: true, bookings: formatted });
+});
+
+/**
+ * Disable Theatre
+ */
+export const disableTheatre = asyncHandler(async (req, res) => {
+  const { theatreId } = req.params;
+  const theatre = await Theatre.findByIdAndUpdate(
+    theatreId,
+    { $set: { disabled: true, disabled_date: new Date() } },
+    { new: true }
+  );
+
+  if (!theatre) {
+    throw new NotFoundError("Theatre");
+  }
+
+  // Disable all active shows for this theatre
+  await Show.updateMany(
+    { theatre: theatreId, showDateTime: { $gte: new Date() } },
+    { isActive: false }
+  );
+
+  res.json({ success: true, message: "Theatre and its active shows disabled successfully" });
+});
+
+/**
+ * Enable Theatre
+ */
+export const enableTheatre = asyncHandler(async (req, res) => {
+  const { theatreId } = req.params;
+  const theatre = await Theatre.findByIdAndUpdate(
+    theatreId,
+    { $set: { disabled: false, disabled_date: null } },
+    { new: true }
+  );
+
+  if (!theatre) {
+    throw new NotFoundError("Theatre");
+  }
+
+  // Re-enable all upcoming shows for this theatre
+  await Show.updateMany(
+    { theatre: theatreId, showDateTime: { $gte: new Date() } },
+    { isActive: true }
+  );
+
+  res.json({ success: true, message: "Theatre and its upcoming shows enabled successfully" });
 });
 
 /**

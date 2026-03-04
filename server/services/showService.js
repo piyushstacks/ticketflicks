@@ -3,6 +3,7 @@ import Movie from "../models/Movie.js";
 import Show from "../models/show_tbls.js";
 import Screen from "../models/ScreenTbl.js";
 import Theatre from "../models/Theatre.js";
+import UpcomingMovie from "../models/UpcomingMovie.js";
 import { inngest } from "../inngest/index.js";
 import { AppError } from "./errorService.js";
 
@@ -161,10 +162,11 @@ export const fetchShows = async () => {
   const shows = await Show.find({
     showDateTime: { $gte: today },
     isActive: true,
+    endDate: { $gte: today }
   })
     .populate(
       "movie",
-      "title overview poster_path backdrop_path release_date vote_average runtime genres isActive reviews _id"
+      "title overview poster_path backdrop_path release_date vote_average runtime genres isActive reviews _id trailer_path trailer_link"
     )
     .populate("theatre")
     .populate("screen")
@@ -184,6 +186,7 @@ export const fetchShowsByMovie = async (movieId) => {
   const shows = await Show.find({
     movie: movieId,
     showDateTime: { $gte: new Date() },
+    endDate: { $gte: new Date() }
   })
     .populate("theatre")
     .populate("screen")
@@ -217,21 +220,27 @@ export const fetchShowsByMovie = async (movieId) => {
 };
 
 export const fetchUpcomingMovies = async () => {
-  const upcomingMovies = await Movie.find({
-    isActive: true,
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+
+  const upcomingMovies = await UpcomingMovie.find({
+    release_date: { $gte: currentDate }
   })
-    .sort({ release_date: -1 })
-    .limit(20)
-    .select(
-      "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
-    );
+    .sort({ release_date: 1 })
+    .limit(20);
 
   return upcomingMovies.map((movie) => ({
     ...movie.toObject(),
     id: movie._id,
-    genre_ids: movie.genres ? movie.genres.map((g) => g.id) : [],
+    poster_path: movie.poster,
+    backdrop_path: movie.poster,
+    title: movie.title,
+    overview: movie.description,
+    vote_average: 0,
+    runtime: 120,
+    genre_ids: movie.genres || [],
     adult: false,
-    original_language: movie.original_language || "en",
+    original_language: "en",
   }));
 };
 
@@ -296,12 +305,14 @@ export const getAvailableMoviesForCustomers = async () => {
   const moviesWithShows = await Show.find({
     showDateTime: { $gte: today },
     isActive: true,
+    endDate: { $gte: today }
   })
     .distinct("movie");
 
   const movies = await Movie.find({
     _id: { $in: moviesWithShows },
     isActive: true,
+    status: "now_showing"
   }).select(
     "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
   );
@@ -316,11 +327,13 @@ export const getAllActiveMovies = async () => {
   const movieIdsWithShows = await Show.find({
     showDateTime: { $gte: today },
     isActive: true,
+    endDate: { $gte: today }
   }).distinct("movie");
 
   const movies = await Movie.find({
     _id: { $in: movieIdsWithShows },
     isActive: true,
+    status: "now_showing"
   }).select(
     "title overview poster_path backdrop_path release_date vote_average runtime genres original_language _id"
   );
