@@ -24,6 +24,7 @@ import matplotlib.dates as mdates
 import seaborn as sns
 import numpy as np
 from collections import Counter
+import generate_pdf
 
 # Add current directory to path for config import
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -72,9 +73,16 @@ sns.set_palette("husl")
 def connect_to_mongodb():
     """Establish connection to MongoDB database."""
     try:
-        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        client = MongoClient(
+            MONGO_URI,
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000,
+            tls=True,
+            tlsAllowInvalidCertificates=False,
+        )
         client.server_info()  # Test connection
-        print(f"✓ Connected to MongoDB: {MONGO_URI}")
+        print(f"✓ Connected to MongoDB: {MONGO_URI[:50]}...")
         return client, client[DATABASE_NAME]
     except Exception as e:
         print(f"✗ Failed to connect to MongoDB: {e}")
@@ -102,6 +110,10 @@ def extract_bookings_data(db):
         df['user_id'] = df['user_id'].astype(str)
     if 'show_id' in df.columns:
         df['show_id'] = df['show_id'].astype(str)
+    if 'movie_id' in df.columns:
+        df['movie_id'] = df['movie_id'].astype(str)
+    if 'theatre_id' in df.columns:
+        df['theatre_id'] = df['theatre_id'].astype(str)
     
     # Convert timestamps
     for col in ['createdAt', 'updatedAt', 'cancelled_at', 'refunded_at']:
@@ -258,6 +270,13 @@ def create_enriched_bookings_data(bookings_df, shows_df, movies_df, theatres_df,
         show_cols = ['show_id', 'movie_id', 'theatre_id', 'show_datetime', 'show_date', 
                      'show_hour', 'basePrice', 'language', 'status']
         available_show_cols = [c for c in show_cols if c in shows_df.columns]
+        
+        # Drop theatre_id and movie_id from bookings if they exist, 
+        # as we want to use the normalized ones from shows_df for consistency
+        for col in ['theatre_id', 'movie_id']:
+            if col in enriched.columns:
+                enriched = enriched.drop(columns=[col])
+                
         enriched = enriched.merge(
             shows_df[available_show_cols].rename(columns={'status': 'show_status'}),
             on='show_id',
@@ -359,7 +378,8 @@ def generate_movie_analytics(movies_df, enriched_bookings_df):
     if 'genre_names' in movies_df:
         all_genres = []
         for genres in movies_df['genre_names'].dropna():
-            all_genres.extend([g.strip() for g in genres.split(',')])
+            # Filter: genre must be at least 2 chars (removes stray "F", "," artifacts)
+            all_genres.extend([g.strip() for g in genres.split(',') if len(g.strip()) >= 2])
         analytics['genre_distribution'] = dict(Counter(all_genres).most_common(10))
     
     # Rating distribution
@@ -410,12 +430,23 @@ def generate_theatre_analytics(theatres_df, enriched_bookings_df):
     
     # Theatre performance from bookings
     if not enriched_bookings_df.empty and 'theatre_name' in enriched_bookings_df:
-        theatre_perf = enriched_bookings_df.groupby('theatre_name').agg({
+        # Group by name and city to preserve city info
+        group_cols = ['theatre_name']
+        if 'city' in enriched_bookings_df.columns:
+            group_cols.append('city')
+            
+        theatre_perf = enriched_bookings_df.groupby(group_cols).agg({
             'booking_id': 'count',
             'total_amount': 'sum',
             'num_seats': 'sum'
         }).reset_index()
-        theatre_perf.columns = ['theatre', 'bookings', 'revenue', 'seats_sold']
+        
+        # Rename columns correctly based on whether city was included
+        if 'city' in group_cols:
+            theatre_perf.columns = ['theatre', 'city', 'bookings', 'revenue', 'seats_sold']
+        else:
+            theatre_perf.columns = ['theatre', 'bookings', 'revenue', 'seats_sold']
+            
         theatre_perf = theatre_perf.sort_values('revenue', ascending=False)
         analytics['top_theatres_by_revenue'] = theatre_perf.head(10).to_dict('records')
     
@@ -426,19 +457,19 @@ def generate_user_analytics(users_df, bookings_df):
     """Generate user analytics summary."""
     if users_df.empty:
         return {}
-    
+
     analytics = {
         'total_users': len(users_df),
     }
-    
+
     # Role distribution
     if 'role' in users_df:
         analytics['users_by_role'] = users_df['role'].value_counts().to_dict()
-    
+
     # Registration trends
     if 'registration_month' in users_df:
         analytics['registration_by_month'] = users_df['registration_month'].value_counts().to_dict()
-    
+
     # User booking activity
     if not bookings_df.empty and 'user_id' in bookings_df:
         user_activity = bookings_df.groupby('user_id').agg({
@@ -446,13 +477,28 @@ def generate_user_analytics(users_df, bookings_df):
             'total_amount': 'sum'
         }).reset_index()
         user_activity.columns = ['user_id', 'total_bookings', 'total_spent']
-        
+
         analytics['users_with_bookings'] = len(user_activity)
         analytics['average_bookings_per_user'] = user_activity['total_bookings'].mean()
         analytics['average_spend_per_user'] = user_activity['total_spent'].mean()
-        analytics['top_customers'] = user_activity.nlargest(10, 'total_spent').to_dict('records')
-    
+
+        # Join with users_df to get name + email
+        if 'user_id' in users_df.columns:
+            user_info = users_df[['user_id'] + [c for c in ['name', 'email'] if c in users_df.columns]].copy()
+            top = user_activity.nlargest(10, 'total_spent').merge(user_info, on='user_id', how='left')
+            # Fill missing names
+            if 'name' in top.columns:
+                top['name'] = top['name'].fillna('N/A').replace('', 'N/A')
+            else:
+                top['name'] = 'N/A'
+            if 'email' not in top.columns:
+                top['email'] = 'N/A'
+            analytics['top_customers'] = top.to_dict('records')
+        else:
+            analytics['top_customers'] = user_activity.nlargest(10, 'total_spent').to_dict('records')
+
     return analytics
+
 
 
 # ============================================================================
@@ -473,8 +519,11 @@ def create_booking_status_pie(bookings_df):
     if bookings_df.empty or 'status' not in bookings_df:
         return None
     
-    fig, ax = plt.subplots(figsize=(10, 8))
     status_counts = bookings_df['status'].value_counts()
+    if len(status_counts) <= 1:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(10, 8))
     
     colors = ['#4ECDC4', '#FF6B6B', '#FFEAA7'][:len(status_counts)]
     explode = [0.05] * len(status_counts)
@@ -500,18 +549,25 @@ def create_booking_status_pie(bookings_df):
 
 def create_payment_status_pie(bookings_df):
     """Create payment status distribution pie chart."""
-    if bookings_df.empty or 'payment_status' not in bookings_df:
+    if bookings_df.empty:
         return None
-    
+        
+    status_col = 'isPaid' if 'isPaid' in bookings_df else 'payment_status'
+    if status_col not in bookings_df:
+        return None
+        
+    status_counts = bookings_df[status_col].value_counts()
+    if len(status_counts) <= 1:
+        return None
+        
     fig, ax = plt.subplots(figsize=(10, 8))
-    payment_counts = bookings_df['payment_status'].value_counts()
     
-    colors = ['#45B7D1', '#96CEB4', '#FF6B6B', '#DDA0DD'][:len(payment_counts)]
-    explode = [0.05] * len(payment_counts)
+    colors = ['#45B7D1', '#96CEB4', '#FF6B6B', '#DDA0DD'][:len(status_counts)]
+    explode = [0.05] * len(status_counts)
     
     wedges, texts, autotexts = ax.pie(
-        payment_counts.values,
-        labels=payment_counts.index.str.title(),
+        status_counts.values,
+        labels=status_counts.index.str.title(),
         autopct='%1.1f%%',
         colors=colors,
         explode=explode,
@@ -521,7 +577,7 @@ def create_payment_status_pie(bookings_df):
     
     ax.set_title('Payment Status Distribution', fontsize=16, fontweight='bold', pad=20)
     
-    ax.legend(wedges, [f"{label}: {count:,}" for label, count in zip(payment_counts.index.str.title(), payment_counts.values)],
+    ax.legend(wedges, [f"{label}: {count:,}" for label, count in zip(status_counts.index.str.title(), status_counts.values)],
               title="Payment Status", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
     
     return save_chart(fig, 'payment_status_pie.png')
@@ -531,16 +587,18 @@ def create_revenue_by_movie_bar(enriched_bookings_df):
     """Create revenue by movie bar chart."""
     if enriched_bookings_df.empty or 'title' not in enriched_bookings_df:
         return None
-    
-    fig, ax = plt.subplots(figsize=(14, 8))
-    
-    revenue_by_movie = enriched_bookings_df.groupby('title')['total_amount'].sum().sort_values(ascending=True).tail(15)
+        
+    revenue_by_movie = enriched_bookings_df.groupby('title')['total_amount'].sum().sort_values(ascending=False).head(10)
+    if len(revenue_by_movie) < 3:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(12, 6))
     
     bars = ax.barh(revenue_by_movie.index, revenue_by_movie.values, color='#4ECDC4', edgecolor='#2C3E50', linewidth=0.5)
     
     ax.set_xlabel('Revenue (₹)', fontsize=12)
     ax.set_ylabel('Movie', fontsize=12)
-    ax.set_title('Top 15 Movies by Revenue', fontsize=16, fontweight='bold', pad=20)
+    ax.set_title('Top 10 Movies by Revenue', fontsize=16, fontweight='bold', pad=20)
     
     # Add value labels
     for bar, value in zip(bars, revenue_by_movie.values):
@@ -557,16 +615,18 @@ def create_revenue_by_theatre_bar(enriched_bookings_df):
     """Create revenue by theatre bar chart."""
     if enriched_bookings_df.empty or 'theatre_name' not in enriched_bookings_df:
         return None
-    
-    fig, ax = plt.subplots(figsize=(14, 8))
-    
-    revenue_by_theatre = enriched_bookings_df.groupby('theatre_name')['total_amount'].sum().sort_values(ascending=True).tail(15)
+        
+    revenue_by_theatre = enriched_bookings_df.groupby('theatre_name')['total_amount'].sum().sort_values(ascending=False).head(10)
+    if len(revenue_by_theatre) < 3:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(12, 6))
     
     bars = ax.barh(revenue_by_theatre.index, revenue_by_theatre.values, color='#45B7D1', edgecolor='#2C3E50', linewidth=0.5)
     
     ax.set_xlabel('Revenue (₹)', fontsize=12)
     ax.set_ylabel('Theatre', fontsize=12)
-    ax.set_title('Top 15 Theatres by Revenue', fontsize=16, fontweight='bold', pad=20)
+    ax.set_title('Top 10 Theatres by Revenue', fontsize=16, fontweight='bold', pad=20)
     
     for bar, value in zip(bars, revenue_by_theatre.values):
         ax.text(value + (revenue_by_theatre.max() * 0.01), bar.get_y() + bar.get_height()/2,
@@ -582,15 +642,18 @@ def create_daily_revenue_trend(bookings_df):
     """Create daily revenue trend line chart."""
     if bookings_df.empty or 'booking_date' not in bookings_df:
         return None
-    
-    fig, ax = plt.subplots(figsize=(14, 6))
-    
-    daily_revenue = bookings_df.groupby('booking_date').agg({
+        
+    daily_revenue_agg = bookings_df.groupby('booking_date').agg({
         'total_amount': 'sum',
         'booking_id': 'count'
     }).reset_index()
-    daily_revenue.columns = ['date', 'revenue', 'bookings']
-    daily_revenue = daily_revenue.sort_values('date')
+    daily_revenue_agg.columns = ['date', 'revenue', 'bookings']
+    daily_revenue = daily_revenue_agg.sort_values('date')
+    
+    if len(daily_revenue) < 4:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(14, 6))
     
     # Filter last 30 days if too much data
     if len(daily_revenue) > 30:
@@ -617,12 +680,14 @@ def create_daily_revenue_trend(bookings_df):
 
 def create_hourly_booking_distribution(bookings_df):
     """Create hourly booking distribution bar chart."""
-    if bookings_df.empty or 'booking_hour' not in bookings_df:
+    if bookings_df.empty or 'booking_hour' not in bookings_df or len(bookings_df) < 5:
         return None
-    
-    fig, ax = plt.subplots(figsize=(14, 6))
-    
+        
     hourly = bookings_df['booking_hour'].value_counts().sort_index()
+    if len(hourly) < 2:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(14, 6))
     
     bars = ax.bar(hourly.index, hourly.values, color='#45B7D1', edgecolor='#2C3E50', linewidth=0.5)
     
@@ -645,13 +710,16 @@ def create_hourly_booking_distribution(bookings_df):
 
 def create_day_of_week_distribution(bookings_df):
     """Create day of week booking distribution bar chart."""
-    if bookings_df.empty or 'booking_day_of_week' not in bookings_df:
+    if bookings_df.empty or 'booking_day_of_week' not in bookings_df or len(bookings_df) < 5:
         return None
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
+        
     day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     dow_counts = bookings_df['booking_day_of_week'].value_counts().reindex(day_order)
+    
+    if dow_counts.sum() < 5:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(10, 6))
     
     colors = ['#96CEB4' if day not in ['Saturday', 'Sunday'] else '#FF6B6B' for day in day_order]
     bars = ax.bar(day_order, dow_counts.values, color=colors, edgecolor='#2C3E50', linewidth=0.5)
@@ -677,17 +745,20 @@ def create_genre_distribution_pie(movies_df):
     
     all_genres = []
     for genres in movies_df['genre_names'].dropna():
-        all_genres.extend([g.strip() for g in genres.split(',')])
+        # Clean stray "F"
+        all_genres.extend([g.strip() for g in genres.split(',') if len(g.strip()) >= 2])
     
     if not all_genres:
         return None
     
-    genre_counts = Counter(all_genres).most_common(10)
-    
+    genre_counts = pd.Series(all_genres).value_counts().head(8)
+    if len(genre_counts) <= 1:
+        return None
+        
     fig, ax = plt.subplots(figsize=(12, 8))
     
-    labels = [g[0] for g in genre_counts]
-    values = [g[1] for g in genre_counts]
+    labels = genre_counts.index.tolist()
+    values = genre_counts.values.tolist()
     
     colors = CHART_COLORS[:len(labels)]
     
@@ -710,10 +781,12 @@ def create_user_role_pie(users_df):
     """Create user role distribution pie chart."""
     if users_df.empty or 'role' not in users_df:
         return None
-    
-    fig, ax = plt.subplots(figsize=(10, 8))
-    
+        
     role_counts = users_df['role'].value_counts()
+    if len(role_counts) <= 1:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(10, 8))
     colors = ['#4ECDC4', '#45B7D1', '#FF6B6B'][:len(role_counts)]
     
     wedges, texts, autotexts = ax.pie(
@@ -735,10 +808,12 @@ def create_theatre_city_bar(theatres_df):
     """Create theatre count by city bar chart."""
     if theatres_df.empty or 'city' not in theatres_df:
         return None
-    
-    fig, ax = plt.subplots(figsize=(12, 6))
-    
+        
     city_counts = theatres_df['city'].value_counts().head(15)
+    if len(city_counts) < 2:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(12, 6))
     
     bars = ax.bar(city_counts.index, city_counts.values, color='#96CEB4', edgecolor='#2C3E50', linewidth=0.5)
     
@@ -762,9 +837,9 @@ def create_rating_distribution_bar(movies_df):
         return None
     
     ratings = movies_df['imdbRating'].dropna()
-    if ratings.empty:
+    if len(ratings) < 5:
         return None
-    
+        
     fig, ax = plt.subplots(figsize=(12, 6))
     
     # Create rating bins
@@ -823,6 +898,84 @@ def create_revenue_vs_bookings_scatter(enriched_bookings_df):
     
     plt.tight_layout()
     return save_chart(fig, 'revenue_vs_bookings_scatter.png')
+
+
+def create_booking_heatmap(bookings_df):
+    """Create heatmap of bookings by day of week and hour."""
+    if bookings_df.empty or 'booking_day_of_week' not in bookings_df or 'booking_hour' not in bookings_df:
+        return None
+    
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    # Create pivot table
+    pivot = pd.pivot_table(
+        bookings_df, 
+        values='booking_id', 
+        index='booking_day_of_week', 
+        columns='booking_hour', 
+        aggfunc='count', 
+        fill_value=0
+    )
+    
+    # Reorder days
+    day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    # Filter only days that exist in the pivot
+    existing_days = [d for d in day_order if d in pivot.index]
+    if not existing_days:
+        return None
+        
+    pivot = pivot.reindex(existing_days)
+    
+    sns.heatmap(pivot, cmap='YlGnBu', annot=True, fmt='d', linewidths=.5, ax=ax)
+    
+    ax.set_xlabel('Hour of Day', fontsize=12)
+    ax.set_ylabel('Day of Week', fontsize=12)
+    ax.set_title('Booking Heatmap (Day vs Hour)', fontsize=16, fontweight='bold', pad=20)
+    
+    plt.tight_layout()
+    return save_chart(fig, 'booking_heatmap.png')
+
+
+def create_revenue_by_genre(enriched_bookings_df):
+    """Create bar chart of revenue by genre."""
+    if enriched_bookings_df.empty or 'genre_names' not in enriched_bookings_df or 'total_amount' not in enriched_bookings_df:
+        return None
+        
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    # Explode genres
+    df_genres = enriched_bookings_df[['booking_id', 'total_amount', 'genre_names']].dropna()
+    if df_genres.empty:
+        return None
+        
+    # Process genres: split by comma, expand rows
+    genre_data = []
+    for _, row in df_genres.iterrows():
+        genres = [g.strip() for g in row['genre_names'].split(',')]
+        for g in genres:
+            if g:
+                genre_data.append({'genre': g, 'revenue': row['total_amount']})
+                
+    if not genre_data:
+        return None
+        
+    df_exploded = pd.DataFrame(genre_data)
+    revenue_by_genre = df_exploded.groupby('genre')['revenue'].sum().sort_values(ascending=True).tail(15)
+    
+    bars = ax.barh(revenue_by_genre.index, revenue_by_genre.values, color='#DDA0DD', edgecolor='#2C3E50', linewidth=0.5)
+    
+    ax.set_xlabel('Revenue (₹)', fontsize=12)
+    ax.set_ylabel('Genre', fontsize=12)
+    ax.set_title('Top Genres by Revenue', fontsize=16, fontweight='bold', pad=20)
+    
+    for bar, value in zip(bars, revenue_by_genre.values):
+        ax.text(value + (revenue_by_genre.max() * 0.01), bar.get_y() + bar.get_height()/2,
+                f'₹{value:,.0f}', va='center', fontsize=9)
+                
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'₹{x/1000:.0f}K'))
+    
+    plt.tight_layout()
+    return save_chart(fig, 'revenue_by_genre_bar.png')
 
 
 # ============================================================================
@@ -1015,6 +1168,50 @@ def main():
     charts.append(('Theatres by City', create_theatre_city_bar(theatres_df)))
     charts.append(('Rating Distribution', create_rating_distribution_bar(movies_df)))
     charts.append(('Revenue vs Bookings', create_revenue_vs_bookings_scatter(enriched_bookings_df)))
+    charts.append(('Booking Heatmap', create_booking_heatmap(bookings_df)))
+    charts.append(('Revenue by Genre', create_revenue_by_genre(enriched_bookings_df)))
+    
+    # Calculate new KPIs
+    status_col = 'isPaid' if 'isPaid' in bookings_df else 'payment_status'
+    total_bk = booking_analytics.get('total_bookings', 1) or 1
+    total_rev = booking_analytics.get('total_revenue', 0)
+    paid_bk = len(bookings_df[bookings_df[status_col] == True]) if status_col in bookings_df else booking_analytics.get('bookings_by_status', {}).get('confirmed', 0)
+    conversion_rate = (paid_bk / total_bk) * 100 if paid_bk else 0
+
+    active_theatres = len(theatre_analytics.get('top_theatres_by_revenue', []))
+    # Fallback to total theatres if no bookings recorded yet to show a proper average
+    if active_theatres == 0:
+        active_theatres = theatre_analytics.get('total_theatres', 0)
+        
+    rev_per_theatre = total_rev / active_theatres if active_theatres > 0 else 0
+
+    # Generate PDF Report
+    print("\n📄 Generating Comprehensive PDF Report...")
+    pdf_stats = {
+        # Summary KPIs
+        'total_bookings':        booking_analytics.get('total_bookings', 0),
+        'total_revenue':         total_rev,
+        'average_booking_value': booking_analytics.get('average_booking_value', 0),
+        'total_users':           user_analytics.get('total_users', 0),
+        'active_movies':         movie_analytics.get('active_movies', 0),
+        
+        # New KPIs
+        'conversion_rate':       conversion_rate,
+        'seats_per_booking':     booking_analytics.get('average_seats_per_booking', 0),
+        'revenue_per_user':      user_analytics.get('average_spend_per_user', 0),
+        'revenue_per_theatre':   rev_per_theatre,
+
+        # Section data — tables
+        'bookings_by_status':   booking_analytics.get('bookings_by_status', {}),
+        'daily_trends':         booking_analytics.get('daily_trends', []).to_dict('records') if hasattr(booking_analytics.get('daily_trends', []), 'to_dict') else booking_analytics.get('daily_trends', []),
+        'top_movies':           movie_analytics.get('top_movies_by_revenue', []),
+        'top_theatres':         theatre_analytics.get('top_theatres_by_revenue', []),
+        'users_by_role':        user_analytics.get('users_by_role', {}),
+        'top_customers':        user_analytics.get('top_customers', []),
+    }
+    
+    pdf_path = os.path.join(OUTPUT_DIR, "comprehensive_report.pdf")
+    generate_pdf.create_pdf(pdf_stats, CHARTS_DIR, pdf_path)
     
     # Close MongoDB connection
     client.close()
@@ -1033,6 +1230,7 @@ def main():
     print(f"   • Total Users: {user_analytics.get('total_users', 0):,}")
     
     print(f"\n📁 OUTPUT FILES:")
+    print(f"   • Comprehensive PDF: {pdf_path}")
     print(f"   • Excel Report: {EXCEL_FILE}")
     print(f"   • Charts Directory: {CHARTS_DIR}/")
     

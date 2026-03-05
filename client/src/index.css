@@ -57,7 +57,7 @@ html:not(.dark) {
   --scrollbar-thumb: #cbd5e1;
   --scrollbar-track: #f1f5f9;
   --blur-glow-opacity: 0.15;
-  --logo-filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  --logo-filter: invert(1) hue-rotate(180deg) brightness(1.2) drop-shadow(0 1px 2px rgba(255, 255, 255, 0.2));
 
   /* Globably invert Tailwind's gray scale so hardcoded dark classes look good in light mode */
   --color-gray-50: #111827;
@@ -99,60 +99,60 @@ body,
    In light mode we need to adapt these so text stays readable on light backgrounds.
    We do NOT touch dark-mode (default), only html:not(.dark). */
 
-html:not(.dark) .text-white {
+html:not(.dark) .admin-wrapper .text-white {
   color: var(--text-primary) !important;
 }
 
 /* Soft text colors → use site secondary text */
-html:not(.dark) .text-gray-400,
-html:not(.dark) .text-gray-500 {
+html:not(.dark) .admin-wrapper .text-gray-400,
+html:not(.dark) .admin-wrapper .text-gray-500 {
   color: var(--text-muted) !important;
 }
 
-html:not(.dark) .text-gray-300 {
+html:not(.dark) .admin-wrapper .text-gray-300 {
   color: var(--text-secondary) !important;
 }
 
 /* Dark backgrounds → use site card/elevated backgrounds */
-html:not(.dark) .bg-gray-900\/30,
-html:not(.dark) .bg-gray-900\/50,
-html:not(.dark) .bg-gray-900\/80 {
+html:not(.dark) .admin-wrapper .bg-gray-900\/30,
+html:not(.dark) .admin-wrapper .bg-gray-900\/50,
+html:not(.dark) .admin-wrapper .bg-gray-900\/80 {
   background-color: var(--bg-card) !important;
 }
 
-html:not(.dark) .bg-gray-800\/30,
-html:not(.dark) .bg-gray-800\/40,
-html:not(.dark) .bg-gray-800\/50 {
+html:not(.dark) .admin-wrapper .bg-gray-800\/30,
+html:not(.dark) .admin-wrapper .bg-gray-800\/40,
+html:not(.dark) .admin-wrapper .bg-gray-800\/50 {
   background-color: var(--bg-secondary) !important;
 }
 
-html:not(.dark) .bg-gray-800 {
+html:not(.dark) .admin-wrapper .bg-gray-800 {
   background-color: var(--bg-secondary) !important;
 }
 
 /* Borders */
-html:not(.dark) .border-gray-700,
-html:not(.dark) .border-gray-700\/50 {
+html:not(.dark) .admin-wrapper .border-gray-700,
+html:not(.dark) .admin-wrapper .border-gray-700\/50 {
   border-color: var(--border) !important;
 }
 
-html:not(.dark) .border-gray-600 {
+html:not(.dark) .admin-wrapper .border-gray-600 {
   border-color: var(--border-hover) !important;
 }
 
 /* Hover states for dark tables/rows */
-html:not(.dark) .hover\:bg-gray-800\/30:hover {
+html:not(.dark) .admin-wrapper .hover\:bg-gray-800\/30:hover {
   background-color: var(--bg-elevated) !important;
 }
 
-html:not(.dark) .hover\:bg-gray-800:hover,
-html:not(.dark) .hover\:bg-gray-700:hover {
+html:not(.dark) .admin-wrapper .hover\:bg-gray-800:hover,
+html:not(.dark) .admin-wrapper .hover\:bg-gray-700:hover {
   background-color: var(--bg-elevated) !important;
 }
 
 /* Table head */
-html:not(.dark) thead.bg-gray-800\/50,
-html:not(.dark) .bg-gray-800\/50 {
+html:not(.dark) .admin-wrapper thead.bg-gray-800\/50,
+html:not(.dark) .admin-wrapper .bg-gray-800\/50 {
   background-color: var(--bg-secondary) !important;
 }
 

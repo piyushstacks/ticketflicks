@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { MapPin, Film, Search, Plus, Clock, Calendar, Star } from 'lucide-react'
+import { MapPin, Film, Search, Plus, Clock, Calendar, Star, ChevronDown, ChevronUp } from 'lucide-react'
 import BlurCircle from '../components/BlurCircle'
 import { useAppContext } from '../context/AppContext'
 import toast from 'react-hot-toast'
@@ -16,6 +16,16 @@ const Theatres = () => {
   const [loading, setLoading] = useState(false)
   const [filteredTheatres, setFilteredTheatres] = useState([])
   const [showRegistration, setShowRegistration] = useState(false)
+  
+  // Track which theatres are expanded to view shows
+  const [expandedTheatres, setExpandedTheatres] = useState({})
+
+  const toggleTheatre = (id) => {
+    setExpandedTheatres(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }))
+  }
 
   const fetchTheatresWithShows = async () => {
     try {
@@ -111,14 +121,15 @@ const Theatres = () => {
         className="mb-8 rounded-xl p-4"
         style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
       >
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
+        <div className="relative flex items-center">
+          <Search className="absolute left-4 w-5 h-5 pointer-events-none" style={{ color: "var(--text-muted)" }} />
           <input
             type="text"
             placeholder="Search theatres by name, city, or location..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="input-field pl-10"
+            className="input-field w-full h-12"
+            style={{ paddingLeft: '3rem' }}
           />
         </div>
       </div>
@@ -139,93 +150,128 @@ const Theatres = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-6">
-          {filteredTheatres.map((theatre) => (
+          {filteredTheatres.map((theatre) => {
+            const tId = theatre.id || theatre._id;
+            const isExpanded = !!expandedTheatres[tId];
+            
+            return (
             <div
-              key={theatre.id || theatre._id}
-              className="card overflow-hidden"
+              key={tId}
+              className="card overflow-hidden transition-all duration-300"
             >
               {/* Theatre Header */}
               <div
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-5"
-                style={{ borderBottom: "1px solid var(--border)" }}
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors"
+                style={{ borderBottom: isExpanded ? "1px solid var(--border)" : "none" }}
+                onClick={() => toggleTheatre(tId)}
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl" style={{ backgroundColor: "var(--color-accent-soft)" }}>
-                    <MapPin className="w-5 h-5 text-accent" />
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl" style={{ backgroundColor: "var(--color-accent-soft)" }}>
+                    <MapPin className="w-6 h-6 text-accent" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{theatre.name}</h2>
+                    <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{theatre.name}</h2>
                     <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{theatre.location}, {theatre.city}</p>
                   </div>
                 </div>
-                <span
-                  className="px-3 py-1 rounded-full text-xs font-semibold text-accent"
-                  style={{ backgroundColor: "var(--color-accent-soft)" }}
-                >
-                  {theatre.shows?.length || 0} Shows
-                </span>
+                
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                  <span
+                    className="px-4 py-1.5 rounded-full text-xs font-semibold text-accent whitespace-nowrap"
+                    style={{ backgroundColor: "var(--color-accent-soft)" }}
+                  >
+                    {theatre.shows?.length || 0} Shows Available
+                  </span>
+                  <div className="p-2 rounded-full hidden sm:flex items-center justify-center transition-transform duration-300" 
+                       style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}>
+                     <ChevronDown className="w-4 h-4" style={{ color: "var(--text-primary)" }} />
+                  </div>
+                  {/* Mobile toggle button layout */}
+                  <button className="sm:hidden text-xs font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-1"
+                          style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}>
+                     {isExpanded ? 'Hide' : 'View'} 
+                     <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
               </div>
 
-              {/* Shows */}
-              <div className="p-5">
-                {theatre.shows && theatre.shows.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {theatre.shows.map((show) => (
-                      <div
-                        key={show._id}
-                        className="rounded-xl overflow-hidden group transition-all duration-200"
-                        style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}
-                      >
-                        <div className="relative overflow-hidden">
-                          <img
-                            src={
-                              show.movie?.poster_path?.startsWith('http')
-                                ? show.movie.poster_path
-                                : imageBaseURL + (show.movie?.poster_path || '')
-                            }
-                            alt={show.movie?.title}
-                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div className="p-3.5">
-                          <h4 className="font-semibold text-sm mb-2 truncate" style={{ color: "var(--text-primary)" }}>
-                            {show.movie?.title}
-                          </h4>
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {show.showDateTime
-                                ? new Date(show.showDateTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-                                : show.showTime || 'TBD'}
-                            </span>
-                            <span>-</span>
-                            <span>{show.language || 'English'}</span>
-                            <span>-</span>
-                            <span className="text-accent font-semibold">{'₹'}{getMinPrice(show)}</span>
+              {/* Shows Content - Only Render if Expanded */}
+              {isExpanded && (
+                <div className="p-5 bg-[var(--bg-card)]">
+                  {theatre.shows && theatre.shows.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                      {theatre.shows.map((show) => (
+                        <div
+                          key={show._id}
+                          className="rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg"
+                          style={{ backgroundColor: "var(--bg-elevated)", border: "1px solid var(--border)" }}
+                        >
+                          <div className="relative overflow-hidden aspect-[4/3]">
+                            <img
+                              src={
+                                show.movie?.poster_path?.startsWith('http')
+                                  ? show.movie.poster_path
+                                  : imageBaseURL + (show.movie?.poster_path || '')
+                              }
+                              alt={show.movie?.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                            
+                            {/* Overlay Price badge */}
+                            <div className="absolute top-2 right-2 px-2.5 py-1 rounded-md text-xs font-bold bg-accent text-white shadow-md">
+                               {'₹'}{getMinPrice(show)}
+                            </div>
                           </div>
-                          <button
-                            onClick={() => handleSelectShow(show._id)}
-                            className="btn-primary w-full py-2 text-xs"
-                          >
-                            Book Now
-                          </button>
+                          
+                          <div className="p-4 flex flex-col h-[140px]">
+                            <h4 className="font-bold text-sm mb-1.5 line-clamp-1" style={{ color: "var(--text-primary)" }}>
+                              {show.movie?.title}
+                            </h4>
+                            
+                            <div className="flex items-center gap-2 text-xs mb-2" style={{ color: "var(--text-muted)" }}>
+                              <Clock className="w-3.5 h-3.5 text-accent" />
+                              <span className="font-medium text-[var(--text-secondary)]">
+                                {show.showDateTime
+                                  ? new Date(show.showDateTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                                  : show.showTime || 'TBD'}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-xs mb-auto" style={{ color: "var(--text-muted)" }}>
+                              <span className="px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)]">
+                                {show.language || 'English'}
+                              </span>
+                            </div>
+                            
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleSelectShow(show._id); }}
+                              className="btn-primary w-full py-2.5 text-xs mt-3 shadow-md hover:shadow-accent/25"
+                            >
+                              Book Tickets
+                            </button>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="flex flex-col items-center justify-center py-12 rounded-xl border border-dashed"
+                      style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border)" }}
+                    >
+                      <div className="p-3 bg-[var(--bg-card)] rounded-full mb-3 shadow-sm">
+                         <Calendar className="w-6 h-6 text-accent opacity-80" />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div
-                    className="flex flex-col items-center justify-center py-10 rounded-xl"
-                    style={{ backgroundColor: "var(--bg-secondary)" }}
-                  >
-                    <Calendar className="w-8 h-8 mb-2" style={{ color: "var(--text-muted)" }} />
-                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>No shows currently running</p>
-                  </div>
-                )}
-              </div>
+                      <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>No shows scheduled</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Check back later for newly added shows.</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

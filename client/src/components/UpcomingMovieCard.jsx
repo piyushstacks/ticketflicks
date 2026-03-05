@@ -61,8 +61,11 @@ const UpcomingMovieCard = ({ movie }) => {
             View Details
           </button>
         </div>
+        {/* Top gradient overlay for badge legibility */}
+        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
+
         {/* Coming Soon badge */}
-        <div className="absolute top-2 left-2 bg-primary/90 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+        <div className="absolute top-3 left-3 bg-red-600/90 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg border border-red-500/30">
           Coming Soon
         </div>
       </div>

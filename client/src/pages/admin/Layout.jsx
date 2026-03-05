@@ -14,7 +14,7 @@ const Layout = () => {
   }, []);
 
   return isAdmin ? (
-    <>
+    <div className="admin-wrapper">
       <AdminNavbar />
       <div className="flex">
         <AdminSidebar />
@@ -24,7 +24,7 @@ const Layout = () => {
           </ErrorBoundary>
         </div>
       </div>
-    </>
+    </div>
   ) : (
     <Loading />
   );

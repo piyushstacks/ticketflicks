@@ -190,7 +190,7 @@ const MovieShowSelector = () => {
     : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 pt-20">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--bg-primary)] via-[var(--bg-secondary)] to-[var(--bg-primary)] pt-20">
       {/* Movie Header with Enhanced Design */}
       {movie && (
         <div className="relative h-72 md:h-96 overflow-hidden">
@@ -203,14 +203,14 @@ const MovieShowSelector = () => {
           />
 
           {/* Gradient Overlays for better text visibility */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-gray-950" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-[var(--bg-primary)]" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
 
           {/* Back Button */}
           <button
             onClick={() => navigate(-1)}
             className="absolute top-6 left-6 md:left-16 z-10 flex items-center gap-2 px-4 py-2.5
-            bg-gray-900/80 backdrop-blur-md hover:bg-gray-800/90 rounded-xl transition-all
+            bg-[var(--bg-secondary)]/80 backdrop-blur-md hover:bg-gray-800/90 rounded-xl transition-all
             font-medium text-sm border border-gray-700/50 hover:border-primary/50
             active:scale-95 transform duration-200 shadow-lg"
           >
@@ -232,9 +232,9 @@ const MovieShowSelector = () => {
 
               {/* Movie Details */}
               <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-2 text-primary text-sm font-semibold">
-                  <Sparkles className="w-4 h-4" />
-                  <span>NOW SHOWING</span>
+                <div className="flex items-center gap-2 text-white/90 text-sm font-semibold">
+                  <Sparkles className="w-4 h-4 text-[#f84565]" />
+                  <span className="text-[#f84565]">NOW SHOWING</span>
                 </div>
 
                 <h1
@@ -244,7 +244,7 @@ const MovieShowSelector = () => {
                   {movie.title}
                 </h1>
 
-                <div className="flex flex-wrap items-center gap-4 text-gray-200 text-sm md:text-base">
+                <div className="flex flex-wrap items-center gap-4 text-white/80 text-sm md:text-base">
                   <span className="flex items-center gap-1.5 bg-yellow-500/20 px-3 py-1 rounded-full border border-yellow-500/30">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                     <span className="font-bold text-yellow-400">
@@ -283,15 +283,15 @@ const MovieShowSelector = () => {
       )}
 
       {/* Date Selection with Enhanced Design */}
-      <div className="sticky top-0 bg-gray-900/95 backdrop-blur-xl border-b border-gray-800/80 z-30 shadow-xl">
+      <div className="sticky top-0 bg-[var(--bg-secondary)]/95 backdrop-blur-xl border-b border-gray-800/80 z-30 shadow-xl">
         <div className="px-6 md:px-16 lg:px-40 py-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />
               Select Date
             </h2>
             {selectedDate && (
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-[var(--text-muted)]">
                 {getTotalShowsForDate(selectedDate)} shows available
               </div>
             )}
@@ -304,7 +304,7 @@ const MovieShowSelector = () => {
               className={`p-2.5 rounded-lg transition-all ${
                 dateOffset === 0
                   ? "bg-gray-800/50 text-gray-600 cursor-not-allowed"
-                  : "bg-gray-800 hover:bg-gray-700 text-white active:scale-95"
+                  : "bg-gray-800 hover:bg-gray-700 text-[var(--text-primary)] active:scale-95"
               }`}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -330,16 +330,16 @@ const MovieShowSelector = () => {
                     }`}
                   >
                     {isToday && (
-                      <span className="absolute -top-2 text-[10px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">
+                      <span className="absolute -top-2 text-[10px] bg-primary text-[var(--text-primary)] px-2 py-0.5 rounded-full font-bold">
                         Today
                       </span>
                     )}
                     <span
-                      className={`font-bold text-xl md:text-2xl ${isSelected ? "text-primary" : "text-white"}`}
+                      className={`font-bold text-xl md:text-2xl ${isSelected ? "text-primary" : "text-[var(--text-primary)]"}`}
                     >
                       {date.getDate()}
                     </span>
-                    <span className="text-xs text-gray-400 mt-1">
+                    <span className="text-xs text-[var(--text-muted)] mt-1">
                       {date.toLocaleDateString("en-US", { weekday: "short" })}
                     </span>
                     <span className="text-xs text-gray-500">
@@ -365,11 +365,11 @@ const MovieShowSelector = () => {
         {selectedDate && filteredTheatres.length > 0 ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
+              <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
                 <Ticket className="w-7 h-7 text-primary" />
                 Available Shows
               </h2>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-[var(--text-muted)]">
                 {selectedDate.toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
@@ -387,7 +387,7 @@ const MovieShowSelector = () => {
               return (
                 <div
                   key={theatre._id}
-                  className="bg-gradient-to-br from-gray-900/80 to-gray-900/40 backdrop-blur-md
+                  className="bg-gradient-to-br from-[var(--bg-secondary)]/80 to-[var(--bg-secondary)]/40 backdrop-blur-md
                   border border-gray-700/50 rounded-2xl overflow-hidden shadow-xl
                   hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300
                   animate-fade-in-up"
@@ -404,14 +404,14 @@ const MovieShowSelector = () => {
                           <MapPin className="w-6 h-6 text-primary" />
                         </div>
                         <div>
-                          <h3 className="text-xl md:text-2xl font-bold text-white mb-1">
+                          <h3 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-1">
                             {theatre.name}
                           </h3>
-                          <p className="text-gray-300 text-sm flex items-center gap-1.5">
+                          <p className="text-[var(--text-secondary)] text-sm flex items-center gap-1.5">
                             <MapPin className="w-3.5 h-3.5" />
                             {theatre.location}, {theatre.city}
                           </p>
-                          <p className="text-gray-400 text-xs mt-1 flex items-center gap-1.5">
+                          <p className="text-[var(--text-muted)] text-xs mt-1 flex items-center gap-1.5">
                             <Users className="w-3.5 h-3.5" />
                             {screenCount}{" "}
                             {screenCount === 1 ? "Screen" : "Screens"}
@@ -421,7 +421,7 @@ const MovieShowSelector = () => {
 
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className="text-xs text-gray-400 mb-1">
+                          <div className="text-xs text-[var(--text-muted)] mb-1">
                             Rating
                           </div>
                           <div className="flex items-center gap-1.5 bg-yellow-500/10 px-3 py-1.5 rounded-lg border border-yellow-500/20">
@@ -453,11 +453,11 @@ const MovieShowSelector = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
-                              <p className="text-sm font-semibold text-gray-200">
+                              <p className="text-sm font-semibold text-[var(--text-secondary)]">
                                 Screen {screenData.screen?.screenNumber}
                               </p>
                               <span className="text-xs text-gray-500">•</span>
-                              <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                              <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
                                 <Users className="w-3.5 h-3.5" />
                                 {screenData.screen?.seatLayout?.totalSeats ||
                                   0}{" "}
@@ -476,15 +476,15 @@ const MovieShowSelector = () => {
                               <button
                                 key={show._id}
                                 onClick={() => handleShowClick(show._id)}
-                                className="group relative p-4 bg-gradient-to-br from-gray-800 to-gray-800/50
+                                className="group relative p-4 bg-gradient-to-br from-[var(--bg-elevated)] to-[var(--bg-elevated)]/50
                                 hover:from-primary hover:to-primary-dull rounded-xl transition-all duration-300
                                 text-center font-semibold border border-gray-700
                                 hover:border-primary hover:shadow-lg hover:shadow-primary/30
                                 active:scale-95 transform"
                               >
                                 <div className="flex flex-col items-center gap-2">
-                                  <Clock className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
-                                  <span className="text-white text-base">
+                                  <Clock className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors" />
+                                  <span className="text-[var(--text-primary)] text-base">
                                     {new Date(
                                       show.showDateTime,
                                     ).toLocaleTimeString("en-US", {
@@ -493,7 +493,7 @@ const MovieShowSelector = () => {
                                       hour12: true,
                                     })}
                                   </span>
-                                  <span className="text-xs text-gray-400 group-hover:text-white/80 transition-colors">
+                                  <span className="text-xs text-[var(--text-muted)] group-hover:text-[var(--text-primary)]/80 transition-colors">
                                     Available
                                   </span>
                                 </div>
@@ -516,14 +516,14 @@ const MovieShowSelector = () => {
         ) : selectedDate ? (
           /* No Shows Available State */
           <div className="text-center py-20 animate-fade-in">
-            <div className="max-w-md mx-auto bg-gray-900/50 backdrop-blur-md border border-gray-700/50 rounded-2xl p-10">
+            <div className="max-w-md mx-auto bg-[var(--bg-secondary)]/50 backdrop-blur-md border border-gray-700/50 rounded-2xl p-10">
               <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Calendar className="w-10 h-10 text-gray-500" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
+              <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                 No Shows Available
               </h3>
-              <p className="text-gray-400 mb-2">
+              <p className="text-[var(--text-muted)] mb-2">
                 No shows are scheduled for this movie on{" "}
                 <span className="text-primary font-semibold">
                   {selectedDate.toLocaleDateString("en-US", {
@@ -541,17 +541,17 @@ const MovieShowSelector = () => {
         ) : (
           /* Select Date First State */
           <div className="text-center py-20 animate-fade-in">
-            <div className="max-w-md mx-auto bg-gray-900/50 backdrop-blur-md border border-gray-700/50 rounded-2xl p-10">
+            <div className="max-w-md mx-auto bg-[var(--bg-secondary)]/50 backdrop-blur-md border border-gray-700/50 rounded-2xl p-10">
               <div
                 className="w-20 h-20 bg-gradient-to-br from-primary/20 to-purple-600/20 rounded-full
               flex items-center justify-center mx-auto mb-6 border border-primary/30"
               >
                 <Calendar className="w-10 h-10 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
+              <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                 Select a Date
               </h3>
-              <p className="text-gray-400">
+              <p className="text-[var(--text-muted)]">
                 Choose a date from the calendar above to view available shows
               </p>
             </div>

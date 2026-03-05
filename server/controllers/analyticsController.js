@@ -226,30 +226,22 @@ export const getAnalyticsData = asyncHandler(async (req, res) => {
 });
 
 /**
- * Generate and download Excel report
+ * Generate and download comprehensive analytics PDF report
  */
-export const downloadReport = asyncHandler(async (req, res) => {
-  // Go up from server/controllers to project root (sdp-dump-2)
+export const downloadComprehensive = asyncHandler(async (req, res) => {
   const projectRoot = path.resolve(__dirname, "../..");
   const analyticsDir = path.join(projectRoot, "analytics");
   const reportsDir = path.join(analyticsDir, "reports");
 
   console.log("[Analytics] Project root:", projectRoot);
-  console.log("[Analytics] Analytics dir:", analyticsDir);
 
-  // Ensure reports directory exists
   if (!fs.existsSync(reportsDir)) {
     fs.mkdirSync(reportsDir, { recursive: true });
   }
 
-  const reportPath = path.join(reportsDir, "ticketflicks_analytics_report.xlsx");
-
-  // Run the Python script
   const pythonScript = path.join(analyticsDir, "analytics_report.py");
 
-  // Check if Python script exists
   if (!fs.existsSync(pythonScript)) {
-    console.error("[Analytics] Script not found at:", pythonScript);
     return res.status(500).json({
       success: false,
       message: "Analytics script not found at: " + pythonScript,
@@ -258,89 +250,47 @@ export const downloadReport = asyncHandler(async (req, res) => {
 
   console.log("[Analytics] Running Python script:", pythonScript);
 
-  // Execute Python script
-  exec(`python3 "${pythonScript}"`, { cwd: analyticsDir, timeout: 60000 }, (error, stdout, stderr) => {
+  const env = { ...process.env, GEMINI_API_KEY: process.env.GEMINI_API_KEY || "dummy" };
+
+  exec(`python3 "${pythonScript}"`, { cwd: analyticsDir, timeout: 180000, env }, (error, stdout, stderr) => {
     if (error) {
       console.error("[Analytics] Script error:", error);
       console.error("[Analytics] stderr:", stderr);
-      console.error("[Analytics] stdout:", stdout);
       return res.status(500).json({
         success: false,
         message: "Failed to generate report",
         error: stderr || error.message,
-        stdout: stdout,
       });
     }
 
-    console.log("[Analytics] Script output:", stdout);
+    const pdfPath = path.join(reportsDir, "comprehensive_report.pdf");
 
-    // Check if report was created
-    if (!fs.existsSync(reportPath)) {
-      console.error("[Analytics] Report file not found at:", reportPath);
-      return res.status(500).json({
-        success: false,
-        message: "Report file was not generated",
-      });
+    if (!fs.existsSync(pdfPath)) {
+      console.error("[Analytics] PDF not found after script run:", pdfPath);
+      return res.status(500).json({ success: false, message: "PDF generation succeeded but file not found." });
     }
 
-    console.log("[Analytics] Report generated successfully:", reportPath);
+    const filename = `ticketflicks_report_${new Date().toISOString().split("T")[0]}.pdf`;
+    console.log("[Analytics] Sending PDF:", pdfPath);
 
-    // Send file for download
-    res.download(reportPath, `ticketflicks_analytics_${new Date().toISOString().split("T")[0]}.xlsx`, (err) => {
-      if (err) {
-        console.error("[Analytics] Download error:", err);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", fs.statSync(pdfPath).size);
+
+    const stream = fs.createReadStream(pdfPath);
+    stream.on("error", (err) => {
+      console.error("[Analytics] Stream error:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: "Error streaming PDF" });
       }
     });
+    stream.pipe(res);
+    console.log("[Analytics] PDF sent successfully!");
   });
 });
 
-/**
- * Generate and download charts as ZIP
- */
-export const downloadCharts = asyncHandler(async (req, res) => {
-  // Go up from server/controllers to project root (sdp-dump-2)
-  const projectRoot = path.resolve(__dirname, "../..");
-  const analyticsDir = path.join(projectRoot, "analytics");
-  const chartsDir = path.join(analyticsDir, "reports", "charts");
-
-  // Check if charts directory exists
-  if (!fs.existsSync(chartsDir)) {
-    // Run Python script to generate charts
-    const pythonScript = path.join(analyticsDir, "analytics_report.py");
-
-    exec(`python3 "${pythonScript}"`, { cwd: analyticsDir, timeout: 60000 }, (error, stdout, stderr) => {
-      if (error) {
-        console.error("[Analytics] Charts generation error:", error);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to generate charts",
-          error: stderr || error.message,
-        });
-      }
-
-      sendChartsZip(res, chartsDir);
-    });
-  } else {
-    sendChartsZip(res, chartsDir);
-  }
-});
-
-/**
- * Helper to send charts as ZIP
- */
-async function sendChartsZip(res, chartsDir) {
-  const archiver = (await import("archiver")).default;
-  const archive = archiver("zip", { zlib: { level: 9 } });
-
-  res.attachment(`ticketflicks_charts_${new Date().toISOString().split("T")[0]}.zip`);
-  archive.pipe(res);
-
-  archive.directory(chartsDir, false);
-  archive.finalize();
-}
 
 export default {
   getAnalyticsData,
-  downloadReport,
-  downloadCharts,
+  downloadComprehensive,
 };

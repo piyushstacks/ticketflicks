@@ -80,18 +80,18 @@ const UpcomingMovieDetails = () => {
             Coming Soon
           </span>
 
-          <h1 className="text-4xl font-semibold max-w-xl text-balance">
+          <h1 className="text-4xl font-semibold max-w-xl text-balance text-[var(--text-primary)]">
             {upcomingMovie.title}
           </h1>
 
-          <p className="text-gray-400 mt-2 text-md leading-relaxed max-w-2xl">
+          <p className="text-[var(--text-secondary)] mt-2 text-md leading-relaxed max-w-2xl">
             {description}
           </p>
 
           <p>
             <span className="text-primary font-medium">Release Date</span>
             {" "}:{" "}
-            <span className="text-white">
+            <span className="text-[var(--text-primary)]">
               {upcomingMovie.release_date
                 ? new Date(upcomingMovie.release_date).toLocaleDateString("en-IN", {
                     day: "numeric",
@@ -105,13 +105,13 @@ const UpcomingMovieDetails = () => {
           <p>
             <span className="text-primary font-medium">Genres</span>
             {" "}:{" "}
-            <span className="text-white">{genreDisplay}</span>
+            <span className="text-[var(--text-primary)]">{genreDisplay}</span>
           </p>
 
           <div className="flex items-center flex-wrap gap-4 mt-4">
             <a
               href="#trailer"
-              className="flex items-center gap-2 px-7 py-3 text-sm bg-gray-800 hover:bg-gray-900 transition rounded-md font-medium cursor-pointer active:scale-95"
+              className="flex items-center gap-2 px-7 py-3 text-sm bg-[var(--bg-elevated)] hover:bg-[var(--bg-card-hover)] transition rounded-md font-medium cursor-pointer active:scale-95 border border-[var(--border)] text-[var(--text-primary)]"
             >
               <PlayCircleIcon className="w-5 h-5" />
               Watch Trailer

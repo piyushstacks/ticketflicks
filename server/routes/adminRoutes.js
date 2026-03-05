@@ -16,8 +16,7 @@ import {
 } from "../controllers/adminController.js";
 import {
   getAnalyticsData,
-  downloadReport,
-  downloadCharts,
+  downloadComprehensive,
 } from "../controllers/analyticsController.js";
 import {
   syncMoviesFromTMDB,
@@ -65,8 +64,7 @@ adminRouter.get("/feedbacks", protectAdmin, getAllFeedbacks);
 
 // Analytics Routes
 adminRouter.get("/analytics", protectAdmin, getAnalyticsData);
-adminRouter.get("/analytics/download-report", protectAdmin, downloadReport);
-adminRouter.get("/analytics/download-charts", protectAdmin, downloadCharts);
+adminRouter.get("/analytics/download-comprehensive", protectAdmin, downloadComprehensive);
 
 // Movie Management Routes
 adminRouter.post("/movies/create", protectAdmin, createMovie);
