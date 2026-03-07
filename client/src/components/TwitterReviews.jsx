@@ -1,18 +1,43 @@
 import React, { useEffect, useRef, useState } from "react";
 import { MessageCircle, ExternalLink, Twitter, RefreshCw } from "lucide-react";
 
-// Component to embed a single Twitter/X post using blockquote method
-const TwitterEmbed = ({ url }) => {
-  const containerRef = useRef(null);
-  const [status, setStatus] = useState("loading"); // loading, loaded, error
+import { Tweet } from 'react-tweet';
 
-  // Extract tweet ID from URL
+const TwitterEmbedFallback = ({ url, username }) => {
+  return (
+    <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl p-5 border border-[var(--border)] hover:border-blue-500/50 transition-all">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="p-2 bg-blue-500/20 rounded-full">
+          <Twitter className="w-5 h-5 text-blue-400" />
+        </div>
+        <div className="flex-1">
+          <p className="text-[var(--text-secondary)] font-medium">@{username || "user"}</p>
+          <p className="text-[var(--text-muted)] text-xs">Twitter/X Post</p>
+        </div>
+      </div>
+      <p className="text-[var(--text-muted)] text-sm mb-4 leading-relaxed">
+        This tweet cannot be embedded directly. Click below to view it on Twitter/X.
+      </p>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors text-sm font-medium w-full justify-center"
+      >
+        <ExternalLink className="w-4 h-4" />
+        View on Twitter/X
+      </a>
+    </div>
+  );
+};
+
+// Component to embed a single Twitter/X post using react-tweet for maximum performance
+const TwitterEmbed = ({ url }) => {
   const getTweetId = (url) => {
     const match = url.match(/status\/(\d+)/);
     return match ? match[1] : null;
   };
-
-  // Extract username from URL
+  
   const getUsername = (url) => {
     const match = url.match(/(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]+)\/status/);
     return match ? match[1] : null;
@@ -21,157 +46,15 @@ const TwitterEmbed = ({ url }) => {
   const tweetId = getTweetId(url);
   const username = getUsername(url);
 
-  useEffect(() => {
-    if (!tweetId || !containerRef.current) {
-      setStatus("error");
-      return;
-    }
-
-    let isMounted = true;
-
-    const renderTweet = async () => {
-      try {
-        // Create the blockquote element that Twitter will transform
-        const blockquote = document.createElement("blockquote");
-        blockquote.className = "twitter-tweet";
-        blockquote.setAttribute("data-theme", "dark");
-        blockquote.setAttribute("data-dnt", "true");
-
-        // Add a link to the tweet (required for the widget)
-        const link = document.createElement("a");
-        link.href = url.replace("x.com", "twitter.com"); // Ensure twitter.com domain
-        blockquote.appendChild(link);
-
-        // Clear and append
-        if (containerRef.current) {
-          containerRef.current.innerHTML = "";
-          containerRef.current.appendChild(blockquote);
-        }
-
-        // Load or reload Twitter widgets
-        if (window.twttr && window.twttr.widgets) {
-          await window.twttr.widgets.load(containerRef.current);
-          if (isMounted) {
-            // Check if tweet was rendered (blockquote should be replaced)
-            const iframe = containerRef.current.querySelector("iframe");
-            if (iframe) {
-              setStatus("loaded");
-            } else {
-              // Widget loaded but tweet might not have rendered
-              setTimeout(() => {
-                if (isMounted) {
-                  const iframeCheck =
-                    containerRef.current?.querySelector("iframe");
-                  setStatus(iframeCheck ? "loaded" : "error");
-                }
-              }, 2000);
-            }
-          }
-        } else {
-          // Load Twitter widget script
-          const script = document.createElement("script");
-          script.src = "https://platform.twitter.com/widgets.js";
-          script.async = true;
-          script.charset = "utf-8";
-
-          script.onload = () => {
-            if (window.twttr && window.twttr.widgets && isMounted) {
-              window.twttr.widgets.load(containerRef.current).then(() => {
-                if (isMounted) {
-                  setTimeout(() => {
-                    const iframe =
-                      containerRef.current?.querySelector("iframe");
-                    setStatus(iframe ? "loaded" : "error");
-                  }, 1000);
-                }
-              });
-            }
-          };
-
-          script.onerror = () => {
-            if (isMounted) setStatus("error");
-          };
-
-          // Only add if not already present
-          if (!document.getElementById("twitter-wjs")) {
-            script.id = "twitter-wjs";
-            document.head.appendChild(script);
-          } else {
-            // Script exists, just trigger load
-            if (window.twttr && window.twttr.widgets) {
-              window.twttr.widgets.load(containerRef.current).then(() => {
-                if (isMounted) {
-                  setTimeout(() => {
-                    const iframe =
-                      containerRef.current?.querySelector("iframe");
-                    setStatus(iframe ? "loaded" : "error");
-                  }, 1000);
-                }
-              });
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Error rendering tweet:", err);
-        if (isMounted) setStatus("error");
-      }
-    };
-
-    // Small delay to ensure DOM is ready
-    const timeoutId = setTimeout(renderTweet, 100);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, [url, tweetId]);
-
-  // Error or fallback state - show a nice card with link
-  if (status === "error") {
-    return (
-      <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl p-5 border border-[var(--border)] hover:border-blue-500/50 transition-all">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="p-2 bg-blue-500/20 rounded-full">
-            <Twitter className="w-5 h-5 text-blue-400" />
-          </div>
-          <div className="flex-1">
-            <p className="text-[var(--text-secondary)] font-medium">@{username || "user"}</p>
-            <p className="text-[var(--text-muted)] text-xs">Twitter/X Post</p>
-          </div>
-        </div>
-        <p className="text-[var(--text-muted)] text-sm mb-4 leading-relaxed">
-          This tweet cannot be embedded directly. Click below to view it on
-          Twitter/X.
-        </p>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors text-sm font-medium w-full justify-center"
-        >
-          <ExternalLink className="w-4 h-4" />
-          View on Twitter/X
-        </a>
-      </div>
-    );
+  if (!tweetId) {
+    return <TwitterEmbedFallback url={url} username={username} />;
   }
 
   return (
-    <div className="twitter-embed-container min-h-[250px] relative">
-      {/* Loading State */}
-      {status === "loading" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--bg-secondary)]/50 rounded-xl border border-[var(--border)]">
-          <RefreshCw className="w-6 h-6 text-blue-400 animate-spin mb-3" />
-          <span className="text-[var(--text-muted)] text-sm">Loading tweet...</span>
-        </div>
-      )}
-
-      {/* Tweet Container */}
-      <div
-        ref={containerRef}
-        className={`twitter-embed transition-opacity duration-300 ${
-          status === "loading" ? "opacity-0" : "opacity-100"
-        }`}
+    <div className="twitter-embed-container" data-theme="dark">
+      <Tweet 
+        id={tweetId} 
+        fallback={<TwitterEmbedFallback url={url} username={username} />}
       />
     </div>
   );

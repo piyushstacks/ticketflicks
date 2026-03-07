@@ -19,6 +19,7 @@
     "react-hot-toast": "^2.5.2",
     "react-player": "^2.16.0",
     "react-router-dom": "^7.6.2",
+    "react-tweet": "^3.3.0",
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {

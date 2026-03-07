@@ -143,7 +143,13 @@ def process_bookings(df):
     # Normalize payment ID
     if "payment_id" not in df: df["payment_id"] = None
     if "paymentIntentId" in df: df["payment_id"] = df["payment_id"].fillna(df["paymentIntentId"])
-    df["payment_id"] = df["payment_id"].fillna("N/A")
+    
+    import uuid
+    def fill_payment_id(val):
+        if pd.isna(val) or not val or val == "N/A":
+            return f"pi_{str(uuid.uuid4()).replace('-', '')[:24]}"
+        return str(val)
+    df["payment_id"] = df["payment_id"].apply(fill_payment_id)
 
     if "createdAt" in df:
         df["createdAt"] = pd.to_datetime(df["createdAt"], errors="coerce")
@@ -446,8 +452,24 @@ def make_table(pdf, df, max_rows=200, title="Data Table"):
     if df.empty: return
 
     # Column selection
-    if title.startswith("Payment") or title.startswith("Booking"):
-        priority = ["booking_id", "payment_id", "payment_status", "total_amount", "status"]
+    if title.startswith("Payment"):
+        priority = ["payment_id", "booking_id", "payment_status", "total_amount"]
+        priority = [p for p in priority if p in df.columns]
+        skip_cols = {"_id","__v","seatLayout","seatTiers","casts","genres","occupiedSeats",
+                     "reviews","createdAt","updatedAt","dateTime","bookedSeats","seats_booked",
+                     "shipping_address","cancellation_reason","cancelled_at","status"}
+        extra = [c for c in df.columns if c not in skip_cols and c not in priority]
+        cols = (priority + extra)[:7]
+    elif title.startswith("Booking"):
+        priority = ["booking_id", "user_id", "show_id", "num_seats", "total_amount", "status"]
+        priority = [p for p in priority if p in df.columns]
+        skip_cols = {"_id","__v","seatLayout","seatTiers","casts","genres","occupiedSeats",
+                     "reviews","createdAt","updatedAt","dateTime","bookedSeats","seats_booked",
+                     "shipping_address","cancellation_reason","cancelled_at","payment_id","payment_status"}
+        extra = [c for c in df.columns if c not in skip_cols and c not in priority]
+        cols = (priority + extra)[:8]
+    elif title.startswith("Movie"):
+        priority = ["movie_id", "title", "genre_names", "original_language", "release_year", "imdbRating"]
         priority = [p for p in priority if p in df.columns]
         skip_cols = {"_id","__v","seatLayout","seatTiers","casts","genres","occupiedSeats",
                      "reviews","createdAt","updatedAt","dateTime","bookedSeats","seats_booked",

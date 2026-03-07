@@ -225,13 +225,13 @@ const ManagerMovies = () => {
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold">{viewingMovie.title}</h2>
+                  <h2 className="text-3xl font-bold text-[var(--text-primary)]">{viewingMovie.title}</h2>
                   {viewingMovie.genres && viewingMovie.genres.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {viewingMovie.genres.map((genre, index) => (
                         <span
                           key={index}
-                          className="px-3 py-1 bg-primary/20 text-primary text-sm rounded"
+                          className="px-3 py-1 bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] text-sm rounded"
                         >
                           {getGenreName(genre)}
                         </span>
@@ -246,9 +246,9 @@ const ManagerMovies = () => {
                 </div>
                 <button
                   onClick={() => setViewingMovie(null)}
-                  className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-[var(--bg-secondary)] rounded-full hover:bg-[var(--border)] transition"
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               
@@ -274,9 +274,9 @@ const ManagerMovies = () => {
 
                 {/* Movie Details */}
                 <div className="space-y-4">
-                  <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-primary mb-3">Movie Information</h3>
-                    <div className="space-y-3">
+                  <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-5">
+                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-4">Movie Information</h3>
+                    <div className="space-y-4">
                       {viewingMovie.overview && (
                         <div>
                           <h4 className="text-sm text-[var(--text-muted)] mb-1">Overview</h4>
@@ -323,8 +323,8 @@ const ManagerMovies = () => {
                   </div>
 
                   {viewingMovie.backdrop_path && (
-                    <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-primary mb-3">Backdrop Image</h3>
+                    <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-5">
+                      <h3 className="text-xl font-bold text-[var(--text-primary)] mb-4">Backdrop Image</h3>
                       <img
                         src={
                           viewingMovie.backdrop_path.startsWith("http")
