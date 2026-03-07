@@ -12,13 +12,9 @@ const client = new MongoClient(MONGO_URI, { tls: true, tlsAllowInvalidCertificat
 async function run() {
   await client.connect();
   const db = client.db("ticketflicks");
-  const bookings = db.collection("bookings_new");
-
-  const allBookings = await bookings.find({}).toArray();
-  for (const b of allBookings) {
-    if (b.payment_status !== "completed") {
-      console.log(b._id, "isPaid:", b.isPaid, "payment_status:", b.payment_status, "status:", b.status);
-    }
+  const reviews = await db.collection("ratings_reviews").find({ type: "twitter" }).toArray();
+  for (const r of reviews) {
+    console.log(r._id, "movie_id:", r.movie_id, "tweet_url:", r.tweet_url, "reviews length:", r.reviews ? r.reviews.length : 0);
   }
   process.exit(0);
 }

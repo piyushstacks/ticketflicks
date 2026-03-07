@@ -55,6 +55,10 @@ const TwitterEmbed = ({ url }) => {
       <Tweet 
         id={tweetId} 
         fallback={<TwitterEmbedFallback url={url} username={username} />}
+        components={{
+          TweetNotFound: () => <TwitterEmbedFallback url={url} username={username} />
+        }}
+        onError={(err) => console.log('Twitter embed error for', url, err)}
       />
     </div>
   );
