@@ -94,11 +94,11 @@ const AddShows = () => {
       <Title text1="Assign" text2="Movies to Theatres" />
 
       <div className="mt-6">
-        <label className="block text-sm font-medium mb-2 text-white/80">Select Theatre</label>
+        <label className="block text-sm font-medium mb-2 text-[var(--text-primary)]/80">Select Theatre</label>
         <select
           value={selectedTheatre}
           onChange={(e) => setSelectedTheatre(e.target.value)}
-          className="w-full border border-gray-600 px-3 py-2 rounded-md bg-black/40 text-white transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
+          className="w-full border border-[var(--border-hover)] px-3 py-2 rounded-md bg-black/40 text-[var(--text-primary)] transition-all duration-200 hover:bg-black/30 focus:outline-none focus:border-primary/80"
           title="Choose a theatre to assign movies to"
         >
           <option value="" className="bg-black/40">-- Select Theatre --</option>
@@ -129,11 +129,11 @@ const AddShows = () => {
                     className="w-full object-cover brightness-90"
                   />
                   <div className="text-sm flex items-center justify-between p-2 bg-black/70 w-full absolute bottom-0 left-0">
-                    <p className="flex items-center gap-1 text-gray-400">
+                    <p className="flex items-center gap-1 text-[var(--text-muted)]">
                       <StarIcon className="w-4 h-4 text-primary fill-primary" />
                       {(movie.vote_average || 0).toFixed(1)}
                     </p>
-                    <p className="text-gray-300">
+                    <p className="text-[var(--text-secondary)]">
                       {kConverter(movie.vote_count || 0)} Votes
                     </p>
                   </div>
@@ -141,14 +141,14 @@ const AddShows = () => {
 
                 {selected && (
                   <div className="absolute top-2 right-2 flex items-center justify-center bg-primary h-6 w-6 rounded">
-                    <CheckIcon className="w-4 h-4 text-white" strokeWidth={2.5} />
+                    <CheckIcon className="w-4 h-4 text-[var(--text-primary)]" strokeWidth={2.5} />
                   </div>
                 )}
 
                 <p className="font-medium truncate" style={{ maxWidth: 160 }}>
                   {movie.title}
                 </p>
-                <p className="text-gray-400 text-sm">{movie.release_date ? new Date(movie.release_date).toLocaleDateString() : "N/A"}</p>
+                <p className="text-[var(--text-muted)] text-sm">{movie.release_date ? new Date(movie.release_date).toLocaleDateString() : "N/A"}</p>
               </div>
             );
           })}

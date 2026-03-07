@@ -95,19 +95,19 @@ const AdminBookings = () => {
         <h1 className="text-3xl font-bold">Booking Details</h1>
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Search bookings..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+              className="pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+            className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
           >
             <option value="all">All Status</option>
             <option value="paid">Paid</option>
@@ -118,19 +118,19 @@ const AdminBookings = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Bookings</p>
+              <p className="text-[var(--text-muted)] text-sm">Total Bookings</p>
               <p className="text-2xl font-bold mt-1">{bookings.length}</p>
             </div>
             <Ticket className="w-8 h-8 text-blue-500" />
           </div>
         </div>
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Paid Bookings</p>
+              <p className="text-[var(--text-muted)] text-sm">Paid Bookings</p>
               <p className="text-2xl font-bold mt-1">
                 {bookings.filter((b) => b.isPaid).length}
               </p>
@@ -138,10 +138,10 @@ const AdminBookings = () => {
             <CreditCard className="w-8 h-8 text-green-500" />
           </div>
         </div>
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Unpaid Bookings</p>
+              <p className="text-[var(--text-muted)] text-sm">Unpaid Bookings</p>
               <p className="text-2xl font-bold mt-1">
                 {bookings.filter((b) => !b.isPaid).length}
               </p>
@@ -149,10 +149,10 @@ const AdminBookings = () => {
             <Calendar className="w-8 h-8 text-orange-500" />
           </div>
         </div>
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Revenue</p>
+              <p className="text-[var(--text-muted)] text-sm">Total Revenue</p>
               <p className="text-2xl font-bold mt-1">
                 {currency}
                 {bookings
@@ -170,65 +170,65 @@ const AdminBookings = () => {
       <h2 className="text-xl font-bold mt-8 mb-4">Theatre Performance</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {theatreStatsArray.map((theatre) => (
-          <div key={theatre.id} className="bg-gray-900/30 border border-gray-700 rounded-lg p-5">
+          <div key={theatre.id} className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-5">
             <h3 className="font-bold text-lg text-primary mb-3">
               {theatre.name}
             </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-400">Total Bookings:</span>
+                <span className="text-[var(--text-muted)]">Total Bookings:</span>
                 <span className="font-semibold">{theatre.totalBookings}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Paid Bookings:</span>
+                <span className="text-[var(--text-muted)]">Paid Bookings:</span>
                 <span className="font-semibold text-green-400">{theatre.paidBookings}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Unpaid Bookings:</span>
+                <span className="text-[var(--text-muted)]">Unpaid Bookings:</span>
                 <span className="font-semibold text-orange-400">{theatre.unpaidBookings}</span>
               </div>
               <div className="flex justify-between pt-2 mt-2 border-t border-gray-800">
-                <span className="text-gray-400">Total Revenue:</span>
+                <span className="text-[var(--text-muted)]">Total Revenue:</span>
                 <span className="font-bold text-base">{currency}{theatre.revenue.toFixed(2)}</span>
               </div>
             </div>
           </div>
         ))}
         {theatreStatsArray.length === 0 && (
-          <div className="col-span-full py-8 text-center text-gray-400 bg-gray-900/30 rounded-lg border border-gray-700">
+          <div className="col-span-full py-8 text-center text-[var(--text-muted)] bg-[var(--bg-primary)]/30 rounded-lg border border-[var(--border)]">
             No theatre data available
           </div>
         )}
       </div>
 
       {/* Bookings Table */}
-      <div className="bg-gray-900/30 border border-gray-700 rounded-lg overflow-hidden">
+      <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-800/50 border-b border-gray-700">
+            <thead className="bg-[var(--bg-secondary)]/50 border-b border-[var(--border)]">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Booking ID
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   User
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Movie
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Show Time
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Seats
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Amount
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Actions
                 </th>
               </tr>
@@ -238,15 +238,15 @@ const AdminBookings = () => {
                 filteredBookings.map((booking) => (
                   <tr
                     key={booking._id}
-                    className="hover:bg-gray-800/30 transition"
+                    className="hover:bg-[var(--bg-secondary)]/30 transition"
                   >
-                    <td className="px-6 py-4 text-sm font-mono text-gray-300">
+                    <td className="px-6 py-4 text-sm font-mono text-[var(--text-secondary)]">
                       {booking._id.slice(-8).toUpperCase()}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div>
                         <p className="font-medium">{booking.user?.name}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-[var(--text-muted)]">
                           {booking.user?.email}
                         </p>
                       </div>
@@ -255,7 +255,7 @@ const AdminBookings = () => {
                       <div>
                         <p className="font-medium">{booking.show?.movie?.title || "N/A"}</p>
                         {booking.show?.theatre?.name && (
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-[var(--text-muted)]">
                             {booking.show.theatre.name}
                           </p>
                         )}
@@ -300,7 +300,7 @@ const AdminBookings = () => {
               ) : (
                 <tr>
                   <td colSpan="8" className="px-6 py-12 text-center">
-                    <p className="text-gray-400">No bookings found</p>
+                    <p className="text-[var(--text-muted)]">No bookings found</p>
                   </td>
                 </tr>
               )}
@@ -312,12 +312,12 @@ const AdminBookings = () => {
       {/* Booking Details Modal */}
       {viewingBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6">
               <h2 className="text-2xl font-bold">Booking Details</h2>
               <button
                 onClick={() => setViewingBooking(null)}
-                className="text-gray-400 hover:text-white"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -327,17 +327,17 @@ const AdminBookings = () => {
 
             <div className="space-y-6">
               {/* Booking Information */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="font-semibold text-primary mb-3">Booking Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                <h3 className="font-semibold text-[var(--color-accent)] mb-3">Booking Information</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm text-[var(--text-secondary)]">
                   <div>
-                    <span className="text-gray-400">Booking ID:</span>
-                    <span className="ml-2 text-gray-300 font-mono">
+                    <span className="text-[var(--text-muted)]">Booking ID:</span>
+                    <span className="ml-2 font-mono">
                       {viewingBooking._id}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Status:</span>
+                    <span className="text-[var(--text-muted)]">Status:</span>
                     <span
                       className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${
                         viewingBooking.isPaid
@@ -349,14 +349,14 @@ const AdminBookings = () => {
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Amount:</span>
-                    <span className="ml-2 text-gray-300 font-bold">
+                    <span className="text-[var(--text-muted)]">Amount:</span>
+                    <span className="ml-2 font-bold">
                       {currency}{viewingBooking.amount?.toFixed(2)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Booking Date:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Booking Date:</span>
+                    <span className="ml-2">
                       {new Date(viewingBooking.createdAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -364,23 +364,23 @@ const AdminBookings = () => {
               </div>
 
               {/* User Information */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="font-semibold text-primary mb-3">User Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                <h3 className="font-semibold text-[var(--color-accent)] mb-3">User Information</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm text-[var(--text-secondary)]">
                   <div>
-                    <span className="text-gray-400">Name:</span>
-                    <span className="ml-2 text-gray-300">{viewingBooking.user?.name}</span>
+                    <span className="text-[var(--text-muted)]">Name:</span>
+                    <span className="ml-2">{viewingBooking.user?.name}</span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Email:</span>
-                    <span className="ml-2 text-gray-300">{viewingBooking.user?.email}</span>
+                    <span className="text-[var(--text-muted)]">Email:</span>
+                    <span className="ml-2">{viewingBooking.user?.email}</span>
                   </div>
                 </div>
               </div>
 
               {/* Movie Information */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="font-semibold text-primary mb-3">Movie Information</h3>
+              <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                <h3 className="font-semibold text-[var(--color-accent)] mb-3">Movie Information</h3>
                 <div className="flex gap-4">
                   {viewingBooking.show?.movie?.poster_path && (
                     <img
@@ -394,8 +394,8 @@ const AdminBookings = () => {
                     />
                   )}
                   <div className="flex-1">
-                    <p className="font-semibold">{viewingBooking.show?.movie?.title}</p>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="font-semibold text-[var(--text-secondary)]">{viewingBooking.show?.movie?.title}</p>
+                    <p className="text-[var(--text-muted)] text-sm mt-1">
                       {viewingBooking.show?.movie?.overview?.substring(0, 100)}...
                     </p>
                   </div>
@@ -403,34 +403,34 @@ const AdminBookings = () => {
               </div>
 
               {/* Show Information */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="font-semibold text-primary mb-3">Show Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                <h3 className="font-semibold text-[var(--color-accent)] mb-3">Show Information</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm text-[var(--text-secondary)]">
                   <div>
-                    <span className="text-gray-400">Theatre:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Theatre:</span>
+                    <span className="ml-2">
                       {viewingBooking.show?.theatre?.name || "N/A"}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Screen:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Screen:</span>
+                    <span className="ml-2">
                       {viewingBooking.show?.screen?.screenNumber
                         ? `Screen ${viewingBooking.show.screen.screenNumber}`
                         : "N/A"}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Show Date & Time:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Show Date & Time:</span>
+                    <span className="ml-2">
                       {viewingBooking.show?.showDateTime
                         ? new Date(viewingBooking.show.showDateTime).toLocaleString()
                         : "N/A"}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Ticket Price:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Ticket Price:</span>
+                    <span className="ml-2">
                       {currency}{viewingBooking.show?.showPrice || "N/A"}
                     </span>
                   </div>
@@ -438,22 +438,22 @@ const AdminBookings = () => {
               </div>
 
               {/* Seat Information */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="font-semibold text-primary mb-3">Seat Information</h3>
-                <div className="space-y-2">
+              <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                <h3 className="font-semibold text-[var(--color-accent)] mb-3">Seat Information</h3>
+                <div className="space-y-2 text-[var(--text-secondary)]">
                   <div>
-                    <span className="text-gray-400">Number of Seats:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Number of Seats:</span>
+                    <span className="ml-2">
                       {viewingBooking.bookedSeats?.length || viewingBooking.selectedSeats?.length || 0}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Booked Seats:</span>
+                    <span className="text-[var(--text-muted)]">Booked Seats:</span>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {(viewingBooking.bookedSeats || viewingBooking.selectedSeats || []).map((seat, index) => (
                         <span
                           key={index}
-                          className="px-3 py-1 bg-primary/20 text-primary text-xs rounded-full font-semibold"
+                          className="px-3 py-1 bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-secondary)] text-xs rounded-full font-semibold"
                         >
                           {typeof seat === 'string' ? seat : seat.seatNumber || seat}
                         </span>

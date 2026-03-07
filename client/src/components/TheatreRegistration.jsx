@@ -25,10 +25,10 @@ const InputField = React.memo(({ formId, label, name, type = "text", value, onCh
         aria-invalid={error ? "true" : undefined}
         aria-describedby={error ? errorId(formId, name) : undefined}
         className={`w-full px-4 py-3 input-field border ${
-          error ? "border-red-500" : "border-gray-700 focus:border-primary"
+          error ? "border-red-500" : "border-[var(--border)] focus:border-primary"
         }`}
       />
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-primary transition-colors duration-200">
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)] group-hover:text-primary transition-colors duration-200">
         {error ? (
           <AlertCircle className="w-5 h-5 text-red-400" />
         ) : (
@@ -85,50 +85,6 @@ const TheatreRegistration = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Manager Info, 2: Theatre Info, 3: Screens
 
-  const fillDemoData = async () => {
-    if (!import.meta.env.DEV) return;
-
-    const now = Date.now();
-    const demoEmail = `demo.manager+${now}@example.com`;
-
-    setManagerData({
-      name: "Demo Manager",
-      email: demoEmail,
-      phone: "9876543210",
-      password: "Demo@1234",
-      confirmPassword: "Demo@1234",
-    });
-
-    setTheatreData({
-      name: "Demo Theatre",
-      location: "Downtown",
-      contact_no: "9876543210",
-      address: "123 Demo Street",
-      city: "Mumbai",
-      state: "Maharashtra",
-      zipCode: "400001",
-      email: `demo.theatre+${now}@example.com`,
-      step3_pdf_url: "https://drive.google.com/file/d/DEMO/view?usp=sharing",
-    });
-
-    setScreens([
-      {
-        name: "Screen 1",
-        layout: {
-          rows: 5,
-          seatsPerRow: 10,
-          totalSeats: 50,
-          layout: Array.from({ length: 5 }, () => Array.from({ length: 10 }, () => "S")),
-        },
-        pricing: { unified: 150 },
-      },
-    ]);
-
-    setLegalTouched(false);
-
-    toast.success("Demo data filled");
-  };
-
   // Manager Information
   const [managerData, setManagerData] = useState({
     name: "",
@@ -152,7 +108,7 @@ const TheatreRegistration = ({ onClose }) => {
 
   // Password validation helper
   const getPasswordStrength = (pwd) => {
-    if (!pwd) return { score: 0, text: "", color: "text-gray-400" };
+    if (!pwd) return { score: 0, text: "", color: "text-[var(--text-muted)]" };
     let score = 0;
     if (pwd.length >= 8) score++;
     if (/[a-z]/.test(pwd)) score++;
@@ -450,15 +406,6 @@ const TheatreRegistration = ({ onClose }) => {
             <h2 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Register Your Theatre</h2>
             <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Step {step} of 4</p>
           </div>
-          {import.meta.env.DEV && (
-            <button
-              type="button"
-              onClick={fillDemoData}
-              className="btn-secondary hidden sm:inline-flex text-xs"
-            >
-              Use Demo Data
-            </button>
-          )}
           <button
             onClick={onClose}
             className="transition-colors hover:opacity-70"
@@ -476,15 +423,6 @@ const TheatreRegistration = ({ onClose }) => {
                 <h3 className="text-xl font-semibold mb-4" style={{ color: "var(--text-primary)" }}>Manager Information</h3>
                 <p className="mb-6" style={{ color: "var(--text-muted)" }}>Please provide your personal details for the theatre manager account.</p>
               </div>
-              {import.meta.env.DEV && (
-                <button
-                  type="button"
-                  onClick={fillDemoData}
-                  className="btn-secondary w-full py-2 font-semibold active:scale-95"
-                >
-                  Use Demo Data
-                </button>
-              )}
               <InputField
                 formId="theatre-manager"
                 label="Manager Name"
@@ -533,7 +471,7 @@ const TheatreRegistration = ({ onClose }) => {
                   aria-invalid={managerTouched.password && managerErrors.password ? "true" : undefined}
                   aria-describedby={managerTouched.password && managerErrors.password ? errorId("theatre-manager", "password") : undefined}
                   className={`w-full px-4 py-3 input-field border ${
-                    managerTouched.password && managerErrors.password ? "border-red-500" : "border-gray-700 focus:border-primary"
+                    managerTouched.password && managerErrors.password ? "border-red-500" : "border-[var(--border)] focus:border-primary"
                   }`}
                 />
                 {managerTouched.password && managerErrors.password && (
@@ -548,24 +486,24 @@ const TheatreRegistration = ({ onClose }) => {
                       {passwordStrength.text}
                     </span>
                   </p>
-                  <p className="text-gray-400 mt-1">
-                    <span className={managerData.password.length >= 8 ? "text-green-400" : "text-gray-400"}>
+                  <p className="text-[var(--text-muted)] mt-1">
+                    <span className={managerData.password.length >= 8 ? "text-green-400" : "text-[var(--text-muted)]"}>
                       ✓ 8+ characters
                     </span>
                     {"\n"}
-                    <span className={/[A-Z]/.test(managerData.password) ? "text-green-400" : "text-gray-400"}>
+                    <span className={/[A-Z]/.test(managerData.password) ? "text-green-400" : "text-[var(--text-muted)]"}>
                       ✓ Uppercase
                     </span>
                     {"\n"}
-                    <span className={/[a-z]/.test(managerData.password) ? "text-green-400" : "text-gray-400"}>
+                    <span className={/[a-z]/.test(managerData.password) ? "text-green-400" : "text-[var(--text-muted)]"}>
                       ✓ Lowercase
                     </span>
                     {"\n"}
-                    <span className={/\d/.test(managerData.password) ? "text-green-400" : "text-gray-400"}>
+                    <span className={/\d/.test(managerData.password) ? "text-green-400" : "text-[var(--text-muted)]"}>
                       ✓ Number
                     </span>
                     {"\n"}
-                    <span className={/[@$!%*?&]/.test(managerData.password) ? "text-green-400" : "text-gray-400"}>
+                    <span className={/[@$!%*?&]/.test(managerData.password) ? "text-green-400" : "text-[var(--text-muted)]"}>
                       ✓ Special char (@$!%*?&)
                     </span>
                   </p>
@@ -592,7 +530,7 @@ const TheatreRegistration = ({ onClose }) => {
                       ? "border-red-500"
                       : managerData.confirmPassword && passwordsMatch
                       ? "border-green-500"
-                      : "border-gray-700 focus:border-primary"
+                      : "border-[var(--border)] focus:border-primary"
                   }`}
                 />
                 {managerTouched.confirmPassword && managerErrors.confirmPassword && (
@@ -608,28 +546,29 @@ const TheatreRegistration = ({ onClose }) => {
                 )}
               </div>
 
-              <button
-                onClick={handleNextStep}
-                disabled={!isStep1Valid}
-                className="w-full py-3 bg-primary hover:bg-primary-dull text-white font-semibold rounded-lg transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next: Theatre Details →
-              </button>
+              <div className="flex justify-between mt-8">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  disabled={!isStep1Valid}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
 
           {/* Step 2: Theatre Information */}
           {step === 2 && (
             <div className="space-y-6">
-              {import.meta.env.DEV && (
-                <button
-                  type="button"
-                  onClick={fillDemoData}
-                  className="btn-secondary w-full py-2 font-semibold active:scale-95"
-                >
-                  Use Demo Data
-                </button>
-              )}
               <InputField
                 formId="theatre-details"
                 label="Theatre Name"
@@ -717,19 +656,21 @@ const TheatreRegistration = ({ onClose }) => {
                 help="5 digits (US) or 6 digits (IN)"
               />
 
-              <div className="flex gap-4">
+              <div className="flex justify-between mt-8">
                 <button
+                  type="button"
                   onClick={() => setStep(1)}
-                  className="btn-secondary flex-1 py-3 font-semibold active:scale-95"
+                  className="btn-secondary"
                 >
-                  ← Back
+                  Previous
                 </button>
                 <button
+                  type="button"
                   onClick={handleNextStep}
                   disabled={!isStep2Valid}
-                  className="flex-1 py-3 bg-primary hover:bg-primary-dull text-white font-semibold rounded-lg transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next: Add Screens →
+                  Next
                 </button>
               </div>
             </div>
@@ -743,19 +684,9 @@ const TheatreRegistration = ({ onClose }) => {
                 <p className="mb-6" style={{ color: "var(--text-muted)" }}>Paste a Google Drive link to your verification PDF.</p>
               </div>
 
-              {import.meta.env.DEV && (
-                <button
-                  type="button"
-                  onClick={fillDemoData}
-                  className="btn-secondary w-full py-2 font-semibold active:scale-95"
-                >
-                  Use Demo Data
-                </button>
-              )}
-
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
-                <h4 className="text-lg font-medium text-white mb-3">Required Documents:</h4>
-                <ul className="space-y-2 text-gray-300 mb-6">
+              <div className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] rounded-lg p-6">
+                <h4 className="text-lg font-medium text-[var(--text-primary)] mb-3">Required Documents:</h4>
+                <ul className="space-y-2 text-[var(--text-secondary)] mb-6">
                   <li className="flex items-start gap-2">
                     <span className="text-primary mt-1">•</span>
                     <span>GST Certificate</span>
@@ -798,7 +729,7 @@ const TheatreRegistration = ({ onClose }) => {
                       className={`w-full px-4 py-3 input-field border ${
                         legalTouched && validateDriveUrl(theatreData.step3_pdf_url)
                           ? "border-red-500"
-                          : "border-gray-700 focus:border-primary"
+                          : "border-[var(--border)] focus:border-primary"
                       }`}
                     />
                     <p className="field-help-text mt-1">Paste a shareable Google Drive link (must contain drive.google.com)</p>
@@ -811,21 +742,21 @@ const TheatreRegistration = ({ onClose }) => {
                 </div>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex justify-between mt-8">
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition active:scale-95"
+                  className="btn-secondary"
                 >
-                  ← Back
+                  Previous
                 </button>
                 <button
                   type="button"
                   onClick={handleNextStep}
                   disabled={!!validateDriveUrl(theatreData.step3_pdf_url)}
-                  className="flex-1 py-3 bg-primary hover:bg-primary-dull text-white font-semibold rounded-lg transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Forward: Screen Config →
+                  Next
                 </button>
               </div>
             </div>

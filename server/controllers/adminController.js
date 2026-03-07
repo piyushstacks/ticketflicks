@@ -37,7 +37,8 @@ export const fetchDashboardData = asyncHandler(async (req, res) => {
     .populate("movie", "title poster_path runtime duration_min")
     .populate("theatre", "name city");
 
-  const totalUsers = await User.countDocuments({ role: "customer" });
+  const totalUsers = await User.countDocuments({});
+  const totalCustomers = await User.countDocuments({ role: "customer" });
   const totalManagers = await User.countDocuments({ role: "manager" });
   const totalTheatres = await Theatre.countDocuments({
     approval_status: "approved",
@@ -55,10 +56,10 @@ export const fetchDashboardData = asyncHandler(async (req, res) => {
       totalBookings: bookings.length,
       totalRevenue,
       activeShows: activeShows.length,
-      totalUsers,
+      totalUsers: totalCustomers,
       totalManagers,
       totalTheatres,
-      activeUsers: totalUsers + totalManagers,
+      activeUsers: totalUsers,
       recentBookings: bookings.slice(0, 5),
       upcomingShows: activeShows.slice(0, 5),
     },
@@ -66,10 +67,10 @@ export const fetchDashboardData = asyncHandler(async (req, res) => {
       totalBookings: bookings.length,
       totalRevenue,
       activeShows: activeShows.length,
-      totalUsers,
+      totalUsers: totalCustomers,
       totalManagers,
       totalTheatres,
-      activeUsers: totalUsers + totalManagers,
+      activeUsers: totalUsers,
     },
   });
 });
@@ -238,9 +239,9 @@ export const getAllBookings = asyncHandler(async (req, res) => {
     show: b.show_id || { movie: { title: "Unknown" }, showDateTime: null },
     bookedSeats: b.seats_booked || [],
     amount: b.total_amount || 0,
-    isPaid: b.payment_status === "completed",
+    isPaid: b.payment_status === "completed" || b.isPaid === true,
     status: b.status,
-    paymentStatus: b.payment_status,
+    paymentStatus: b.payment_status || (b.isPaid ? 'completed' : 'pending'),
     paymentMethod: payMap[b._id.toString()]?.method || b.payment_method || null,
     transactionId: payMap[b._id.toString()]?.transaction_id || b.payment_id || null,
     createdAt: b.createdAt,

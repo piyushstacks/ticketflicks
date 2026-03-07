@@ -1202,12 +1202,11 @@ def main():
         'revenue_per_theatre':   rev_per_theatre,
 
         # Section data — tables
-        'bookings_by_status':   booking_analytics.get('bookings_by_status', {}),
-        'daily_trends':         booking_analytics.get('daily_trends', []).to_dict('records') if hasattr(booking_analytics.get('daily_trends', []), 'to_dict') else booking_analytics.get('daily_trends', []),
-        'top_movies':           movie_analytics.get('top_movies_by_revenue', []),
-        'top_theatres':         theatre_analytics.get('top_theatres_by_revenue', []),
-        'users_by_role':        user_analytics.get('users_by_role', {}),
-        'top_customers':        user_analytics.get('top_customers', []),
+        'raw_bookings':         bookings_df.fillna('').astype(str).to_dict('records') if not bookings_df.empty else [],
+        'raw_movies':           movies_df.fillna('').astype(str).to_dict('records') if not movies_df.empty else [],
+        'raw_theatres':         theatres_df.fillna('').astype(str).to_dict('records') if not theatres_df.empty else [],
+        'raw_shows':            shows_df.fillna('').astype(str).to_dict('records') if not shows_df.empty else [],
+        'raw_users':            users_df.fillna('').astype(str).to_dict('records') if not users_df.empty else [],
     }
     
     pdf_path = os.path.join(OUTPUT_DIR, "comprehensive_report.pdf")

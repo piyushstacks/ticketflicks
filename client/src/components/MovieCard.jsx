@@ -73,14 +73,14 @@ const MovieCard = ({ movie }) => {
 
         {/* Year badge */}
         {releaseYear && (
-          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md text-xs font-medium bg-black/50 text-white backdrop-blur-sm">
+          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md text-xs font-medium bg-black/50 text-[var(--text-primary)] backdrop-blur-sm">
             {releaseYear}
           </div>
         )}
 
         {/* Rating badge */}
         {movie.vote_average != null && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-black/50 text-white backdrop-blur-sm">
+          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-black/50 text-[var(--text-primary)] backdrop-blur-sm">
             <StarIcon className="w-3 h-3 text-amber fill-amber" />
             {Number(movie.vote_average).toFixed(1)}
           </div>

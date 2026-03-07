@@ -105,14 +105,14 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
-        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-[var(--bg-secondary)]/50 backdrop-blur-sm border border-[var(--border)] rounded-2xl p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="mx-auto w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mb-4">
               <Mail className="w-8 h-8 text-purple-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Verify Email</h2>
-            <p className="text-gray-400">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Verify Email</h2>
+            <p className="text-[var(--text-muted)]">
               We've sent a 6-digit OTP to<br />
               <span className="text-purple-400 font-medium">{managerData.email}</span>
             </p>
@@ -121,7 +121,7 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
           {/* OTP Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
                 Enter OTP
               </label>
               <div className="flex justify-center gap-2">
@@ -156,7 +156,7 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
                         prevInput?.focus();
                       }
                     }}
-                    className="w-12 h-12 text-center text-lg font-semibold bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-12 h-12 text-center text-lg font-semibold bg-[var(--bg-elevated)] border border-[var(--border-hover)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 ))}
               </div>
@@ -170,7 +170,7 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
             {/* Timer */}
             <div className="text-center">
               {timeLeft > 0 ? (
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-[var(--text-muted)]">
                   OTP expires in <span className="text-purple-400 font-medium">{formatTime(timeLeft)}</span>
                 </p>
               ) : (
@@ -182,7 +182,7 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
             <button
               type="submit"
               disabled={loading || values.otp.length !== 6 || timeLeft === 0}
-              className="w-full py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+              className="w-full py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-[var(--bg-elevated)] disabled:cursor-not-allowed text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -200,7 +200,7 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
             <button
               onClick={handleResend}
               disabled={resending || timeLeft > 0}
-              className="text-purple-400 hover:text-purple-300 disabled:text-gray-500 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2 mx-auto"
+              className="text-purple-400 hover:text-purple-300 disabled:text-[var(--text-muted)] disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2 mx-auto"
             >
               <RefreshCw className={`w-4 h-4 ${resending ? 'animate-spin' : ''}`} />
               {resending ? "Resending..." : timeLeft > 0 ? "Resend OTP" : "Resend OTP"}
@@ -211,7 +211,7 @@ const TheatreVerifyEmail = ({ theatreData, managerData, screens }) => {
           <div className="mt-6">
             <button
               onClick={handleBack}
-              className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-lg transition flex items-center justify-center gap-2"
+              className="w-full py-2 bg-[var(--bg-elevated)] hover:bg-[var(--border-hover)] text-[var(--text-secondary)] font-medium rounded-lg transition flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Registration

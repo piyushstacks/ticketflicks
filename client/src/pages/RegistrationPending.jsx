@@ -8,19 +8,19 @@ const RegistrationPending = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
-        <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 shadow-2xl text-center">
+        <div className="bg-[var(--bg-secondary)]/50 backdrop-blur-sm border border-[var(--border)] rounded-2xl p-8 shadow-2xl text-center">
           {/* Icon */}
           <div className="mx-auto w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mb-6">
             <Clock className="w-10 h-10 text-yellow-400" />
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-white mb-4">
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
             Registration Pending Approval
           </h2>
 
           {/* Message */}
-          <div className="text-gray-300 space-y-4 mb-8">
+          <div className="text-[var(--text-secondary)] space-y-4 mb-8">
             <p>
               Thank you for registering your theatre! Your application has been
               submitted successfully and is now under review by our admin team.
@@ -33,8 +33,8 @@ const RegistrationPending = () => {
           </div>
 
           {/* Features */}
-          <div className="bg-gray-700/30 rounded-lg p-4 mb-8">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+          <div className="bg-[var(--bg-elevated)]/30 rounded-lg p-4 mb-8">
+            <div className="flex items-center justify-center gap-2 text-sm text-[var(--text-muted)]">
               <Mail className="w-4 h-4" />
               <span>Check your email for updates</span>
             </div>
@@ -52,14 +52,14 @@ const RegistrationPending = () => {
             
             <button
               onClick={() => navigate("/login")}
-              className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium rounded-lg transition"
+              className="w-full py-3 bg-[var(--bg-elevated)] hover:bg-[var(--border-hover)] text-[var(--text-secondary)] font-medium rounded-lg transition"
             >
               Go to Login
             </button>
           </div>
 
           {/* Additional Info */}
-          <div className="mt-6 text-xs text-gray-500">
+          <div className="mt-6 text-xs text-[var(--text-muted)]">
             <p>
               If you don't receive an email within 48 hours, please contact our
               support team.

@@ -47,7 +47,7 @@ const AdminPayments = () => {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] rounded-lg transition"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -59,11 +59,11 @@ const AdminPayments = () => {
       <div className="bg-gradient-to-br from-green-600/20 to-green-900/20 border border-green-500/30 rounded-lg p-8">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-gray-400 text-sm">Total Revenue</p>
+            <p className="text-[var(--text-muted)] text-sm">Total Revenue</p>
             <p className="text-4xl font-bold mt-2">
               ₹{totalRevenue.toFixed(2)}
             </p>
-            <p className="text-gray-400 text-sm mt-2">
+            <p className="text-[var(--text-muted)] text-sm mt-2">
               From {bookings.length} bookings
             </p>
           </div>
@@ -72,27 +72,27 @@ const AdminPayments = () => {
       </div>
 
       {/* Bookings Table */}
-      <div className="bg-gray-900/30 border border-gray-700 rounded-lg overflow-hidden">
+      <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-800/50 border-b border-gray-700">
+            <thead className="bg-[var(--bg-secondary)]/50 border-b border-[var(--border)]">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Booking ID
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   User
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Movie
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Date
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Seats
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Amount
                 </th>
               </tr>
@@ -102,15 +102,15 @@ const AdminPayments = () => {
                 bookings.map((booking) => (
                   <tr
                     key={booking._id}
-                    className="hover:bg-gray-800/30 transition"
+                    className="hover:bg-[var(--bg-secondary)]/30 transition"
                   >
-                    <td className="px-6 py-4 text-sm font-mono text-gray-300">
+                    <td className="px-6 py-4 text-sm font-mono text-[var(--text-secondary)]">
                       {booking._id.slice(-8).toUpperCase()}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div>
                         <p className="font-medium">{booking.user?.name}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-[var(--text-muted)]">
                           {booking.user?.email}
                         </p>
                       </div>
@@ -138,7 +138,7 @@ const AdminPayments = () => {
               ) : (
                 <tr>
                   <td colSpan="6" className="px-6 py-12 text-center">
-                    <p className="text-gray-400">No bookings found</p>
+                    <p className="text-[var(--text-muted)]">No bookings found</p>
                   </td>
                 </tr>
               )}

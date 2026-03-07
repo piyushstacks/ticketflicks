@@ -57,7 +57,8 @@ html:not(.dark) {
   --scrollbar-thumb: #cbd5e1;
   --scrollbar-track: #f1f5f9;
   --blur-glow-opacity: 0.15;
-  --logo-filter: invert(1) hue-rotate(180deg) brightness(1.2) drop-shadow(0 1px 2px rgba(255, 255, 255, 0.2));
+  /* Light mode logo: invert white text to black, and use hue-rotate to fix the inverted red T back to red */
+  --logo-filter: invert(1) hue-rotate(180deg) saturate(1.5) brightness(0.9);
 
   /* Globably invert Tailwind's gray scale so hardcoded dark classes look good in light mode */
   --color-gray-50: #111827;
@@ -156,8 +157,72 @@ html:not(.dark) .admin-wrapper .bg-gray-800\/50 {
   background-color: var(--bg-secondary) !important;
 }
 
+/* ===== LIGHT MODE: SHOW LANGUAGE LABELS & CHIP TEXT (outside hero overlays) ===== */
+/* Language chips like px-3.../bg-black/60 become invisible in light mode */
+html:not(.dark) .admin-wrapper span[class*="bg-black"],
+html:not(.dark) .admin-wrapper span[class*="bg-black/"] {
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+}
 
-/* ===== SCROLLBAR ===== */
+/* ===== LIGHT MODE: MOVIE CARD BADGES (rating, year) ===== */
+/* These use bg-black/50 which disappears in light mode */
+html:not(.dark) [class*="bg-black/50"],
+html:not(.dark) [class*="bg-black\/50"] {
+  background-color: rgba(15, 23, 42, 0.75) !important;
+  color: #ffffff !important;
+}
+
+html:not(.dark) [class*="bg-black/60"],
+html:not(.dark) [class*="bg-black\/60"] {
+  background-color: rgba(15, 23, 42, 0.80) !important;
+  color: #ffffff !important;
+}
+
+/* === EXCEPTION: Hero Section overlays must stay dark regardless of theme === */
+html:not(.dark) .hero-overlay-dark {
+  background-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+/* ===== LIGHT MODE: GENERAL PAGE FIXES ===== */
+/* Catch-all for pages outside admin-wrapper that have hardcoded dark text classes */
+html:not(.dark) .text-gray-800 {
+  color: var(--text-primary);
+}
+
+html:not(.dark) .text-gray-700 {
+  color: var(--text-secondary);
+}
+
+html:not(.dark) .text-gray-600,
+html:not(.dark) .text-gray-500 {
+  color: var(--text-muted);
+}
+
+/* ===== LIGHT MODE: BORDER-GRAY-800 GLOBAL FIX ===== */
+/* border-gray-800 becomes near-white in our inverted palette, causing invisible or very light borders */
+html:not(.dark) .border-gray-800,
+html:not(.dark) .border-gray-800\/80,
+html:not(.dark) .border-gray-800\/50 {
+  border-color: var(--border) !important;
+}
+
+/* ===== LIGHT MODE: SHOW BOOKING SECTION (MovieShowSelector) ===== */
+/* Theatre header gradient strip needs to be light-theme-aware */
+html:not(.dark) .MovieShowSelector-theatre-header,
+html:not(.dark) [class*="from-primary\/20"][class*="via-purple-600\/10"] {
+  background: linear-gradient(to right, rgba(248, 69, 101, 0.1), rgba(147, 51, 234, 0.05), transparent) !important;
+}
+
+/* ===== LIGHT MODE: ADMIN SHOWS LANGUAGE LABEL ===== */
+/* The language badge on show cards uses bg-black/60 which is invisible in light */
+html:not(.dark) .admin-wrapper span[class*="bg-black"] {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  color: #fff !important;
+}
+
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

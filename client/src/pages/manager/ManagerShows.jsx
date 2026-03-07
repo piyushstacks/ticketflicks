@@ -721,7 +721,11 @@ const ManagerShows = () => {
 
   // Derive startDate from stored startDate or from showDateTime
   const getShowStartDate = (show) => {
-    if (show.startDate) return show.startDate;
+    if (show.startDate) {
+      return typeof show.startDate === 'string'
+        ? show.startDate.substring(0, 10)
+        : new Date(show.startDate).toISOString().substring(0, 10);
+    }
     if (show.showDateTime) {
       return new Date(show.showDateTime).toISOString().split('T')[0];
     }
@@ -730,7 +734,11 @@ const ManagerShows = () => {
 
   // Derive endDate — if missing, same as startDate (single-day show)
   const getShowEndDate = (show) => {
-    if (show.endDate) return show.endDate;
+    if (show.endDate) {
+      return typeof show.endDate === 'string'
+        ? show.endDate.substring(0, 10)
+        : new Date(show.endDate).toISOString().substring(0, 10);
+    }
     return getShowStartDate(show);
   };
 
@@ -750,11 +758,11 @@ const ManagerShows = () => {
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight flex items-center gap-4">
+          <h1 className="text-4xl font-black text-[var(--text-primary)] tracking-tight flex items-center gap-4">
             <Calendar className="w-10 h-10 text-primary" />
             Show Schedule
           </h1>
-          <p className="text-gray-400 mt-2 font-medium flex items-center gap-2">
+          <p className="text-[var(--text-muted)] mt-2 font-medium flex items-center gap-2">
             <Film className="w-4 h-4 text-primary" />
             Manage and schedule movie shows for your theatre screens
           </p>
@@ -786,10 +794,10 @@ const ManagerShows = () => {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-4 md:p-6 mb-6 md:mb-10 backdrop-blur-sm">
+      <div className="bg-[var(--bg-primary)]/40 border border-gray-800 rounded-2xl p-4 md:p-6 mb-6 md:mb-10 backdrop-blur-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
               <Calendar className="w-3 h-3 text-primary" />
               Time Period
             </label>
@@ -797,18 +805,18 @@ const ManagerShows = () => {
               <select
                 value={filterWeek}
                 onChange={(e) => setFilterWeek(e.target.value)}
-                className="w-full pl-4 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                className="w-full pl-4 pr-10 py-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
               >
                 <option value="all">All Shows</option>
                 <option value="current">Current Week</option>
                 <option value="next">Next Week</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none group-focus-within:text-primary transition-colors" />
             </div>
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
               <Film className="w-3 h-3 text-primary" />
               Filter Movie
             </label>
@@ -816,7 +824,7 @@ const ManagerShows = () => {
               <select
                 value={filterMovie}
                 onChange={(e) => setFilterMovie(e.target.value)}
-                className="w-full pl-4 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                className="w-full pl-4 pr-10 py-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
               >
                 <option value="">All Movies</option>
                 {movies.map((movie) => (
@@ -825,12 +833,12 @@ const ManagerShows = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none group-focus-within:text-primary transition-colors" />
             </div>
           </div>
           
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
               <Monitor className="w-3 h-3 text-primary" />
               Filter Screen
             </label>
@@ -838,7 +846,7 @@ const ManagerShows = () => {
               <select
                 value={filterScreen}
                 onChange={(e) => setFilterScreen(e.target.value)}
-                className="w-full pl-4 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                className="w-full pl-4 pr-10 py-3 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
               >
                 <option value="">All Screens</option>
                 {screens.map((screen) => (
@@ -847,14 +855,14 @@ const ManagerShows = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none group-focus-within:text-primary transition-colors" />
             </div>
           </div>
           
           <div className="flex items-end pb-1">
             <div className="flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/10 rounded-xl w-full">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-sm font-bold text-gray-300">
+              <span className="text-sm font-bold text-[var(--text-secondary)]">
                 {filteredShows.length} {filteredShows.length === 1 ? 'Show' : 'Shows'} Found
               </span>
             </div>
@@ -865,17 +873,17 @@ const ManagerShows = () => {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-start md:items-center justify-center z-50 p-2 md:p-4 animate-in fade-in duration-300 overflow-y-auto">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl md:rounded-3xl w-full max-w-2xl my-4 md:my-0 overflow-hidden shadow-2xl shadow-primary/20 ring-1 ring-white/10">
-            <div className="p-4 md:p-8 border-b border-gray-800 flex justify-between items-center bg-gray-900/50">
+          <div className="bg-[var(--bg-primary)] border border-gray-800 rounded-2xl md:rounded-3xl w-full max-w-2xl my-4 md:my-0 overflow-hidden shadow-2xl shadow-primary/20 ring-1 ring-white/10">
+            <div className="p-4 md:p-8 border-b border-gray-800 flex justify-between items-center bg-[var(--bg-primary)]/50">
               <div className="flex items-center gap-3 md:gap-5">
                 <div className="w-10 h-10 md:w-14 md:h-14 bg-primary/10 rounded-xl md:rounded-2xl flex items-center justify-center border border-primary/20">
                   <Calendar className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-lg md:text-2xl font-black text-white tracking-tight">
+                  <h2 className="text-lg md:text-2xl font-black text-[var(--text-primary)] tracking-tight">
                     {editingId ? "Update Schedule" : "Schedule New Show"}
                   </h2>
-                  <p className="text-gray-400 text-xs md:text-sm font-medium mt-1">
+                  <p className="text-[var(--text-muted)] text-xs md:text-sm font-medium mt-1">
                     Configure show timings and duration for your screen
                   </p>
                 </div>
@@ -895,9 +903,9 @@ const ManagerShows = () => {
                     isActive: true
                   });
                 }}
-                className="p-3 hover:bg-gray-800 rounded-2xl transition-all border border-transparent hover:border-gray-700 group"
+                className="p-3 hover:bg-[var(--bg-secondary)] rounded-2xl transition-all border border-transparent hover:border-[var(--border)] group"
               >
-                <X className="w-6 h-6 text-gray-500 group-hover:text-white group-hover:rotate-90 transition-all duration-300" />
+                <X className="w-6 h-6 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] group-hover:rotate-90 transition-all duration-300" />
               </button>
             </div>
 
@@ -905,7 +913,7 @@ const ManagerShows = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 {/* Movie Selection */}
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
                     <Film className="w-4 h-4 text-primary" />
                     Target Movie <span className="text-primary">*</span>
                   </label>
@@ -918,7 +926,7 @@ const ManagerShows = () => {
                       aria-invalid={touched.movie && fieldErrors.movie ? "true" : undefined}
                       aria-describedby={touched.movie && fieldErrors.movie ? errorId(formId, "movie") : undefined}
                       required
-                      className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                      className="w-full pl-4 pr-10 py-4 bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
                     >
                       <option value="">Select a movie...</option>
                       {movies.map((movie) => (
@@ -927,7 +935,7 @@ const ManagerShows = () => {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none group-focus-within:text-primary transition-colors" />
                   </div>
                   {touched.movie && fieldErrors.movie && (
                     <p id={errorId(formId, "movie")} className="field-error-text" role="alert">
@@ -938,7 +946,7 @@ const ManagerShows = () => {
 
                 {/* Screen Selection */}
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
                     <Monitor className="w-4 h-4 text-primary" />
                     Select Screen <span className="text-primary">*</span>
                   </label>
@@ -951,7 +959,7 @@ const ManagerShows = () => {
                       aria-invalid={touched.screen && fieldErrors.screen ? "true" : undefined}
                       aria-describedby={touched.screen && fieldErrors.screen ? errorId(formId, "screen") : undefined}
                       required
-                      className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                      className="w-full pl-4 pr-10 py-4 bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
                     >
                       <option value="">Select a screen...</option>
                       {screens.map((screen) => (
@@ -960,7 +968,7 @@ const ManagerShows = () => {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none group-focus-within:text-primary transition-colors" />
                   </div>
                   {touched.screen && fieldErrors.screen && (
                     <p id={errorId(formId, "screen")} className="field-error-text" role="alert">
@@ -971,7 +979,7 @@ const ManagerShows = () => {
 
                 {/* Show Time */}
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
                     <Clock className="w-4 h-4 text-primary" />
                     Daily Time <span className="text-primary">*</span>
                   </label>
@@ -984,7 +992,7 @@ const ManagerShows = () => {
                     aria-invalid={touched.showTime && fieldErrors.showTime ? "true" : undefined}
                     aria-describedby={touched.showTime && fieldErrors.showTime ? errorId(formId, "showTime") : undefined}
                     required
-                    className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
+                    className="w-full px-5 py-4 bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                   />
                   {touched.showTime && fieldErrors.showTime && (
                     <p id={errorId(formId, "showTime")} className="field-error-text" role="alert">
@@ -995,7 +1003,7 @@ const ManagerShows = () => {
 
                 {/* Language Selection */}
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
                     <Globe className="w-4 h-4 text-primary" />
                     Language <span className="text-primary">*</span>
                   </label>
@@ -1008,7 +1016,7 @@ const ManagerShows = () => {
                       aria-invalid={touched.language && fieldErrors.language ? "true" : undefined}
                       aria-describedby={touched.language && fieldErrors.language ? errorId(formId, "language") : undefined}
                       required
-                      className="w-full pl-4 pr-10 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+                      className="w-full pl-4 pr-10 py-4 bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
                     >
                       {languages.map((lang) => (
                         <option key={lang} value={lang}>
@@ -1016,7 +1024,7 @@ const ManagerShows = () => {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none group-focus-within:text-primary transition-colors" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none group-focus-within:text-primary transition-colors" />
                   </div>
                   {touched.language && fieldErrors.language && (
                     <p id={errorId(formId, "language")} className="field-error-text" role="alert">
@@ -1027,7 +1035,7 @@ const ManagerShows = () => {
 
                 {/* Start Date */}
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-primary" />
                     Start Date <span className="text-primary">*</span>
                   </label>
@@ -1041,7 +1049,7 @@ const ManagerShows = () => {
                     aria-describedby={touched.startDate && fieldErrors.startDate ? errorId(formId, "startDate") : undefined}
                     min={getTodayString()}
                     required
-                    className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
+                    className="w-full px-5 py-4 bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                   />
                   {touched.startDate && fieldErrors.startDate && (
                     <p id={errorId(formId, "startDate")} className="field-error-text" role="alert">
@@ -1052,7 +1060,7 @@ const ManagerShows = () => {
 
                 {/* End Date */}
                 <div className="space-y-3">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-primary" />
                     End Date <span className="text-primary">*</span>
                   </label>
@@ -1066,7 +1074,7 @@ const ManagerShows = () => {
                     aria-describedby={touched.endDate && fieldErrors.endDate ? errorId(formId, "endDate") : undefined}
                     min={getTodayString()}
                     required
-                    className="w-full px-5 py-4 bg-gray-800/40 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
+                    className="w-full px-5 py-4 bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                   />
                   {touched.endDate && fieldErrors.endDate && (
                     <p id={errorId(formId, "endDate")} className="field-error-text" role="alert">
@@ -1077,7 +1085,7 @@ const ManagerShows = () => {
 
                 {/* Tier Pricing */}
                 <div className="space-y-3 md:col-span-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-2">
                     <span className="text-primary">₹</span>
                     Tier Pricing
                   </label>
@@ -1088,9 +1096,9 @@ const ManagerShows = () => {
                       return (
                         <div className="space-y-4">
                           {/* Default Pricing Display */}
-                          <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 p-4">
+                          <div className="bg-[var(--bg-secondary)]/30 rounded-xl border border-[var(--border)]/50 p-4">
                             <div className="flex items-center justify-between mb-3">
-                              <span className="text-sm font-semibold text-gray-300">Default Screen Pricing</span>
+                              <span className="text-sm font-semibold text-[var(--text-secondary)]">Default Screen Pricing</span>
                               <button
                                 type="button"
                                 onClick={() => setShowPricingCustomization(!showPricingCustomization)}
@@ -1102,8 +1110,8 @@ const ManagerShows = () => {
                             
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                               {selectedScreen.seatTiers.map((tier, index) => (
-                                <div key={index} className="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2">
-                                  <span className="text-xs text-gray-400">{tier.tierName}</span>
+                                <div key={index} className="flex items-center justify-between bg-[var(--bg-secondary)]/50 rounded-lg px-3 py-2">
+                                  <span className="text-xs text-[var(--text-muted)]">{tier.tierName}</span>
                                   <span className="text-sm font-bold text-primary">₹{formData.tierPrices[tier.tierName] || tier.price}</span>
                                 </div>
                               ))}
@@ -1113,13 +1121,13 @@ const ManagerShows = () => {
                           {/* Customization Inputs - Only shown when toggled */}
                           {showPricingCustomization && (
                             <div className="space-y-3 animate-fadeIn">
-                              <div className="text-xs text-gray-400 text-center border-t border-gray-700/50 pt-3">
+                              <div className="text-xs text-[var(--text-muted)] text-center border-t border-[var(--border)]/50 pt-3">
                                 Set custom prices for this show
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {selectedScreen.seatTiers.map((tier, index) => (
                                   <div key={index} className="space-y-2">
-                                    <label className="text-xs font-semibold text-gray-300 flex items-center gap-2">
+                                    <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-2">
                                       <span className="w-2 h-2 bg-primary rounded-full"></span>
                                       {tier.tierName}
                                     </label>
@@ -1144,7 +1152,7 @@ const ManagerShows = () => {
                                         min="0"
                                         step="10"
                                         placeholder={tier.price.toString()}
-                                        className="w-full pl-8 pr-3 py-3 bg-gray-800/40 border border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
+                                        className="w-full pl-8 pr-3 py-3 bg-[var(--bg-secondary)]/40 border border-[var(--border)] rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-sm"
                                       />
                                     </div>
                                     {touched[`tierPrice_${tier.tierName}`] && fieldErrors[`tierPrice_${tier.tierName}`] && (
@@ -1165,8 +1173,8 @@ const ManagerShows = () => {
                       );
                     } else {
                       return (
-                        <div className="text-center py-8 bg-gray-800/30 rounded-xl border border-gray-700/50">
-                          <div className="text-gray-400 text-sm">
+                        <div className="text-center py-8 bg-[var(--bg-secondary)]/30 rounded-xl border border-[var(--border)]/50">
+                          <div className="text-[var(--text-muted)] text-sm">
                             Please select a screen to configure tier pricing
                           </div>
                         </div>
@@ -1184,7 +1192,7 @@ const ManagerShows = () => {
                     setShowForm(false);
                     setShowPricingCustomization(false);
                   }}
-                  className="flex-1 px-8 py-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-2xl font-bold transition-all border border-gray-700"
+                  className="flex-1 px-8 py-4 bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] text-[var(--text-secondary)] rounded-2xl font-bold transition-all border border-[var(--border)]"
                 >
                   Cancel
                 </button>
@@ -1212,7 +1220,7 @@ const ManagerShows = () => {
           filteredShows.map((show) => (
             <div
               key={show._id}
-              className={`bg-gray-900/40 border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 ${
+              className={`bg-[var(--bg-primary)]/40 border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 ${
                 show.isActive ? 'border-gray-800 hover:border-primary/40' : 'border-red-900/30 opacity-80'
               }`}
             >
@@ -1229,10 +1237,10 @@ const ManagerShows = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
-                  <h3 className="text-xl font-bold text-white line-clamp-1">
+                  <h3 className="text-xl font-bold text-[var(--text-primary)] line-clamp-1">
                     {show.movie?.title || 'Unknown Movie'}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1 text-sm text-gray-300">
+                  <div className="flex items-center gap-2 mt-1 text-sm text-[var(--text-secondary)]">
                     <span className="px-2 py-0.5 bg-primary/20 text-primary rounded text-xs font-semibold">
                       {show.language || "English"}
                     </span>
@@ -1256,17 +1264,17 @@ const ManagerShows = () => {
               {/* Show Card Content */}
               <div className="p-3 md:p-5 space-y-3 md:space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4">
-                  <div className="flex items-center gap-2 md:gap-3 text-gray-300 bg-gray-800/50 p-2 md:p-3 rounded-lg border border-gray-700/50">
+                  <div className="flex items-center gap-2 md:gap-3 text-[var(--text-secondary)] bg-[var(--bg-secondary)]/50 p-2 md:p-3 rounded-lg border border-[var(--border)]/50">
                     <Clock className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Show Time</p>
+                      <p className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Show Time</p>
                       <p className="text-xs md:text-sm font-semibold truncate">{formatShowTime(getShowTime(show))}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 md:gap-3 text-gray-300 bg-gray-800/50 p-2 md:p-3 rounded-lg border border-gray-700/50">
+                  <div className="flex items-center gap-2 md:gap-3 text-[var(--text-secondary)] bg-[var(--bg-secondary)]/50 p-2 md:p-3 rounded-lg border border-[var(--border)]/50">
                     <Calendar className="w-4 h-4 md:w-5 md:h-5 text-primary flex-shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Start Date</p>
+                      <p className="text-[10px] text-[var(--text-muted)] uppercase font-bold tracking-wider">Start Date</p>
                       <p className="text-xs md:text-sm font-semibold truncate">
                         {getShowStartDate(show) ? new Date(`${getShowStartDate(show)}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Not set'}
                       </p>
@@ -1276,8 +1284,8 @@ const ManagerShows = () => {
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm py-1 md:py-2 px-1">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Date Range</span>
-                    <span className="text-gray-300 text-xs md:text-sm truncate">
+                    <span className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Date Range</span>
+                    <span className="text-[var(--text-secondary)] text-xs md:text-sm truncate">
                       {(getShowStartDate(show) || getShowEndDate(show))
                         ? `${new Date(`${getShowStartDate(show)}T12:00:00`).toLocaleDateString()} - ${new Date(`${getShowEndDate(show)}T12:00:00`).toLocaleDateString()}`
                         : 'Date range not set'
@@ -1285,7 +1293,7 @@ const ManagerShows = () => {
                     </span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Actions</span>
+                    <span className="text-[var(--text-muted)] text-xs uppercase font-bold tracking-wider">Actions</span>
                     <button 
                       onClick={() => setViewingShow(show)}
                       className="text-primary hover:underline text-xs font-bold uppercase"
@@ -1337,10 +1345,10 @@ const ManagerShows = () => {
             </div>
           ))
         ) : (
-          <div className="col-span-full text-center py-12 md:py-20 bg-gray-900/20 rounded-2xl border-2 border-gray-800 border-dashed mx-2 md:mx-0">
-            <Film className="w-12 h-12 md:w-16 md:h-16 text-gray-700 mx-auto mb-4" />
-            <h3 className="text-lg md:text-xl font-bold text-gray-400">No shows found</h3>
-            <p className="text-gray-500 mt-2 text-sm md:text-base px-4">
+          <div className="col-span-full text-center py-12 md:py-20 bg-[var(--bg-primary)]/20 rounded-2xl border-2 border-gray-800 border-dashed mx-2 md:mx-0">
+            <Film className="w-12 h-12 md:w-16 md:h-16 text-[var(--text-secondary)] mx-auto mb-4" />
+            <h3 className="text-lg md:text-xl font-bold text-[var(--text-muted)]">No shows found</h3>
+            <p className="text-[var(--text-muted)] mt-2 text-sm md:text-base px-4">
               {filterWeek === 'current' 
                 ? "No shows scheduled for this week. Create your first show to get started."
                 : "No shows found for the selected filters."}
@@ -1372,16 +1380,16 @@ const ManagerShows = () => {
       {/* Show Details Modal */}
       {viewingShow && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-[var(--bg-primary)] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-2xl font-bold">{viewingShow.movie.title}</h2>
-                  <p className="text-gray-400 mt-1">Show Details</p>
+                  <p className="text-[var(--text-muted)] mt-1">Show Details</p>
                 </div>
                 <button
                   onClick={() => setViewingShow(null)}
-                  className="text-gray-400 hover:text-white"
+                  className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -1400,46 +1408,46 @@ const ManagerShows = () => {
                       className="w-full rounded-lg"
                     />
                   ) : (
-                    <div className="w-full h-64 bg-gray-800 flex items-center justify-center rounded-lg">
-                      <Film className="w-16 h-16 text-gray-600" />
+                    <div className="w-full h-64 bg-[var(--bg-secondary)] flex items-center justify-center rounded-lg">
+                      <Film className="w-16 h-16 text-[var(--text-muted)]" />
                     </div>
                   )}
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="bg-gray-800/50 rounded-lg p-4">
+                  <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-primary mb-3">Show Information</h3>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Screen:</span>
-                        <span className="text-gray-300">{viewingShow.screen.name || `Screen ${viewingShow.screen.screenNumber}`}</span>
+                        <span className="text-[var(--text-muted)]">Screen:</span>
+                        <span className="text-[var(--text-secondary)]">{viewingShow.screen.name || `Screen ${viewingShow.screen.screenNumber}`}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Show Time:</span>
-                        <span className="text-gray-300">{formatShowTime(getShowTime(viewingShow))}</span>
+                        <span className="text-[var(--text-muted)]">Show Time:</span>
+                        <span className="text-[var(--text-secondary)]">{formatShowTime(getShowTime(viewingShow))}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Language:</span>
-                        <span className="text-gray-300">{viewingShow.language || "English"}</span>
+                        <span className="text-[var(--text-muted)]">Language:</span>
+                        <span className="text-[var(--text-secondary)]">{viewingShow.language || "English"}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Start Date:</span>
-                        <span className="text-gray-300">
+                        <span className="text-[var(--text-muted)]">Start Date:</span>
+                        <span className="text-[var(--text-secondary)]">
                           {getShowStartDate(viewingShow)
                             ? new Date(`${getShowStartDate(viewingShow)}T12:00:00`).toLocaleDateString()
                             : 'Not set'}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">End Date:</span>
-                        <span className="text-gray-300">
+                        <span className="text-[var(--text-muted)]">End Date:</span>
+                        <span className="text-[var(--text-secondary)]">
                           {getShowEndDate(viewingShow)
                             ? new Date(`${getShowEndDate(viewingShow)}T12:00:00`).toLocaleDateString()
                             : 'Not set'}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Status:</span>
+                        <span className="text-[var(--text-muted)]">Status:</span>
                         <span className={`px-2 py-1 rounded text-xs ${
                           viewingShow.isActive 
                             ? 'bg-green-600/20 text-green-400' 
@@ -1452,9 +1460,9 @@ const ManagerShows = () => {
                   </div>
                   
                   {viewingShow.movie.overview && (
-                    <div className="bg-gray-800/50 rounded-lg p-4">
+                    <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
                       <h3 className="text-lg font-semibold text-primary mb-3">Movie Overview</h3>
-                      <p className="text-gray-300 text-sm">{viewingShow.movie.overview}</p>
+                      <p className="text-[var(--text-secondary)] text-sm">{viewingShow.movie.overview}</p>
                     </div>
                   )}
                 </div>

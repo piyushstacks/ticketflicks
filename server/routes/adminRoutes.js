@@ -17,6 +17,7 @@ import {
 import {
   getAnalyticsData,
   downloadComprehensive,
+  downloadTargetedReport,
 } from "../controllers/analyticsController.js";
 import {
   syncMoviesFromTMDB,
@@ -35,6 +36,7 @@ import {
   updateMovieReviews,
   deleteMovieReview,
   getMovieReviews,
+  fetchTMDBRating,
 } from "../controllers/adminMovieController.js";
 import { fetchAllFeedbacks } from "../controllers/feedbackController.js";
 
@@ -65,12 +67,14 @@ adminRouter.get("/feedbacks", protectAdmin, getAllFeedbacks);
 // Analytics Routes
 adminRouter.get("/analytics", protectAdmin, getAnalyticsData);
 adminRouter.get("/analytics/download-comprehensive", protectAdmin, downloadComprehensive);
+adminRouter.get("/analytics/download-targeted", protectAdmin, downloadTargetedReport);
 
 // Movie Management Routes
 adminRouter.post("/movies/create", protectAdmin, createMovie);
 adminRouter.post("/movies/sync-tmdb", protectAdmin, syncMoviesFromTMDB);
 adminRouter.get("/movies", protectAdmin, getAllMovies);
 adminRouter.get("/movies/available", protectAdmin, getAllAvailableMovies);
+adminRouter.get("/movies/tmdb-rating", fetchTMDBRating); // Public TMDB lookup - no auth needed
 adminRouter.get("/movies/:movieId", protectAdmin, getMovieById);
 adminRouter.put(
   "/movies/:movieId/deactivate",

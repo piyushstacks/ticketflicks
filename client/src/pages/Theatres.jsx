@@ -218,11 +218,6 @@ const Theatres = () => {
                               loading="lazy"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                            
-                            {/* Overlay Price badge */}
-                            <div className="absolute top-2 right-2 px-2.5 py-1 rounded-md text-xs font-bold bg-accent text-white shadow-md">
-                               {'₹'}{getMinPrice(show)}
-                            </div>
                           </div>
                           
                           <div className="p-4 flex flex-col h-[140px]">

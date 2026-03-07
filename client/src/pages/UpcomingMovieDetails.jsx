@@ -28,7 +28,7 @@ const UpcomingMovieDetails = () => {
   if (!upcomingMovie) {
     return (
       <div className="flex justify-center items-center h-[90vh]">
-        <p className="text-gray-400 text-lg">Movie not found.</p>
+        <p className="text-[var(--text-muted)] text-lg">Movie not found.</p>
       </div>
     );
   }
@@ -65,8 +65,8 @@ const UpcomingMovieDetails = () => {
             onError={(e) => { e.target.style.display = "none"; }}
           />
         ) : (
-          <div className="max-md:mx-auto rounded-xl h-104 max-w-70 w-full flex items-center justify-center bg-gray-800">
-            <Film className="w-16 h-16 text-gray-600" />
+          <div className="max-md:mx-auto rounded-xl h-104 max-w-70 w-full flex items-center justify-center bg-[var(--bg-secondary)]">
+            <Film className="w-16 h-16 text-[var(--text-muted)]" />
           </div>
         )}
 

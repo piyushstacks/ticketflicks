@@ -56,7 +56,7 @@ const DateSelect = ({ dateTime, id }) => {
                       isSelected
                         ? "bg-primary"
                         : isPast
-                        ? "border border-gray-600 bg-gray-800/50 cursor-not-allowed opacity-50"
+                        ? "border border-[var(--border-hover)] bg-[var(--bg-secondary)]/50 cursor-not-allowed opacity-50"
                         : "border border-primary/70"
                     }`}
                   >

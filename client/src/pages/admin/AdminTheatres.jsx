@@ -270,13 +270,13 @@ const AdminTheatres = () => {
       </div>
 
       {/* Approval Status Tabs */}
-      <div className="flex flex-wrap gap-2 sm:gap-4 border-b border-gray-700 pb-px -mx-1 px-1">
+      <div className="flex flex-wrap gap-2 sm:gap-4 border-b border-[var(--border)] pb-px -mx-1 px-1">
         <button
           onClick={() => setActiveTab("pending")}
           className={`px-3 py-2 sm:px-4 font-medium transition rounded-t-lg whitespace-nowrap ${
             activeTab === "pending"
-              ? "text-primary border-b-2 border-primary bg-gray-800/50"
-              : "text-gray-400 hover:text-white hover:bg-gray-800/30"
+              ? "text-primary border-b-2 border-primary bg-[var(--bg-secondary)]/50"
+              : "text-[var(--text-muted)] hover:text-primary hover:bg-[var(--bg-secondary)]/30"
           }`}
         >
           <span className="flex items-center gap-2">
@@ -288,8 +288,8 @@ const AdminTheatres = () => {
           onClick={() => setActiveTab("approved")}
           className={`px-3 py-2 sm:px-4 font-medium transition rounded-t-lg whitespace-nowrap ${
             activeTab === "approved"
-              ? "text-primary border-b-2 border-primary bg-gray-800/50"
-              : "text-gray-400 hover:text-white hover:bg-gray-800/30"
+              ? "text-primary border-b-2 border-primary bg-[var(--bg-secondary)]/50"
+              : "text-[var(--text-muted)] hover:text-primary hover:bg-[var(--bg-secondary)]/30"
           }`}
         >
           <span className="flex items-center gap-2">
@@ -303,7 +303,7 @@ const AdminTheatres = () => {
 
       {/* Edit Form - Only for existing theatres */}
       {showForm && editingId && (
-        <div className="bg-gray-900/30 border border-gray-700 rounded-xl p-4 sm:p-6 w-full overflow-hidden">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-xl p-4 sm:p-6 w-full overflow-hidden">
           <h2 className="text-lg sm:text-xl font-bold mb-4">Edit Theatre</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -315,7 +315,7 @@ const AdminTheatres = () => {
                     type="text"
                     placeholder="Theatre Name *"
                     required
-                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition pr-10"
                   />
                   {touched.name && errors.name && (
                     <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
@@ -328,14 +328,14 @@ const AdminTheatres = () => {
                 {...getInputProps("location")}
                 type="text"
                 placeholder="Location"
-                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
               />
 
               <input
                 {...getInputProps("address")}
                 type="text"
                 placeholder="Address"
-                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                className="w-full min-w-0 px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
               />
 
               <div className="min-w-0">
@@ -345,7 +345,7 @@ const AdminTheatres = () => {
                     type="text"
                     placeholder="City *"
                     required
-                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition pr-10"
                   />
                   {touched.city && errors.city && (
                     <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
@@ -361,7 +361,7 @@ const AdminTheatres = () => {
                     type="text"
                     placeholder="State *"
                     required
-                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition pr-10"
+                    className="w-full min-w-0 px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition pr-10"
                   />
                   {touched.state && errors.state && (
                     <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
@@ -376,7 +376,7 @@ const AdminTheatres = () => {
                   type="text"
                   inputMode="numeric"
                   placeholder="Zip Code"
-                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
                 />
                 {touched.zipCode && errors.zipCode && <p id={errorId(formId, "zipCode")} className="field-error-text mt-1">{errors.zipCode}</p>}
               </div>
@@ -387,7 +387,7 @@ const AdminTheatres = () => {
                   type="tel"
                   inputMode="numeric"
                   placeholder="Contact / Phone"
-                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
                 />
                 {touched.contact_no && errors.contact_no && <p id={errorId(formId, "contact_no")} className="field-error-text mt-1">{errors.contact_no}</p>}
               </div>
@@ -397,7 +397,7 @@ const AdminTheatres = () => {
                   {...getInputProps("email")}
                   type="email"
                   placeholder="Email"
-                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+                  className="w-full min-w-0 px-3 sm:px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
                 />
                 {touched.email && errors.email && <p id={errorId(formId, "email")} className="field-error-text mt-1">{errors.email}</p>}
               </div>
@@ -407,7 +407,7 @@ const AdminTheatres = () => {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-4 sm:px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-medium text-sm sm:text-base"
+                className="px-4 sm:px-6 py-2 bg-[var(--bg-elevated)] hover:bg-[var(--border-hover)] rounded-lg transition font-medium text-sm sm:text-base"
               >
                 Cancel
               </button>
@@ -428,7 +428,7 @@ const AdminTheatres = () => {
           {pendingTheatres.map((theatre) => (
             <div
               key={theatre._id}
-              className="bg-gray-900/30 border border-yellow-500/30 rounded-xl p-4 sm:p-5 hover:border-yellow-500/50 transition min-w-0 overflow-hidden flex flex-col"
+              className="bg-[var(--bg-primary)]/30 border border-yellow-500/30 rounded-xl p-4 sm:p-5 hover:border-yellow-500/50 transition min-w-0 overflow-hidden flex flex-col"
             >
               <div className="space-y-3 flex-1 min-w-0">
                 <div className="flex justify-between items-start gap-2">
@@ -439,7 +439,7 @@ const AdminTheatres = () => {
                   </span>
                 </div>
 
-                <div className="space-y-2 text-sm text-gray-400 min-w-0">
+                <div className="space-y-2 text-sm text-[var(--text-muted)] min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-4 h-4 shrink-0 text-primary" />
                     <span className="truncate">{theatre.location || "N/A"}</span>
@@ -448,16 +448,16 @@ const AdminTheatres = () => {
                   {theatre.manager_id && (
                     <>
                       <div className="text-xs truncate">
-                        <span className="text-gray-500">Manager: </span>
+                        <span className="text-[var(--text-muted)]">Manager: </span>
                         <span>{theatre.manager_id.name}</span>
                       </div>
                       <div className="text-xs truncate">
-                        <span className="text-gray-500">Email: </span>
+                        <span className="text-[var(--text-muted)]">Email: </span>
                         <span>{theatre.manager_id.email}</span>
                       </div>
                       {theatre.manager_id.phone && (
                         <div className="text-xs">
-                          <span className="text-gray-500">Phone: </span>
+                          <span className="text-[var(--text-muted)]">Phone: </span>
                           <span>{theatre.manager_id.phone}</span>
                         </div>
                       )}
@@ -466,7 +466,7 @@ const AdminTheatres = () => {
 
                   {theatre.screenCount !== undefined && (
                     <div className="text-xs flex items-center gap-1">
-                      <span className="text-gray-500">Screens: </span>
+                      <span className="text-[var(--text-muted)]">Screens: </span>
                       <span className="text-primary font-bold">
                         {theatre.screenCount}
                       </span>
@@ -474,7 +474,7 @@ const AdminTheatres = () => {
                   )}
 
                   <div className="text-xs">
-                    <span className="text-gray-500">Submitted: </span>
+                    <span className="text-[var(--text-muted)]">Submitted: </span>
                     <span>{new Date(theatre.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
@@ -501,8 +501,8 @@ const AdminTheatres = () => {
 
           {pendingTheatres.length === 0 && (
             <div className="col-span-full text-center py-12 px-4">
-              <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg">No pending theatre approvals</p>
+              <Clock className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+              <p className="text-[var(--text-muted)] text-lg">No pending theatre approvals</p>
             </div>
           )}
         </div>
@@ -521,7 +521,7 @@ const AdminTheatres = () => {
               {theatres.filter(t => t.approval_status === "approved" && !t.disabled).map((theatre) => (
                 <div
                   key={theatre._id}
-                  className="bg-gray-900/30 border border-gray-700 rounded-xl p-4 sm:p-5 hover:border-primary/50 transition min-w-0 overflow-hidden flex flex-col"
+                  className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-xl p-4 sm:p-5 hover:border-primary/50 transition min-w-0 overflow-hidden flex flex-col"
                 >
                   <div className="space-y-3 flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2">
@@ -529,19 +529,19 @@ const AdminTheatres = () => {
                     </div>
 
                     <div className="space-y-2 min-w-0">
-                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
-                        <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm min-w-0">
+                        <MapPin className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                         <span className="truncate">{theatre.location}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
-                        <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm min-w-0">
+                        <Users className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                         <span className="truncate">{theatre.address || "—"}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
-                        <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm min-w-0">
+                        <Phone className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                         <span className="truncate">{theatre.contact_no || "No phone"}</span>
                       </div>
-                      <div className="text-gray-300 text-sm truncate">
+                      <div className="text-[var(--text-secondary)] text-sm truncate">
                         {theatre.city}, {theatre.state}
                       </div>
                     </div>
@@ -575,7 +575,7 @@ const AdminTheatres = () => {
 
               {theatres.filter(t => t.approval_status === "approved" && !t.disabled).length === 0 && (
                 <div className="col-span-full text-center py-12 px-4">
-                  <p className="text-gray-400 text-lg">No active theatres found</p>
+                  <p className="text-[var(--text-muted)] text-lg">No active theatres found</p>
                 </div>
               )}
             </div>
@@ -591,7 +591,7 @@ const AdminTheatres = () => {
               {disabledTheatres.filter(t => t.approval_status === "approved").map((theatre) => (
                 <div
                   key={theatre._id}
-                  className="bg-gray-900/30 border border-red-500/30 rounded-xl p-4 sm:p-5 hover:border-red-500/50 transition opacity-90 min-w-0 overflow-hidden flex flex-col"
+                  className="bg-[var(--bg-primary)]/30 border border-red-500/30 rounded-xl p-4 sm:p-5 hover:border-red-500/50 transition opacity-90 min-w-0 overflow-hidden flex flex-col"
                 >
                   <div className="space-y-3 flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2">
@@ -602,19 +602,19 @@ const AdminTheatres = () => {
                     </div>
 
                     <div className="space-y-2 min-w-0">
-                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
-                        <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm min-w-0">
+                        <MapPin className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                         <span className="truncate">{theatre.location}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
-                        <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm min-w-0">
+                        <Users className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                         <span className="truncate">{theatre.address || "—"}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-300 text-sm min-w-0">
-                        <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                      <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm min-w-0">
+                        <Phone className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                         <span className="truncate">{theatre.contact_no || "No phone"}</span>
                       </div>
-                      <div className="text-gray-300 text-sm truncate">
+                      <div className="text-[var(--text-secondary)] text-sm truncate">
                         {theatre.city}, {theatre.state}
                       </div>
                     </div>
@@ -641,8 +641,8 @@ const AdminTheatres = () => {
 
               {disabledTheatres.filter(t => t.approval_status === "approved").length === 0 && (
                 <div className="col-span-full text-center py-12 px-4">
-                  <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">No disabled theatres found</p>
+                  <XCircle className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+                  <p className="text-[var(--text-muted)] text-lg">No disabled theatres found</p>
                 </div>
               )}
             </div>
@@ -653,15 +653,15 @@ const AdminTheatres = () => {
       {/* Screens Modal */}
       {viewingScreens && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-gray-900 rounded-xl p-4 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto my-4 shadow-xl">
-            <div className="flex justify-between items-start gap-3 mb-4 sm:mb-6 sticky top-0 bg-gray-900 pb-2 z-10">
+          <div className="bg-[var(--bg-primary)] rounded-xl p-4 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto my-4 shadow-xl">
+            <div className="flex justify-between items-start gap-3 mb-4 sm:mb-6 sticky top-0 bg-[var(--bg-primary)] pb-2 z-10">
               <div className="min-w-0">
-                <h2 className="text-lg sm:text-2xl font-bold truncate">Screens — {viewingScreens.name}</h2>
-                <p className="text-gray-400 mt-1 text-sm truncate">{viewingScreens.location}, {viewingScreens.city}</p>
+                <h2 className="text-lg sm:text-2xl font-bold truncate text-[var(--text-primary)]">Screens — {viewingScreens.name}</h2>
+                <p className="text-[var(--text-muted)] mt-1 text-sm truncate">{viewingScreens.location}, {viewingScreens.city}</p>
               </div>
               <button
                 onClick={() => setViewingScreens(null)}
-                className="shrink-0 p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition"
+                className="shrink-0 p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-secondary)] transition"
                 aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -677,10 +677,10 @@ const AdminTheatres = () => {
             ) : screens.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 min-w-0">
                 {screens.map((screen) => (
-                  <div key={screen._id} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-5 min-w-0 overflow-hidden">
+                  <div key={screen._id} className="bg-[var(--bg-secondary)]/50 border border-[var(--border)] rounded-xl p-4 sm:p-5 min-w-0 overflow-hidden">
                     <div className="space-y-4">
                       <div className="flex justify-between items-start">
-                        <h3 className="text-xl font-bold">{screen.name || `Screen ${screen.screenNumber}`}</h3>
+                        <h3 className="text-xl font-bold text-[var(--text-primary)]">{ screen.name || `Screen ${screen.screenNumber}`}</h3>
                         <span className={`px-3 py-1 rounded-full text-sm ${
                           screen.isActive 
                             ? 'bg-green-600/20 text-green-400' 
@@ -707,8 +707,8 @@ const AdminTheatres = () => {
                         const totalSeatsCount = lArr.flat().filter(s => s && (s.seatNumber || (typeof s === 'string' && s !== ''))).length;
 
                         return (
-                          <div className="bg-gray-900/50 rounded-lg p-4">
-                            <h4 className="font-semibold text-primary mb-3">Seat Layout Preview</h4>
+                          <div className="bg-[var(--bg-primary)]/50 rounded-lg p-4">
+                            <h4 className="font-semibold text-[var(--text-primary)] mb-3">Seat Layout Preview</h4>
                             <div className="flex justify-center mb-4">
                               <div className="inline-block">
                                 {lArr.slice(0, 6).map((row, rIdx) => (
@@ -719,7 +719,7 @@ const AdminTheatres = () => {
                                         className={`w-2 h-2 rounded-sm ${
                                           !seat || seat === '' || (typeof seat === 'object' && !seat.seatNumber)
                                             ? 'invisible' 
-                                            : 'bg-gray-600'
+                                            : 'bg-[var(--border-hover)]'
                                         }`}
                                         title={typeof seat === 'object' ? seat.seatNumber : seat}
                                       />
@@ -727,19 +727,19 @@ const AdminTheatres = () => {
                                   </div>
                                 ))}
                                 {lArr.length > 6 && (
-                                  <div className="text-center text-gray-500 text-xs mt-1">...and more rows</div>
+                                  <div className="text-center text-[var(--text-muted)] text-xs mt-1">...and more rows</div>
                                 )}
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 text-sm mt-4 border-t border-gray-700/50 pt-3">
+                            <div className="grid grid-cols-2 gap-4 text-sm mt-4 border-t border-[var(--border)]/50 pt-3">
                               <div>
-                                <span className="text-gray-400">Total Seats:</span>
-                                <span className="ml-2 text-gray-300">{totalSeatsCount}</span>
+                                <span className="text-[var(--text-muted)]">Total Seats:</span>
+                                <span className="ml-2 font-semibold text-[var(--text-primary)]">{totalSeatsCount}</span>
                               </div>
                               <div>
-                                <span className="text-gray-400">Layout:</span>
-                                <span className="ml-2 text-gray-300">
+                                <span className="text-[var(--text-muted)]">Layout:</span>
+                                <span className="ml-2 font-semibold text-[var(--text-primary)]">
                                   {rowsCount} rows × {colsCount} cols
                                 </span>
                               </div>
@@ -747,20 +747,32 @@ const AdminTheatres = () => {
                             
                             {screen.seatTiers && screen.seatTiers.length > 0 ? (
                               <div className="mt-3">
-                                <h5 className="text-gray-400 text-sm mb-1">Seat Tiers</h5>
+                                <h5 className="text-[var(--text-muted)] text-sm mb-2 font-medium">Seat Tiers</h5>
                                 <div className="space-y-1">
                                   {screen.seatTiers.map((tier, idx) => (
-                                    <div key={idx} className="flex justify-between text-sm">
-                                      <span className="text-gray-300">{tier.tierName}:</span>
-                                      <span className="text-primary font-medium">₹{tier.price}</span>
+                                    <div key={idx} className="flex justify-between items-center text-sm">
+                                      <div className="flex items-center gap-2">
+                                        {(tier.color || tier.tierColor) && (
+                                          <span
+                                            className="w-3 h-3 rounded-full inline-block flex-shrink-0"
+                                            style={{ backgroundColor: tier.color || tier.tierColor }}
+                                          />
+                                        )}
+                                        <span className="text-[var(--text-primary)] font-medium">
+                                          {tier.name || tier.tierName || `Tier ${idx + 1}`}
+                                        </span>
+                                      </div>
+                                      <span className="text-green-500 font-semibold">
+                                        ₹{tier.price ?? tier.tierPrice ?? 'N/A'}
+                                      </span>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             ) : uniqueTiers.length > 0 ? (
                               <div className="mt-3">
-                                <h5 className="text-gray-400 text-sm mb-1">Detected Tiers</h5>
-                                <div className="text-sm text-gray-300">{uniqueTiers.join(', ')}</div>
+                                <h5 className="text-[var(--text-muted)] text-sm mb-1 font-medium">Detected Tiers</h5>
+                                <div className="text-sm text-[var(--text-primary)]">{uniqueTiers.join(', ')}</div>
                               </div>
                             ) : null}
                           </div>
@@ -771,12 +783,12 @@ const AdminTheatres = () => {
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-4 text-sm mt-2">
                           <div>
-                            <span className="text-gray-400">Screen Number:</span>
-                            <span className="ml-2 text-gray-300">{screen.screenNumber}</span>
+                            <span className="text-[var(--text-muted)]">Screen Number:</span>
+                            <span className="ml-2 font-semibold text-[var(--text-primary)]">{screen.screenNumber}</span>
                           </div>
                           <div>
-                            <span className="text-gray-400">Status:</span>
-                            <span className={`ml-2 ${screen.isActive ? 'text-green-400' : 'text-red-400'}`}>
+                            <span className="text-[var(--text-muted)]">Status:</span>
+                            <span className={`ml-2 font-semibold ${screen.isActive ? 'text-green-500' : 'text-red-400'}`}>
                               {screen.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </div>
@@ -788,8 +800,8 @@ const AdminTheatres = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <Monitor className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No screens found for this theatre</p>
+                <Monitor className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
+                <p className="text-[var(--text-muted)] text-lg">No screens found for this theatre</p>
               </div>
             )}
           </div>

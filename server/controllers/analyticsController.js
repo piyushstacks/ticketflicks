@@ -19,6 +19,8 @@ import { asyncHandler } from "../middleware/errorHandler.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const VALID_TYPES = ["bookings", "payments", "movies", "shows", "users", "theatres"];
+
 /**
  * Get analytics data for dashboard
  */
@@ -290,7 +292,98 @@ export const downloadComprehensive = asyncHandler(async (req, res) => {
 });
 
 
+/**
+ * Generate targeted report(s) by type and download as PDF (single) or ZIP (multiple)
+ * Query: ?types=bookings,payments,movies  OR  ?types=all
+ */
+export const downloadTargetedReport = asyncHandler(async (req, res) => {
+  const rawTypes = req.query.types || "";
+  const requested = rawTypes.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+
+  const types =
+    requested.includes("all")
+      ? VALID_TYPES
+      : requested.filter((t) => VALID_TYPES.includes(t));
+
+  if (types.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: `No valid types provided. Valid: ${VALID_TYPES.join(", ")}`,
+    });
+  }
+
+  const projectRoot = path.resolve(__dirname, "../..");
+  const analyticsDir = path.join(projectRoot, "analytics");
+  const reportsDir = path.join(analyticsDir, "reports");
+  const script = path.join(analyticsDir, "generate_targeted_report.py");
+
+  if (!fs.existsSync(script)) {
+    return res.status(500).json({ success: false, message: "Targeted report script not found." });
+  }
+
+  fs.mkdirSync(reportsDir, { recursive: true });
+
+  const typesArg = types.join(" ");
+  const cmd = `python3 "${script}" --types ${typesArg}`;
+
+  console.log("[Analytics] Running targeted report:", cmd);
+
+  exec(cmd, { cwd: analyticsDir, timeout: 300000 }, (error, stdout, stderr) => {
+    if (error) {
+      console.error("[Analytics] Script error:", error);
+      console.error("[Analytics] stderr:", stderr);
+      return res.status(500).json({
+        success: false,
+        message: "Report generation failed",
+        error: stderr || error.message,
+      });
+    }
+
+    console.log("[Analytics] stdout:", stdout);
+
+    // Parse output path from stdout
+    let filePath = null;
+    let isZip = false;
+
+    const zipMatch = stdout.match(/ZIP_PATH:(.+)/);
+    const pdfMatch = stdout.match(/PDF_PATH:(.+)/);
+
+    if (zipMatch) {
+      filePath = zipMatch[1].trim();
+      isZip = true;
+    } else if (pdfMatch) {
+      filePath = pdfMatch[1].trim();
+    }
+
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(500).json({ success: false, message: "Output file not found after generation." });
+    }
+
+    const dateStr = new Date().toISOString().split("T")[0];
+    const filename = isZip
+      ? `ticketflicks_reports_${types.join("_")}_${dateStr}.zip`
+      : `ticketflicks_${types[0]}_report_${dateStr}.pdf`;
+
+    const contentType = isZip ? "application/zip" : "application/pdf";
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", fs.statSync(filePath).size);
+
+    const stream = fs.createReadStream(filePath);
+    stream.on("error", (err) => {
+      console.error("[Analytics] Stream error:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: "Error streaming file" });
+      }
+    });
+    stream.pipe(res);
+  });
+});
+
+
 export default {
   getAnalyticsData,
   downloadComprehensive,
+  downloadTargetedReport,
 };

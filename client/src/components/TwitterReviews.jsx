@@ -129,17 +129,17 @@ const TwitterEmbed = ({ url }) => {
   // Error or fallback state - show a nice card with link
   if (status === "error") {
     return (
-      <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl p-5 border border-gray-700 hover:border-blue-500/50 transition-all">
+      <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl p-5 border border-[var(--border)] hover:border-blue-500/50 transition-all">
         <div className="flex items-start gap-3 mb-4">
           <div className="p-2 bg-blue-500/20 rounded-full">
             <Twitter className="w-5 h-5 text-blue-400" />
           </div>
           <div className="flex-1">
-            <p className="text-gray-300 font-medium">@{username || "user"}</p>
-            <p className="text-gray-500 text-xs">Twitter/X Post</p>
+            <p className="text-[var(--text-secondary)] font-medium">@{username || "user"}</p>
+            <p className="text-[var(--text-muted)] text-xs">Twitter/X Post</p>
           </div>
         </div>
-        <p className="text-gray-400 text-sm mb-4 leading-relaxed">
+        <p className="text-[var(--text-muted)] text-sm mb-4 leading-relaxed">
           This tweet cannot be embedded directly. Click below to view it on
           Twitter/X.
         </p>
@@ -160,9 +160,9 @@ const TwitterEmbed = ({ url }) => {
     <div className="twitter-embed-container min-h-[250px] relative">
       {/* Loading State */}
       {status === "loading" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/50 rounded-xl border border-gray-700">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--bg-secondary)]/50 rounded-xl border border-[var(--border)]">
           <RefreshCw className="w-6 h-6 text-blue-400 animate-spin mb-3" />
-          <span className="text-gray-400 text-sm">Loading tweet...</span>
+          <span className="text-[var(--text-muted)] text-sm">Loading tweet...</span>
         </div>
       )}
 
@@ -206,7 +206,7 @@ const TwitterReviews = ({ reviews = [] }) => {
         </div>
         <div>
           <h2 className="text-2xl font-semibold">What People Say</h2>
-          <p className="text-gray-400 text-sm">Reviews from Twitter/X</p>
+          <p className="text-[var(--text-muted)] text-sm">Reviews from Twitter/X</p>
         </div>
         <span className="ml-auto px-3 py-1 bg-blue-600/20 text-blue-400 text-sm rounded-full font-medium">
           {validReviews.length}{" "}
@@ -231,10 +231,10 @@ const TwitterReviews = ({ reviews = [] }) => {
         <div className="flex justify-center mt-10">
           <button
             onClick={showMore}
-            className="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-3 font-medium"
+            className="px-8 py-3 bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] rounded-lg transition-colors flex items-center gap-3 font-medium"
           >
             <span>Show More Reviews</span>
-            <span className="px-2 py-0.5 bg-gray-700 rounded text-sm">
+            <span className="px-2 py-0.5 bg-[var(--bg-elevated)] rounded text-sm">
               {validReviews.length - visibleCount} more
             </span>
           </button>
@@ -242,7 +242,7 @@ const TwitterReviews = ({ reviews = [] }) => {
       )}
 
       {/* Attribution */}
-      <p className="text-center text-gray-500 text-xs mt-8">
+      <p className="text-center text-[var(--text-muted)] text-xs mt-8">
         Reviews sourced from Twitter/X posts • Click on any tweet to view the
         full conversation
       </p>

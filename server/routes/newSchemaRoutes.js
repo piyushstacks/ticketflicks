@@ -18,6 +18,7 @@ import {
 } from "../controllers/userController.js";
 import seatController from "../controllers/publicScreenTblController.js";
 import metadataController from "../controllers/publicController.js";
+import { submitFeedback } from "../controllers/feedbackController.js";
 
 import {
   requestTheatreRegistrationOtp,
@@ -141,6 +142,9 @@ router.get("/is-admin", protectUser, checkIsAdmin);
 // Favorites routes
 router.get("/favorites", protectUser, fetchFavorites);
 router.post("/favorites", protectUser, updateFavorite);
+
+// Feedback route
+router.post("/submit-feedback", protectUser, submitFeedback);
 
 // ========== SEAT ROUTES ==========
 router.post("/seat-categories", seatController.createSeatCategory);

@@ -7,6 +7,7 @@ Layout: Cover -> Summary -> [Section Page: Table + Charts] -> AI Analysis
 import os
 from datetime import datetime
 from fpdf import FPDF, XPos, YPos
+from fpdf.fonts import FontFace
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -141,58 +142,106 @@ class TFReport(FPDF):
         self.ln(16)
 
     # ── TABLE ───────────────────────────────────────────────────────────────
-    def draw_table(self, headers, rows, col_widths, max_rows=25):
+    def draw_table(self, headers, rows, col_widths, max_rows=None):
         """
-        Render aligned table. Header = red bg / white text.
-        Rows alternate white / light-red.
+        Clean professional table with:
+        - Dark red header bar (white bold text)
+        - Alternating white / light-gray data rows
+        - Word-wrap inside cells via multi_cell trick
+        - Subtle border lines only
         """
         if not rows:
             self.set_font('Helvetica', 'I', 9)
             set_text(self, GRAY_500)
-            self.cell(0, 8, 'No data available.', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            self.cell(0, 8, 'No data available for this section.', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
             self.ln(3)
             return
 
-        total_w = sum(col_widths)
-        x_start = (210 - total_w) / 2   # centre the table
+        data_rows  = rows[:max_rows] if max_rows else rows
+        total_w    = sum(col_widths)
+        row_h      = 6          # mm per data row
+        hdr_h      = 8          # mm header height
+        font_size  = 7.5        # data font size
+        left_x     = self.l_margin
 
-        # Header
-        set_fill(self, RED)
+        # ── HEADER ──────────────────────────────────────────────────────────
+        set_fill(self, RED_DARK)
         set_draw(self, RED_DARK)
-        self.set_line_width(0.2)
-        self.set_xy(x_start, self.get_y())
-        for h, w in zip(headers, col_widths):
-            self.set_font('Helvetica', 'B', 8)
-            set_text(self, WHITE)
-            self.cell(w, 9, s(h), border=1, align='C', fill=True)
-        self.ln()
+        self.set_line_width(0.1)
+        self.rect(left_x, self.get_y(), total_w, hdr_h, 'F')
 
-        # Data rows
-        set_draw(self, GRAY_300)
-        for ri, row in enumerate(rows[:max_rows]):
-            if self.get_y() > self.h - 28:
+        self.set_font('Helvetica', 'B', 8)
+        set_text(self, WHITE)
+        x = left_x
+        hdr_y = self.get_y()
+        for i, (h, w) in enumerate(zip(headers, col_widths)):
+            self.set_xy(x + 1, hdr_y + 1.5)
+            self.cell(w - 2, hdr_h - 3, s(h).upper(), align='L', border=0)
+            x += w
+        self.set_y(hdr_y + hdr_h)
+
+        # ── DATA ROWS ───────────────────────────────────────────────────────
+        STRIPE_A = (255, 255, 255)   # white
+        STRIPE_B = (245, 246, 248)   # very light gray
+        BORDER_C = (220, 220, 220)   # subtle grid line
+
+        set_draw(self, BORDER_C)
+        self.set_line_width(0.1)
+
+        for ri, row in enumerate(data_rows):
+            # Page break guard
+            if self.get_y() + row_h > self.h - 22:
                 self.add_page()
-                # Repeat header on next page
-                self.set_xy(x_start, self.get_y())
-                set_fill(self, RED)
+                # Reprint header on new page
+                set_fill(self, RED_DARK)
+                self.rect(left_x, self.get_y(), total_w, hdr_h, 'F')
+                self.set_font('Helvetica', 'B', 8)
+                set_text(self, WHITE)
+                x = left_x
+                hdr_y2 = self.get_y()
                 for h, w in zip(headers, col_widths):
-                    self.set_font('Helvetica', 'B', 8)
-                    set_text(self, WHITE)
-                    self.cell(w, 9, s(h), border=1, align='C', fill=True)
-                self.ln()
+                    self.set_xy(x + 1, hdr_y2 + 1.5)
+                    self.cell(w - 2, hdr_h - 3, s(h).upper(), align='L', border=0)
+                    x += w
+                self.set_y(hdr_y2 + hdr_h)
+                set_draw(self, BORDER_C)
+                self.set_line_width(0.1)
 
-            fill = ri % 2 == 0
-            set_fill(self, GRAY_100 if fill else WHITE)
-            self.set_xy(x_start, self.get_y())
+            row_y     = self.get_y()
+            stripe    = STRIPE_A if ri % 2 == 0 else STRIPE_B
+            set_fill(self, stripe)
+            self.rect(left_x, row_y, total_w, row_h, 'F')
 
+            self.set_font('Helvetica', '', font_size)
+            set_text(self, GRAY_700)
+            x = left_x
             for ci, (cell_val, w) in enumerate(zip(row, col_widths)):
-                self.set_font('Helvetica', '', 7.5)
-                set_text(self, GRAY_700)
-                align = 'R' if ci > 0 else 'L'
-                self.cell(w, 7.5, s(str(cell_val)), border=1, align=align, fill=fill)
-            self.ln()
+                cell_text = s(str(cell_val))
+                # Right-align numeric-looking cells (simple heuristic)
+                try:
+                    float(str(cell_val).replace(',', '').replace('Rs', '').strip())
+                    align = 'R'
+                    self.set_xy(x + 1, row_y + 1)
+                    self.cell(w - 2, row_h - 2, cell_text, align=align, border=0)
+                except ValueError:
+                    align = 'L'
+                    self.set_xy(x + 1, row_y + 1)
+                    # Truncate to fit cell width (avoid overflow)
+                    max_chars = max(4, int(w / 1.9))
+                    display = cell_text if len(cell_text) <= max_chars else cell_text[:max_chars - 2] + '..'
+                    self.cell(w - 2, row_h - 2, display, align=align, border=0)
+                x += w
 
-        self.ln(5)
+            # Bottom border line for each row
+            set_draw(self, BORDER_C)
+            self.line(left_x, row_y + row_h, left_x + total_w, row_y + row_h)
+            self.set_y(row_y + row_h)
+
+        # Outer border
+        set_draw(self, GRAY_300)
+        self.set_line_width(0.3)
+        self.rect(left_x, hdr_y, total_w, hdr_h + len(data_rows) * row_h, border=0)
+        self.ln(6)
 
     # ── KPI CARD ────────────────────────────────────────────────────────────
     def kpi_card(self, label, value, x, y, w=44, h=20):
@@ -223,33 +272,36 @@ def generate_ai_analysis(stats):
     api_key = os.environ.get("GEMINI_API_KEY") or "dummy"
 
     prompt = f"""
-You are a Senior Data Scientist at TicketFlicks. Write a concise, high-impact analytical report strictly based on the provided data.
-DO NOT invent, assume, or hallucinate trends. If data is limited, state exactly what the data shows without unsupported extrapolations.
+You are a Senior Data Scientist & Strategy Lead at TicketFlicks. 
+Provide a COPIOUS and HIGHLY DETAILED analytical report strictly based on the provided platform data.
 
 PLATFORM METRICS:
-- Total Revenue: INR {stats.get('total_revenue', 0):,.0f}
-- Revenue per User: INR {stats.get('revenue_per_user', 0):,.0f}
-- Revenue per Theatre: INR {stats.get('revenue_per_theatre', 0):,.0f}
-- Booking Conversion Rate: {stats.get('conversion_rate', 0):.1f}%
-- Average Seats per Booking: {stats.get('seats_per_booking', 0):.1f}
+- Total Revenue: INR {stats.get('total_revenue', 0):,.2f}
+- Revenue per User: INR {stats.get('revenue_per_user', 0):,.2f}
+- Revenue per Theatre: INR {stats.get('revenue_per_theatre', 0):,.2f}
+- Booking Conversion Rate: {stats.get('conversion_rate', 0):.2f}%
+- Average Seats per Booking: {stats.get('seats_per_booking', 0):.2f}
 - Active Movies: {stats.get('active_movies', 0)}
 - Registered Users: {stats.get('total_users', 0)}
 
-Write exactly 4 numbered sections. Format each section as:
+Write 4 long, information-dense analytical sections. Each section MUST be at least 2 long paragraphs.
+Expand significantly on the data to explain 'why' these metrics matter and how they impact scalability.
+
+Format each section as:
 [NUMBER. SECTION HEADING]
-[1 blank line then the paragraph body]
+[Paragraph 1...]
+[Paragraph 2...]
 
 Sections required:
-1. EXECUTIVE PERFORMANCE OVERVIEW
-2. REVENUE & CONVERSION ANALYSIS
-3. USER BEHAVIOUR & ENGAGEMENT
-4. OPERATIONAL EFFICIENCY
+1. EXECUTIVE PERFORMANCE OVERVIEW: Deep dive into the current financial health and revenue scalability...
+2. REVENUE & CONVERSION ANALYSIS: Detailed breakdown of the sales funnel and conversion efficiency...
+3. USER BEHAVIOUR & ENGAGEMENT: Granular look at user registration growth and seat occupancy patterns...
+4. OPERATIONAL EFFICIENCY: Assessment of movie inventory performance and theatre-level throughput...
 
 Rules:
-- NO bullets, NO asterisks, NO markdown, NO em-dashes (use plain hyphens only).
-- Each section heading must appear alone on its own line in UPPERCASE.
-- Paragraphs must be highly analytical, data-dense, 3-4 sentences total.
-- Total length: 250-320 words.
+- Length: Be verbose. Provide deep context.
+- NO bullets, NO asterisks, NO markdown. Use only plain text sentences.
+- Each section heading must be on its own line in UPPERCASE.
 """
 
     try:
@@ -270,26 +322,73 @@ Rules:
 
         return s(
             "1. EXECUTIVE PERFORMANCE OVERVIEW\n"
-            f"TicketFlicks generated INR {rev:,.0f} in platform revenue. With an average revenue per user of INR {stats.get('revenue_per_user',0):,.0f}"
-            f" across {usr} registered users, the platform demonstrates a solid foundation. Key operational metrics indicate"
-            f" consistent user engagement, though overall volume remains constrained by current catalogue depth of {stats.get('active_movies',0)} active movies.\n\n"
+            f"TicketFlicks has generated a total platform revenue of INR {rev:,.0f}, reflecting the cumulative value"
+            f" captured from all successful ticket transactions processed through the system. This top-line figure"
+            f" positions the platform at a critical early growth stage, where the foundational transaction"
+            f" infrastructure has proven operational but scale remains the central challenge. With {usr} registered"
+            f" users on the platform and a revenue-per-user ratio of INR {stats.get('revenue_per_user',0):,.0f},"
+            f" there is clear evidence that individual monetisation is moderate and consistent, which is a healthy"
+            f" sign for a B2C ticketing marketplace. The average booking value of INR {avg:,.0f} indicates that"
+            f" customers are making deliberate, considered purchasing decisions rather than impulsive micro-purchases,"
+            f" suggesting the platform attracts intent-driven users primed for conversion.\n"
+            f"The fact that {stats.get('active_movies',0)} active movies are available simultaneously speaks to"
+            f" catalogue depth, yet it is the conversion of that catalogue breadth into actual booked seats that"
+            f" defines commercial success. As the platform matures, the key strategic imperative is not merely"
+            f" user acquisition but activation -- ensuring that each registered account transitions into a"
+            f" repeat, high-value customer. Deepening content diversity and expanding theatre partnerships"
+            f" across Tier-1 and Tier-2 cities remains the most reliable lever for sustained revenue scaling.\n\n"
 
             "2. REVENUE & CONVERSION ANALYSIS\n"
-            f"The platform achieved a booking conversion rate of {stats.get('conversion_rate',0):.1f}%. This indicates the proportion"
-            f" of initiated transactions resulting in successful payments. Examining revenue distribution across venues,"
-            f" the platform averages INR {stats.get('revenue_per_theatre',0):,.0f} per active theatre, highlighting"
-            f" the baseline geographical monetisation performance.\n\n"
+            f"The booking conversion rate stands at {stats.get('conversion_rate',0):.1f}%, a metric that encapsulates"
+            f" the efficiency of the entire sales funnel from initial user interest through to a completed,"
+            f" paid transaction. In the context of digital ticketing marketplaces, industry benchmarks typically"
+            f" range between 2.5% and 8%, meaning TicketFlicks' current rate provides a clear baseline"
+            f" against which future optimisation efforts should be measured. The revenue distribution across"
+            f" active theatre partners averages INR {stats.get('revenue_per_theatre',0):,.0f} per venue, highlighting"
+            f" both the per-venue productivity and the degree to which revenue is concentrated or distributed"
+            f" across the network. A high per-theatre average is indicative of strong demand concentration,"
+            f" while a lower figure suggests broader geographic spread but thinner per-location revenue.\n"
+            f"Improving conversion requires simultaneous attention to UX friction points, payment reliability,"
+            f" and show discovery algorithms. Any reduction in drop-off between the seat-selection stage and"
+            f" final payment confirmation has an outsized impact on overall revenue since it directly increases"
+            f" the numerator of the conversion rate without requiring additional marketing spend. Implementing"
+            f" dynamic pricing models, promotional bundles, and personalised show recommendations based on user"
+            f" history represents the highest-ROI conversion optimisation available to the platform at this stage.\n\n"
 
             "3. USER BEHAVIOUR & ENGAGEMENT\n"
-            f"Transaction data reveals an average of {stats.get('seats_per_booking',0):.1f} seats booked per order. This group-booking"
-            f" tendency suggests that users primarily utilise the platform for shared social experiences. Customer lifetime"
-            f" value indicators reflect moderate retention, forming a baseline for future targeted re-engagement campaigns.\n\n"
+            f"Transaction data reveals an average of {stats.get('seats_per_booking',0):.1f} seats per booking,"
+            f" a figure that carries significant implications for both venue capacity planning and marketing"
+            f" strategy. A mean above 1.5 strongly indicates that users are booking as part of social groups --"
+            f" couples, families, or friends -- rather than as solo attendees. This group booking behaviour is"
+            f" inherently positive for the platform because it means each conversion event generates"
+            f" proportionally higher revenue than a single-seat transaction, amplifying the effective revenue"
+            f" per conversion. It also implies that word-of-mouth dynamics are likely active -- users who enjoy"
+            f" the booking experience will naturally introduce the platform to their social circles.\n"
+            f"From an engagement standpoint, the concentration of bookings across {usr} registered users creates"
+            f" both a risk and an opportunity. If a small cohort of highly active users accounts for a"
+            f" disproportionate share of total revenue, the platform is exposed to churn risk within that"
+            f" segment. Implementing a tiered loyalty framework -- offering priority seat selection, exclusive"
+            f" pre-sale windows, or bundled F&B credits to frequent bookers -- would serve both to retain"
+            f" high-value users and to create aspirational incentives that encourage infrequent users to"
+            f" increase their booking frequency toward the premium tier.\n\n"
 
             "4. OPERATIONAL EFFICIENCY\n"
-            f"Current platform operations show varying degrees of efficiency across physical and digital touchpoints."
-            f" By focusing purely on existing data traces, it is evident that increasing the conversion rate from"
-            f" {stats.get('conversion_rate',0):.1f}% represents the most immediate lever for revenue expansion without"
-            f" requiring proportional increases in user acquisition spending."
+            f"Operational efficiency for a cinema ticketing platform is best measured through the ratio of"
+            f" successfully closed transactions relative to total initiated sessions, the throughput of each"
+            f" theatre partner, and the reliability of the payment gateway integration. Currently, the"
+            f" conversion rate of {stats.get('conversion_rate',0):.1f}% implies that for every 100 users who"
+            f" begin the booking process, approximately {stats.get('conversion_rate',0):.0f} complete a"
+            f" successful payment. Closing this gap -- even by 2-3 percentage points -- mathematically"
+            f" translates to a significant revenue uplift per marketing rupee spent, making it the highest"
+            f" priority operational improvement available without capital expenditure.\n"
+            f"Theatre partner efficiency, measured by revenue per active venue at INR {stats.get('revenue_per_theatre',0):,.0f},"
+            f" should be benchmarked against individual theatre show schedules to identify underperforming"
+            f" screens and peak-demand times. Venues with low per-show occupancy rates would benefit from"
+            f" targeted promotional pushes -- flash discounts, last-minute deal notifications, or"
+            f" complementary bundling with nearby dining options -- to drive fill rates upward. The"
+            f" operational goal is to ensure that the fixed cost of maintaining each theatre partnership"
+            f" is consistently offset by the variable revenue it generates, establishing a self-sustaining"
+            f" and scalable theatre network that grows in profitability as the user base expands."
         )
 
 
@@ -513,204 +612,146 @@ def create_pdf(analytics_data, charts_dir, output_path):
     pdf._in_cover = False
 
     # =========================================================
-    # PAGE 2 - EXECUTIVE KPI SUMMARY
-    # =========================================================
-    pdf.add_page()
-    pdf.section_banner('Executive Summary', 'Platform-wide key performance indicators')
-
-    kpis = [
-        ("Total Revenue",    f"Rs {analytics_data.get('total_revenue', 0):,.0f}"),
-        ("Total Bookings",   str(analytics_data.get('total_bookings', 0))),
-        ("Conversion Rate",  f"{analytics_data.get('conversion_rate', 0):.1f}%"),
-        ("Rev / User",       f"Rs {analytics_data.get('revenue_per_user', 0):,.0f}"),
-    ]
-    kpis2 = [
-        ("Seats / Booking",  f"{analytics_data.get('seats_per_booking', 0):.1f}"),
-        ("Rev / Theatre",    f"Rs {analytics_data.get('revenue_per_theatre', 0):,.0f}"),
-        ("Active Movies",    str(analytics_data.get('active_movies', 0))),
-        ("Registered Users", str(analytics_data.get('total_users', 0))),
-    ]
-
-    # Larger KPI cards: 2 rows of 4, each 47mm wide
-    card_w, card_h = 47, 26
-    gap = 3
-    start_x = (210 - (4 * card_w + 3 * gap)) / 2
-    row1_y = pdf.get_y()
-    for i, (lbl, val) in enumerate(kpis[:4]):
-        pdf.kpi_card(lbl, val, x=start_x + i * (card_w + gap), y=row1_y, w=card_w, h=card_h)
-    pdf.set_y(row1_y + card_h + gap)
-    row2_y = pdf.get_y()
-    for i, (lbl, val) in enumerate(kpis2):
-        pdf.kpi_card(lbl, val, x=start_x + i * (card_w + gap), y=row2_y, w=card_w, h=card_h)
-    pdf.set_y(row2_y + card_h + 10)
-
-    # =========================================================
     # SECTION: BOOKINGS
     # =========================================================
-    bk_status = analytics_data.get('bookings_by_status', {})
-    build_section(
-        pdf, charts_dir,
-        title    = 'Bookings - Status Overview',
-        subtitle = 'Distribution of bookings by status and payment',
-        table_headers = ['Status', 'Count'],
-        table_rows    = [[k.title(), str(v)] for k, v in bk_status.items()] if bk_status else [],
-        col_widths    = [95, 95],
-        chart_files   = [
-            ('booking_status_pie.png',   'Figure 1: Booking Status Distribution'),
-            ('payment_status_pie.png',   'Figure 2: Payment Status Distribution'),
+    bookings = analytics_data.get('raw_bookings', [])
+    b_rows = [
+        [
+            s(r.get('booking_id', ''))[-12:],           # last 12 chars of ID (unique suffix)
+            s(r.get('user_id',    ''))[-12:],
+            s(r.get('show_id',    ''))[-12:],
+            f"Rs {r.get('total_amount', 0):,.0f}",
+            s(r.get('status',         'N/A')).capitalize(),
+            s(r.get('payment_status', 'N/A')).capitalize(),
+            str(r.get('num_seats', 0))
         ]
-    )
-
-    # =========================================================
-    # SECTION: DAILY REVENUE TRENDS
-    # =========================================================
-    daily = analytics_data.get('daily_trends', [])
-    daily_rows = []
-    if daily:
-        for r in daily:
-            if r.get('bookings', 0) > 0:
-                daily_rows.append([
-                    r.get('date', ''),
-                    str(r.get('bookings', 0)),
-                    f"Rs {r.get('revenue', 0):,.0f}"
-                ])
-
+        for r in bookings
+    ]
     build_section(
         pdf, charts_dir,
-        title    = 'Revenue - Daily Trends',
-        subtitle = 'Bookings and revenue over the past 30 days',
-        table_headers = ['Date', 'Bookings', 'Revenue (Rs)'],
-        table_rows    = daily_rows,
-        col_widths    = [70, 60, 60],
-        chart_files   = [
-            ('daily_revenue_trend.png', 'Figure 3: Daily Revenue Trend'),
+        title='Bookings Table & Charts',
+        subtitle='Booking records with status, amount and seat details',
+        table_headers=['Booking ID', 'User ID', 'Show ID', 'Amount', 'Status', 'Payment', 'Seats'],
+        table_rows=b_rows,
+        col_widths=[28, 28, 28, 22, 22, 22, 14],
+        chart_files=[
+            ('booking_status_pie.png',          'Booking Status Distribution'),
+            ('payment_status_pie.png',           'Payment Status Distribution'),
+            ('hourly_booking_distribution.png',  'Bookings by Hour of Day'),
+            ('day_of_week_distribution.png',     'Bookings by Day of Week'),
+            ('booking_heatmap.png',              'Booking Activity Heatmap'),
+            ('daily_revenue_trend.png',          'Daily Revenue Trend'),
         ]
     )
 
     # =========================================================
     # SECTION: MOVIES
     # =========================================================
-    top_movies = analytics_data.get('top_movies', [])
-    movie_rows = [
-        [s(r.get('movie', ''))[:35], str(r.get('bookings', 0)),
-         f"Rs {r.get('revenue', 0):,.0f}", str(r.get('seats_sold', 0))]
-        for r in top_movies
+    movies = analytics_data.get('raw_movies', [])
+    m_rows = [
+        [
+            s(r.get('movie_id', ''))[-12:],
+            s(r.get('title', 'N/A'))[:28],
+            s(r.get('genre_names', 'N/A'))[:20],
+            str(r.get('imdbRating', 'N/A')),
+            str(r.get('duration_min', 'N/A')),
+            'Yes' if r.get('isActive') else 'No'
+        ]
+        for r in movies
     ]
     build_section(
         pdf, charts_dir,
-        title    = 'Movies - Performance Breakdown',
-        subtitle = 'All movies ranked by revenue',
-        table_headers = ['Movie Title', 'Bookings', 'Revenue (Rs)', 'Seats Sold'],
-        table_rows    = movie_rows,
-        col_widths    = [80, 36, 46, 28],
-        chart_files   = [
-            ('revenue_by_movie_bar.png',       'Figure 4: Revenue by Movie'),
-            ('revenue_vs_bookings_scatter.png','Figure 5: Revenue vs Bookings Scatter'),
+        title='Movies Table & Charts',
+        subtitle='Active movie catalogue with genres, ratings and runtime',
+        table_headers=['Movie ID', 'Title', 'Genre', 'Rating', 'Mins', 'Active'],
+        table_rows=m_rows,
+        col_widths=[26, 52, 42, 16, 16, 16],
+        chart_files=[
+            ('revenue_by_movie_bar.png',        'Revenue by Movie'),
+            ('rating_distribution_bar.png',     'Rating Distribution'),
+            ('genre_distribution_pie.png',      'Genre Distribution'),
+            ('revenue_by_genre_bar.png',        'Revenue by Genre'),
+            ('revenue_vs_bookings_scatter.png', 'Revenue vs Bookings')
         ]
     )
 
     # =========================================================
     # SECTION: THEATRES
     # =========================================================
-    top_theatres = analytics_data.get('top_theatres', [])
-    theatre_rows = [
-        [s(r.get('theatre', ''))[:26], s(r.get('city', 'N/A'))[:14],
-         str(r.get('bookings', 0)), f"Rs {r.get('revenue', 0):,.0f}", str(r.get('seats_sold', 0))]
-        for r in top_theatres
+    theatres = analytics_data.get('raw_theatres', [])
+    t_rows = [
+        [
+            s(r.get('theatre_id', ''))[-12:],
+            s(r.get('name', 'N/A'))[:28],
+            s(r.get('city', 'N/A'))[:18],
+            s(r.get('approval_status', 'N/A')).capitalize(),
+            'Yes' if r.get('disabled') else 'No'
+        ]
+        for r in theatres
     ]
     build_section(
         pdf, charts_dir,
-        title    = 'Theatres - Performance Breakdown',
-        subtitle = 'Revenue, bookings and capacity per theatre',
-        table_headers = ['Theatre Name', 'City', 'Bookings', 'Revenue (Rs)', 'Seats Sold'],
-        table_rows    = theatre_rows,
-        col_widths    = [58, 34, 28, 44, 26],
-        chart_files   = [
-            ('revenue_by_theatre_bar.png', 'Figure 6: Revenue by Theatre'),
-            ('theatre_city_bar.png',       'Figure 7: Theatres per City'),
+        title='Theatres Table & Charts',
+        subtitle='Partner venue directory with status and city distribution',
+        table_headers=['Theatre ID', 'Name', 'City', 'Status', 'Disabled'],
+        table_rows=t_rows,
+        col_widths=[26, 58, 38, 28, 20],
+        chart_files=[
+            ('revenue_by_theatre_bar.png', 'Revenue by Theatre'),
+            ('theatre_city_bar.png',       'Theatres by City')
         ]
     )
 
     # =========================================================
-    # SECTION: GENRES
+    # SECTION: SHOWS
     # =========================================================
-    genre_dist = analytics_data.get('genre_distribution', {})
-    genre_rows = [[s(g), str(c)] for g, c in genre_dist.items()]
+    shows = analytics_data.get('raw_shows', [])
+    sh_rows = [
+        [
+            s(r.get('show_id',    ''))[-12:],
+            s(r.get('movie_id',   ''))[-12:],
+            s(r.get('theatre_id', ''))[-12:],
+            s(str(r.get('show_datetime', 'N/A')))[:16],
+            f"Rs {r.get('basePrice', 0):,.0f}" if r.get('basePrice') else 'N/A',
+            s(r.get('status', 'N/A')).capitalize()
+        ]
+        for r in shows
+    ]
     build_section(
         pdf, charts_dir,
-        title    = 'Genre - Distribution & Revenue',
-        subtitle = 'Genre breakdown across active movies',
-        table_headers = ['Genre', 'Movie Count'],
-        table_rows    = genre_rows,
-        col_widths    = [100, 90],
-        chart_files   = [
-            ('genre_distribution_pie.png', 'Figure 8: Genre Distribution'),
-            ('revenue_by_genre_bar.png',   'Figure 9: Revenue by Genre'),
-        ]
+        title='Shows Table & Charts',
+        subtitle='Scheduled show records with timing and pricing details',
+        table_headers=['Show ID', 'Movie ID', 'Theatre ID', 'Date & Time', 'Price', 'Status'],
+        table_rows=sh_rows,
+        col_widths=[26, 26, 26, 38, 22, 32],
+        chart_files=[]
     )
 
     # =========================================================
-    # SECTION: USERS & TOP CUSTOMERS
+    # SECTION: USERS
     # =========================================================
-    user_roles     = analytics_data.get('users_by_role', {})
-    top_customers  = analytics_data.get('top_customers', [])
-
-    role_rows = [[k.title(), str(v)] for k, v in user_roles.items()]
-
-    pdf.add_page()
-    pdf.section_banner('Users - Role Distribution & Top Customers', 'Platform user roles and top spenders')
-
-    if role_rows:
-        pdf.set_font('Helvetica', 'B', 8)
-        set_text(pdf, GRAY_700)
-        pdf.cell(0, 5, 'User Role Breakdown', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.draw_table(['Role', 'Count'], role_rows, [100, 90])
-
-    if top_customers:
-        pdf.set_font('Helvetica', 'B', 8)
-        set_text(pdf, GRAY_700)
-        pdf.cell(0, 5, 'Top Customers by Value', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        cust_rows = []
-        for r in top_customers[:10]:
-            user_id = str(r.get('user_id', 'Unknown'))
-            display_id = f"ID: {user_id[:8]}...{user_id[-4:]}" if len(user_id) >= 12 else user_id
-            cust_rows.append([
-                s(display_id),
-                str(r.get('total_bookings', r.get('bookings', 0))),
-                f"Rs {r.get('total_spent', r.get('total', 0)):,.0f}"
-            ])
-        pdf.draw_table(['Customer ID', 'Bookings', 'Total Spent (Rs)'], cust_rows, [95, 40, 55])
-
-    # Smart embedding will safely skip None
-    embed_chart(pdf, charts_dir, 'user_role_pie.png', 'Figure 10: User Role Distribution')
-
-    # =========================================================
-    # SECTION: BOOKING TIME PATTERNS
-    # =========================================================
-    pdf.add_page()
-    pdf.section_banner('Booking Patterns - Time Analysis', 'When users book — by hour, day and heatmap')
-
-    embed_chart(pdf, charts_dir, 'booking_heatmap.png',              'Figure 11: Booking Heatmap (Day x Hour)')
-    embed_chart(pdf, charts_dir, 'hourly_booking_distribution.png',  'Figure 12: Bookings by Hour of Day')
-    embed_chart(pdf, charts_dir, 'day_of_week_distribution.png',     'Figure 13: Bookings by Day of Week')
-
-    # =========================================================
-    # SECTION: MOVIE RATINGS
-    # =========================================================
-    rating_dist = analytics_data.get('rating_distribution', {})
-    if rating_dist:
-        rating_rows = [[k, str(v)] for k, v in rating_dist.items() if v > 0]
-        build_section(
-            pdf, charts_dir,
-            title    = 'Movies - IMDb Rating Distribution',
-            subtitle = 'How movies on the platform score on IMDb',
-            table_headers = ['Rating Band', 'Movie Count'],
-            table_rows    = rating_rows,
-            col_widths    = [95, 95],
-            chart_files   = [
-                ('rating_distribution_bar.png', 'Figure 14: IMDb Rating Distribution'),
-            ]
-        )
+    users = analytics_data.get('raw_users', [])
+    u_rows = [
+        [
+            s(r.get('user_id', ''))[-12:],
+            s(r.get('name',  'N/A'))[:24],
+            s(r.get('email', 'N/A'))[:28],
+            s(r.get('role',  'N/A')).capitalize(),
+            s(str(r.get('createdAt', 'N/A')))[:10]
+        ]
+        for r in users
+    ]
+    build_section(
+        pdf, charts_dir,
+        title='Users Table & Charts',
+        subtitle='Registered user accounts with roles and join dates',
+        table_headers=['User ID', 'Name', 'Email', 'Role', 'Joined'],
+        table_rows=u_rows,
+        col_widths=[26, 40, 56, 24, 24],
+        chart_files=[
+            ('user_role_pie.png', 'User Role Distribution')
+        ]
+    )
 
     # =========================================================
     # FINAL PAGE - STRATEGIC ANALYSIS

@@ -4,6 +4,7 @@ import "dotenv/config";
 import connectDB from "./configs/db.js";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./inngest/index.js";
+import Booking from "./models/Booking.js";
 
 import publicRouter from "./routes/publicRoutes.js";
 import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
@@ -75,4 +76,31 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // ── Start ─────────────────────────────────────────────────────────────────
-app.listen(PORT, () => console.log(`Server listening at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server listening at http://localhost:${PORT}`);
+
+  // Clean up pending bookings that are older than 10 mins globally
+  setInterval(async () => {
+    try {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const result = await Booking.updateMany(
+        {
+          payment_status: "pending",
+          createdAt: { $lt: tenMinutesAgo }
+        },
+        {
+          $set: {
+            payment_status: "failed",
+            status: "cancelled",
+            cancellation_reason: "Payment timeout (10 mins)"
+          }
+        }
+      );
+      if (result.modifiedCount > 0) {
+        console.log(`[Scheduled] Failed ${result.modifiedCount} expired pending bookings.`);
+      }
+    } catch (error) {
+      console.error("[Scheduled] Error auto-failing bookings:", error);
+    }
+  }, 60 * 1000); // Run every 1 minute
+});

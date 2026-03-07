@@ -2,6 +2,25 @@ import Movie from "../models/Movie.js";
 import axios from "axios";
 import User from "../models/User.js";
 import Theatre from "../models/Theatre.js";
+import RatingsReview from "../models/RatingsReview.js";
+
+// ── Helper: upsert rating + reviews into RatingsReview collection ──
+async function upsertRatingsReview(movieId, vote_average, reviews) {
+  const update = {};
+  if (vote_average !== undefined && vote_average !== null && !isNaN(vote_average)) {
+    update.rating = parseFloat(parseFloat(vote_average).toFixed(1));
+  }
+  if (Array.isArray(reviews) && reviews.length > 0) {
+    update.reviews = reviews.filter(url => url && url.trim() !== "");
+  }
+  if (Object.keys(update).length === 0) return; // nothing to save
+
+  await RatingsReview.findOneAndUpdate(
+    { movie_id: movieId, type: "twitter" },
+    { $set: { ...update, movie_id: movieId, type: "twitter", isActive: true } },
+    { upsert: true, new: true }
+  );
+}
 
 // Sync movies from TMDB API
 export const syncMoviesFromTMDB = async (req, res) => {
@@ -73,6 +92,47 @@ export const syncMoviesFromTMDB = async (req, res) => {
     });
   } catch (error) {
     console.error("[syncMoviesFromTMDB]", error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Fetch TMDB rating for a movie by title (for admin form auto-fill)
+export const fetchTMDBRating = async (req, res) => {
+  try {
+    const { title } = req.query;
+    if (!title || !title.trim()) {
+      return res.json({ success: false, message: "Movie title is required" });
+    }
+
+    const TMDB_API_KEY = process.env.TMDB_API_KEY;
+    if (!TMDB_API_KEY) {
+      return res.json({ success: false, message: "TMDB API key not configured" });
+    }
+
+    // TMDB_API_KEY is a JWT v4 Bearer token (confirmed from .env)
+    const tmdbResp = await axios.get(
+      `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(title.trim())}&page=1`,
+      { headers: { Authorization: `Bearer ${TMDB_API_KEY}` } }
+    );
+    const data = tmdbResp.data;
+
+    if (!data.results || data.results.length === 0) {
+      return res.json({ success: false, message: "No movie found on TMDB with that title" });
+    }
+
+    const top = data.results[0];
+    res.json({
+      success: true,
+      tmdbId: top.id,
+      title: top.title,
+      vote_average: top.vote_average,
+      vote_count: top.vote_count,
+      release_date: top.release_date,
+      overview: top.overview,
+      poster_path: top.poster_path ? `https://image.tmdb.org/t/p/w500${top.poster_path}` : null,
+    });
+  } catch (error) {
+    console.error("[fetchTMDBRating]", error);
     res.json({ success: false, message: error.message });
   }
 };
@@ -202,6 +262,9 @@ export const createMovie = async (req, res) => {
     });
 
     await newMovie.save();
+
+    // Persist rating & Twitter reviews into RatingsReview collection
+    await upsertRatingsReview(newMovie._id, vote_average, reviews);
 
     // Update theatres to include this movie
     await Theatre.updateMany(
@@ -491,6 +554,9 @@ export const updateMovie = async (req, res) => {
     if (!movie) {
       return res.json({ success: false, message: "Movie not found" });
     }
+
+    // Persist updated rating & Twitter reviews into RatingsReview collection
+    await upsertRatingsReview(movie._id, updates.vote_average, updates.reviews);
 
     res.json({
       success: true,

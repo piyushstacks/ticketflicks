@@ -203,7 +203,7 @@ const ManagerScreens = () => {
 
       {/* Form */}
       {showForm && (
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <h2 className="text-xl font-bold mb-4">
             {editingId ? "Edit Screen" : "Add New Screen"}
           </h2>
@@ -223,7 +223,7 @@ const ManagerScreens = () => {
                     aria-describedby={touched.screenNumber && fieldErrors.screenNumber ? errorId(formId, "screenNumber") : undefined}
                     required
                     min="1"
-                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition w-full pr-10"
+                    className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition w-full pr-10"
                   />
                   {touched.screenNumber && fieldErrors.screenNumber && (
                     <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
@@ -250,7 +250,7 @@ const ManagerScreens = () => {
                     required
                     min="50"
                     max="500"
-                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition w-full pr-10"
+                    className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition w-full pr-10"
                   />
                   {touched.totalSeats && fieldErrors.totalSeats && (
                     <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
@@ -274,7 +274,7 @@ const ManagerScreens = () => {
                   setTouched({});
                   setFieldErrors({});
                 }}
-                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-medium"
+                className="px-6 py-2 bg-[var(--bg-elevated)] hover:bg-[var(--border-hover)] rounded-lg transition font-medium"
               >
                 Cancel
               </button>
@@ -295,7 +295,7 @@ const ManagerScreens = () => {
           screens.map((screen) => (
             <div
               key={screen._id}
-              className="bg-gray-900/30 border border-gray-700 rounded-lg p-6 hover:border-primary/50 transition"
+              className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6 hover:border-primary/50 transition"
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -311,8 +311,8 @@ const ManagerScreens = () => {
                   </div>
                 </div>
 
-                <div className="bg-gray-800/30 rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-gray-300">
+                <div className="bg-[var(--bg-secondary)]/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                     <Users className="w-4 h-4" />
                     <span>
                       {screen.seatLayout?.totalSeats || 0} Total Seats
@@ -350,7 +350,7 @@ const ManagerScreens = () => {
           ))
         ) : (
           <div className="col-span-full text-center py-12">
-            <p className="text-gray-400 text-lg">No screens found</p>
+            <p className="text-[var(--text-muted)] text-lg">No screens found</p>
           </div>
         )}
       </div>

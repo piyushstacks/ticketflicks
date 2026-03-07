@@ -78,15 +78,15 @@ const ManagerMovies = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Manage Movies</h1>
-          <p className="text-gray-400 mt-1">View and manage movies available for your theatre shows</p>
+          <p className="text-[var(--text-muted)] mt-1">View and manage movies available for your theatre shows</p>
         </div>
       </div>
 
       {/* Movies Grid */}
-      <div className="bg-gray-900/20 border border-gray-700 rounded-lg p-6">
+      <div className="bg-[var(--bg-primary)]/20 border border-[var(--border)] rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Available Movies for Shows</h2>
-          <div className="flex items-center gap-2 text-sm text-gray-400">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
             <span>{movies.length} movies available</span>
           </div>
         </div>
@@ -96,8 +96,8 @@ const ManagerMovies = () => {
             movies.map((movie) => (
               <div
                 key={movie._id}
-                className={`bg-gray-800/50 border rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 ${
-                  !movie.isEnabledForTheatre ? 'border-gray-700 opacity-60' : 'border-gray-600'
+                className={`bg-[var(--bg-secondary)]/50 border rounded-xl overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 ${
+                  !movie.isEnabledForTheatre ? 'border-[var(--border)] opacity-60' : 'border-[var(--border-hover)]'
                 }`}
               >
                 <div className="relative">
@@ -113,7 +113,7 @@ const ManagerMovies = () => {
                     />
                   ) : (
                     <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                      <Film className="w-12 h-12 text-gray-500" />
+                      <Film className="w-12 h-12 text-[var(--text-muted)]" />
                     </div>
                   )}
                   {!movie.isEnabledForTheatre && (
@@ -130,7 +130,7 @@ const ManagerMovies = () => {
 
                 <div className="p-4 space-y-3">
                   <div>
-                    <h3 className="font-bold text-lg line-clamp-2 text-white">{movie.title}</h3>
+                    <h3 className="font-bold text-lg line-clamp-2 text-[var(--text-primary)]">{movie.title}</h3>
                     {movie.genres && movie.genres.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {movie.genres.slice(0, 2).map((genre, index) => (
@@ -142,7 +142,7 @@ const ManagerMovies = () => {
                           </span>
                         ))}
                         {movie.genres.length > 2 && (
-                          <span className="px-2 py-1 bg-gray-700 text-gray-400 text-xs rounded-md">
+                          <span className="px-2 py-1 bg-[var(--bg-elevated)] text-[var(--text-muted)] text-xs rounded-md">
                             +{movie.genres.length - 2}
                           </span>
                         )}
@@ -152,20 +152,20 @@ const ManagerMovies = () => {
 
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-gray-400">
+                      <div className="flex items-center gap-2 text-[var(--text-muted)]">
                         <Clock className="w-4 h-4" />
                         <span>{movie.runtime} min</span>
                       </div>
                       {movie.vote_average && (
                         <div className="flex items-center gap-1 text-yellow-500">
                           <Star className="w-4 h-4 fill-current" />
-                          <span className="text-white">{movie.vote_average}</span>
+                          <span className="text-[var(--text-primary)]">{movie.vote_average}</span>
                         </div>
                       )}
                     </div>
                     
                     {movie.release_date && (
-                      <div className="flex items-center gap-2 text-gray-400">
+                      <div className="flex items-center gap-2 text-[var(--text-muted)]">
                         <Calendar className="w-4 h-4" />
                         <span>{new Date(movie.release_date).getFullYear()}</span>
                       </div>
@@ -206,11 +206,11 @@ const ManagerMovies = () => {
             ))
           ) : (
             <div className="col-span-full text-center py-16">
-              <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Film className="w-10 h-10 text-gray-600" />
+              <div className="w-20 h-20 bg-[var(--bg-secondary)] rounded-full flex items-center justify-center mx-auto mb-4">
+                <Film className="w-10 h-10 text-[var(--text-muted)]" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-300 mb-2">No Movies Available</h3>
-              <p className="text-gray-500 max-w-md mx-auto">
+              <h3 className="text-xl font-semibold text-[var(--text-secondary)] mb-2">No Movies Available</h3>
+              <p className="text-[var(--text-muted)] max-w-md mx-auto">
                 Movies will appear here once they are added to your theatre. Contact your administrator if you need movies added.
               </p>
             </div>
@@ -221,7 +221,7 @@ const ManagerMovies = () => {
       {/* Movie Details Modal */}
       {viewingMovie && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-[var(--bg-primary)] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
@@ -246,7 +246,7 @@ const ManagerMovies = () => {
                 </div>
                 <button
                   onClick={() => setViewingMovie(null)}
-                  className="text-gray-400 hover:text-white"
+                  className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 >
                   ✕
                 </button>
@@ -266,50 +266,50 @@ const ManagerMovies = () => {
                       className="w-full rounded-lg"
                     />
                   ) : (
-                    <div className="w-full h-96 bg-gray-800 flex items-center justify-center rounded-lg">
-                      <Film className="w-24 h-24 text-gray-600" />
+                    <div className="w-full h-96 bg-[var(--bg-secondary)] flex items-center justify-center rounded-lg">
+                      <Film className="w-24 h-24 text-[var(--text-muted)]" />
                     </div>
                   )}
                 </div>
 
                 {/* Movie Details */}
                 <div className="space-y-4">
-                  <div className="bg-gray-800/50 rounded-lg p-4">
+                  <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-primary mb-3">Movie Information</h3>
                     <div className="space-y-3">
                       {viewingMovie.overview && (
                         <div>
-                          <h4 className="text-sm text-gray-400 mb-1">Overview</h4>
-                          <p className="text-gray-300">{viewingMovie.overview}</p>
+                          <h4 className="text-sm text-[var(--text-muted)] mb-1">Overview</h4>
+                          <p className="text-[var(--text-secondary)]">{viewingMovie.overview}</p>
                         </div>
                       )}
                       
                       <div className="grid grid-cols-2 gap-4">
                         {viewingMovie.runtime && (
                           <div>
-                            <span className="text-gray-400">Runtime:</span>
-                            <span className="ml-2 text-gray-300">{viewingMovie.runtime} min</span>
+                            <span className="text-[var(--text-muted)]">Runtime:</span>
+                            <span className="ml-2 text-[var(--text-secondary)]">{viewingMovie.runtime} min</span>
                           </div>
                         )}
                         
                         {viewingMovie.vote_average && (
                           <div>
-                            <span className="text-gray-400">Rating:</span>
-                            <span className="ml-2 text-gray-300">{viewingMovie.vote_average}/10</span>
+                            <span className="text-[var(--text-muted)]">Rating:</span>
+                            <span className="ml-2 text-[var(--text-secondary)]">{viewingMovie.vote_average}/10</span>
                           </div>
                         )}
                         
                         {viewingMovie.release_date && (
                           <div>
-                            <span className="text-gray-400">Release Date:</span>
-                            <span className="ml-2 text-gray-300">
+                            <span className="text-[var(--text-muted)]">Release Date:</span>
+                            <span className="ml-2 text-[var(--text-secondary)]">
                               {new Date(viewingMovie.release_date).toLocaleDateString()}
                             </span>
                           </div>
                         )}
                         
                         <div>
-                          <span className="text-gray-400">Status:</span>
+                          <span className="text-[var(--text-muted)]">Status:</span>
                           <span className={`ml-2 px-2 py-1 rounded text-xs ${
                             viewingMovie.isActive 
                               ? 'bg-green-600/20 text-green-400' 
@@ -323,7 +323,7 @@ const ManagerMovies = () => {
                   </div>
 
                   {viewingMovie.backdrop_path && (
-                    <div className="bg-gray-800/50 rounded-lg p-4">
+                    <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
                       <h3 className="text-lg font-semibold text-primary mb-3">Backdrop Image</h3>
                       <img
                         src={

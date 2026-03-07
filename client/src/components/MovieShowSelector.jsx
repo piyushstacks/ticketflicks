@@ -210,8 +210,8 @@ const MovieShowSelector = () => {
           <button
             onClick={() => navigate(-1)}
             className="absolute top-6 left-6 md:left-16 z-10 flex items-center gap-2 px-4 py-2.5
-            bg-[var(--bg-secondary)]/80 backdrop-blur-md hover:bg-gray-800/90 rounded-xl transition-all
-            font-medium text-sm border border-gray-700/50 hover:border-primary/50
+            bg-[var(--bg-secondary)]/80 backdrop-blur-md hover:bg-[var(--bg-secondary)]/90 rounded-xl transition-all
+            font-medium text-sm border border-[var(--border)]/50 hover:border-primary/50
             active:scale-95 transform duration-200 shadow-lg"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -232,7 +232,7 @@ const MovieShowSelector = () => {
 
               {/* Movie Details */}
               <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-2 text-white/90 text-sm font-semibold">
+                <div className="flex items-center gap-2 text-[var(--text-primary)]/90 text-sm font-semibold">
                   <Sparkles className="w-4 h-4 text-[#f84565]" />
                   <span className="text-[#f84565]">NOW SHOWING</span>
                 </div>
@@ -244,7 +244,7 @@ const MovieShowSelector = () => {
                   {movie.title}
                 </h1>
 
-                <div className="flex flex-wrap items-center gap-4 text-white/80 text-sm md:text-base">
+                <div className="flex flex-wrap items-center gap-4 text-[var(--text-primary)]/80 text-sm md:text-base">
                   <span className="flex items-center gap-1.5 bg-yellow-500/20 px-3 py-1 rounded-full border border-yellow-500/30">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                     <span className="font-bold text-yellow-400">
@@ -303,8 +303,8 @@ const MovieShowSelector = () => {
               disabled={dateOffset === 0}
               className={`p-2.5 rounded-lg transition-all ${
                 dateOffset === 0
-                  ? "bg-gray-800/50 text-gray-600 cursor-not-allowed"
-                  : "bg-gray-800 hover:bg-gray-700 text-[var(--text-primary)] active:scale-95"
+                  ? "bg-[var(--bg-secondary)]/50 text-[var(--text-muted)] cursor-not-allowed"
+                  : "bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] active:scale-95"
               }`}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -326,7 +326,7 @@ const MovieShowSelector = () => {
                     ${
                       isSelected
                         ? "border-primary bg-gradient-to-br from-primary/30 to-purple-600/30 shadow-lg shadow-primary/30 scale-105"
-                        : "border-gray-700 hover:border-primary/50 hover:bg-gray-800/50"
+                        : "border-[var(--border)] hover:border-primary/50 hover:bg-[var(--bg-secondary)]/50"
                     }`}
                   >
                     {isToday && (
@@ -342,7 +342,7 @@ const MovieShowSelector = () => {
                     <span className="text-xs text-[var(--text-muted)] mt-1">
                       {date.toLocaleDateString("en-US", { weekday: "short" })}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-[var(--text-muted)]">
                       {date.toLocaleDateString("en-US", { month: "short" })}
                     </span>
                   </button>
@@ -352,7 +352,7 @@ const MovieShowSelector = () => {
 
             <button
               onClick={() => handleNavigateDate(1)}
-              className="p-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 transition-all active:scale-95"
+              className="p-2.5 rounded-lg bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] transition-all active:scale-95"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -388,7 +388,7 @@ const MovieShowSelector = () => {
                 <div
                   key={theatre._id}
                   className="bg-gradient-to-br from-[var(--bg-secondary)]/80 to-[var(--bg-secondary)]/40 backdrop-blur-md
-                  border border-gray-700/50 rounded-2xl overflow-hidden shadow-xl
+                  border border-[var(--border)]/50 rounded-2xl overflow-hidden shadow-xl
                   hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300
                   animate-fade-in-up"
                   style={{ animationDelay: `${index * 100}ms` }}
@@ -396,7 +396,7 @@ const MovieShowSelector = () => {
                   {/* Theatre Header */}
                   <div
                     className="bg-gradient-to-r from-primary/20 via-purple-600/10 to-transparent
-                  p-6 border-b border-gray-700/50"
+                  p-6 border-b border-[var(--border)]/50"
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-start gap-4">
@@ -456,7 +456,7 @@ const MovieShowSelector = () => {
                               <p className="text-sm font-semibold text-[var(--text-secondary)]">
                                 Screen {screenData.screen?.screenNumber}
                               </p>
-                              <span className="text-xs text-gray-500">•</span>
+                              <span className="text-xs text-[var(--text-muted)]">•</span>
                               <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
                                 <Users className="w-3.5 h-3.5" />
                                 {screenData.screen?.seatLayout?.totalSeats ||
@@ -464,7 +464,7 @@ const MovieShowSelector = () => {
                                 seats
                               </p>
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-[var(--text-muted)]">
                               {showsForDate.length}{" "}
                               {showsForDate.length === 1 ? "show" : "shows"}
                             </div>
@@ -478,7 +478,7 @@ const MovieShowSelector = () => {
                                 onClick={() => handleShowClick(show._id)}
                                 className="group relative p-4 bg-gradient-to-br from-[var(--bg-elevated)] to-[var(--bg-elevated)]/50
                                 hover:from-primary hover:to-primary-dull rounded-xl transition-all duration-300
-                                text-center font-semibold border border-gray-700
+                                text-center font-semibold border border-[var(--border)]
                                 hover:border-primary hover:shadow-lg hover:shadow-primary/30
                                 active:scale-95 transform"
                               >
@@ -516,9 +516,9 @@ const MovieShowSelector = () => {
         ) : selectedDate ? (
           /* No Shows Available State */
           <div className="text-center py-20 animate-fade-in">
-            <div className="max-w-md mx-auto bg-[var(--bg-secondary)]/50 backdrop-blur-md border border-gray-700/50 rounded-2xl p-10">
-              <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Calendar className="w-10 h-10 text-gray-500" />
+            <div className="max-w-md mx-auto bg-[var(--bg-secondary)]/50 backdrop-blur-md border border-[var(--border)]/50 rounded-2xl p-10">
+              <div className="w-20 h-20 bg-[var(--bg-secondary)] rounded-full flex items-center justify-center mx-auto mb-6">
+                <Calendar className="w-10 h-10 text-[var(--text-muted)]" />
               </div>
               <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                 No Shows Available
@@ -533,7 +533,7 @@ const MovieShowSelector = () => {
                   })}
                 </span>
               </p>
-              <p className="text-gray-500 text-sm">
+              <p className="text-[var(--text-muted)] text-sm">
                 Try selecting a different date to see available shows
               </p>
             </div>
@@ -541,7 +541,7 @@ const MovieShowSelector = () => {
         ) : (
           /* Select Date First State */
           <div className="text-center py-20 animate-fade-in">
-            <div className="max-w-md mx-auto bg-[var(--bg-secondary)]/50 backdrop-blur-md border border-gray-700/50 rounded-2xl p-10">
+            <div className="max-w-md mx-auto bg-[var(--bg-secondary)]/50 backdrop-blur-md border border-[var(--border)]/50 rounded-2xl p-10">
               <div
                 className="w-20 h-20 bg-gradient-to-br from-primary/20 to-purple-600/20 rounded-full
               flex items-center justify-center mx-auto mb-6 border border-primary/30"

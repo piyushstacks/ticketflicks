@@ -6,7 +6,7 @@ import ErrorBoundary from "../../components/ErrorBoundary";
 
 const ManagerLayout = () => {
   return (
-    <div className="admin-wrapper bg-gray-900 min-h-screen text-white">
+    <div className="admin-wrapper bg-[var(--bg-primary)] min-h-screen text-[var(--text-primary)]">
       <ManagerNavbar />
       <div className="flex">
         <ManagerSidebar />

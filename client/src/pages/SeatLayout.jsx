@@ -120,7 +120,7 @@ const SeatLayout = () => {
       "Classic Screen": {
         icon: "🎬",
         color: "from-gray-600/30 to-slate-600/30",
-        border: "border-gray-500/30",
+        border: "border-[var(--border-hover)]/30",
       },
     };
     return badges[label] || badges["Classic Screen"];
@@ -435,7 +435,7 @@ const SeatLayout = () => {
           }
           ${
             isUnavailable
-              ? "cursor-not-allowed opacity-40 bg-gray-700 border-gray-600"
+              ? "cursor-not-allowed opacity-40 bg-[var(--bg-elevated)] border-[var(--border-hover)]"
               : "cursor-pointer active:scale-95"
           }
           ${seatsLoading ? "animate-pulse" : ""}
@@ -493,7 +493,7 @@ const SeatLayout = () => {
           key={rowIndex}
           className="flex items-center justify-center gap-1 md:gap-1.5 mb-1.5"
         >
-          <span className="w-6 text-right text-xs text-gray-400 font-semibold mr-1">
+          <span className="w-6 text-right text-xs text-[var(--text-muted)] font-semibold mr-1">
             {rowLetter}
           </span>
           <div className="flex gap-1 md:gap-1.5">
@@ -501,7 +501,7 @@ const SeatLayout = () => {
               renderSeat(seatType, rowIndex, colIndex),
             )}
           </div>
-          <span className="w-6 text-left text-xs text-gray-400 font-semibold ml-1">
+          <span className="w-6 text-left text-xs text-[var(--text-muted)] font-semibold ml-1">
             {rowLetter}
           </span>
         </div>

@@ -33,7 +33,7 @@ const ResetPassword = () => {
 
   // Password validation helper
   const getPasswordStrength = (pwd) => {
-    if (!pwd) return { score: 0, text: "", color: "text-gray-400" };
+    if (!pwd) return { score: 0, text: "", color: "text-[var(--text-muted)]" };
     let score = 0;
     if (pwd.length >= 8) score++;
     if (/[a-z]/.test(pwd)) score++;

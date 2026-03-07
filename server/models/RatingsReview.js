@@ -72,8 +72,13 @@ const ratingsReviewSchema = new mongoose.Schema({
   rating: {
     type: Number,
     min: 0,
-    max: 5,
+    max: 10,   // supports TMDB/IMDB scale (0–10)
     default: null
+  },
+  // Admin-added Twitter/X review URLs (from movie form)
+  reviews: {
+    type: [String],
+    default: []
   },
   review: {
     type: String,

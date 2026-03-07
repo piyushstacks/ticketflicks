@@ -38,7 +38,10 @@ const MovieDetails = () => {
       // Fetch movie details directly.
       const { data } = await axios.get(`/api/show/movies/${id}`);
       if (data?.success && data?.movie) {
-        setShow({ movie: data.movie, dateTime: {} });
+        const movieData = { movie: data.movie, dateTime: {} };
+        setShow(movieData);
+        // Pass movie.reviews to prioritize admin-added real Twitter URLs
+        getTwitterReviews(data.movie.reviews || []);
         return;
       }
 
@@ -51,6 +54,7 @@ const MovieDetails = () => {
         const movieFromShow = anyShow?.movie_id || anyShow?.movie;
         if (movieFromShow) {
           setShow({ movie: movieFromShow, dateTime: {} });
+          getTwitterReviews(movieFromShow.reviews || []);
           return;
         }
       }
@@ -62,11 +66,21 @@ const MovieDetails = () => {
     }
   };
 
-  const getTwitterReviews = async () => {
+  const getTwitterReviews = async (movieReviews) => {
+    // If the movie already has real Twitter URLs set by admin, use them directly
+    if (movieReviews && movieReviews.length > 0) {
+      const twitterRegex = /^https?:\/\/(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/status\/\d+/;
+      const validUrls = movieReviews.filter(url => url && twitterRegex.test(url.trim()));
+      if (validUrls.length > 0) {
+        setTwitterReviews(validUrls);
+        return;
+      }
+    }
+
+    // Fallback: fetch from RatingsReview collection (dummy/scraped reviews)
     try {
       const { data } = await axios.get(`/api/reviews/twitter/${id}`);
       if (data?.success && data?.reviews) {
-        // Extract tweet URLs from the reviews
         const urls = data.reviews
           .filter(r => r.tweet_url)
           .map(r => r.tweet_url);
@@ -108,7 +122,8 @@ const MovieDetails = () => {
 
   useEffect(() => {
     getShow();
-    getTwitterReviews();
+    // Note: getTwitterReviews is now called from within getShow()
+    // after the movie data is loaded, so reviews can be checked first
   }, [id]);
 
   return show && show.movie ? (

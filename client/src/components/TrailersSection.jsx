@@ -97,7 +97,7 @@ const TrailersSection = () => {
             />
             <PlayCircleIcon
               strokeWidth={1.5}
-              className="absolute top-1/2 left-1/2 w-6 md:w-8 h-6 md:h-8 -translate-x-1/2 -translate-y-1/2 text-white/80 group-hover:text-white group-hover:scale-110 transition-all"
+              className="absolute top-1/2 left-1/2 w-6 md:w-8 h-6 md:h-8 -translate-x-1/2 -translate-y-1/2 text-[var(--text-primary)]/80 group-hover:text-[var(--text-primary)] group-hover:scale-110 transition-all"
             />
           </button>
         ))}

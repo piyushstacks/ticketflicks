@@ -23,7 +23,7 @@ const TrailerSection = ({ url }) => {
             />
           ) : (
             <div className="flex items-center justify-center bg-black/40 rounded-2xl h-[400px]">
-              <p className="text-center text-gray-400 text-sm">
+              <p className="text-center text-[var(--text-muted)] text-sm">
                 Trailer not available for this movie.
               </p>
             </div>

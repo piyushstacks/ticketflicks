@@ -10,6 +10,7 @@ import {
   TrendingUp,
   IndianRupee,
   Activity,
+  XCircle,
 } from "lucide-react";
 
 const AdminPaymentsList = () => {
@@ -39,7 +40,11 @@ const AdminPaymentsList = () => {
           theatre: booking.theatre || booking.show?.theatre,
           amount: booking.amount || 0,
           method: booking.paymentMode || "Online",
-          status: booking.isPaid ? "success" : "pending",
+          status: (booking.paymentStatus === "completed" || booking.payment_status === "completed" || booking.isPaid) 
+            ? "success" 
+            : (booking.paymentStatus === "failed" || booking.payment_status === "failed") 
+              ? "failed" 
+              : "pending",
           createdAt: booking.createdAt,
           seats: booking.bookedSeats,
           showDate: booking.show?.showDateTime,
@@ -127,19 +132,19 @@ const AdminPaymentsList = () => {
         <h1 className="text-3xl font-bold">Payment Information & Details</h1>
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Search payments..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+              className="pl-10 pr-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+            className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
           >
             <option value="all">All Status</option>
             <option value="success">Success</option>
@@ -149,7 +154,7 @@ const AdminPaymentsList = () => {
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:border-primary outline-none transition"
+            className="px-4 py-2 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg focus:border-primary outline-none transition"
           >
             <option value="all">All Time</option>
             <option value="today">Today</option>
@@ -160,11 +165,11 @@ const AdminPaymentsList = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Revenue</p>
+              <p className="text-[var(--text-muted)] text-sm">Total Revenue</p>
               <p className="text-2xl font-bold mt-1">
                 {currency}
                 {totalRevenue.toFixed(2)}
@@ -173,10 +178,10 @@ const AdminPaymentsList = () => {
             <IndianRupee className="w-8 h-8 text-green-500" />
           </div>
         </div>
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Today's Revenue</p>
+              <p className="text-[var(--text-muted)] text-sm">Today's Revenue</p>
               <p className="text-2xl font-bold mt-1">
                 {currency}
                 {todayRevenue.toFixed(2)}
@@ -185,10 +190,10 @@ const AdminPaymentsList = () => {
             <TrendingUp className="w-8 h-8 text-blue-500" />
           </div>
         </div>
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Successful Payments</p>
+              <p className="text-[var(--text-muted)] text-sm">Successful Payments</p>
               <p className="text-2xl font-bold mt-1">
                 {payments.filter((p) => p.status === "success").length}
               </p>
@@ -196,10 +201,10 @@ const AdminPaymentsList = () => {
             <CreditCard className="w-8 h-8 text-green-500" />
           </div>
         </div>
-        <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Pending Payments</p>
+              <p className="text-[var(--text-muted)] text-sm">Pending Payments</p>
               <p className="text-2xl font-bold mt-1">
                 {payments.filter((p) => p.status === "pending").length}
               </p>
@@ -207,14 +212,25 @@ const AdminPaymentsList = () => {
             <Activity className="w-8 h-8 text-orange-500" />
           </div>
         </div>
+        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[var(--text-muted)] text-sm">Failed Payments</p>
+              <p className="text-2xl font-bold mt-1">
+                {payments.filter((p) => p.status === "failed").length}
+              </p>
+            </div>
+            <XCircle className="w-8 h-8 text-red-500" />
+          </div>
+        </div>
       </div>
 
       {/* Revenue Chart Placeholder */}
-      <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
+      <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Revenue Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-800/50 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Average Transaction</p>
+          <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+            <p className="text-[var(--text-muted)] text-sm">Average Transaction</p>
             <p className="text-xl font-bold mt-1">
               {currency}
               {payments.length > 0
@@ -225,8 +241,8 @@ const AdminPaymentsList = () => {
                 : "0.00"}
             </p>
           </div>
-          <div className="bg-gray-800/50 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Success Rate</p>
+          <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+            <p className="text-[var(--text-muted)] text-sm">Success Rate</p>
             <p className="text-xl font-bold mt-1">
               {payments.length > 0
                 ? `${(
@@ -237,8 +253,8 @@ const AdminPaymentsList = () => {
                 : "0%"}
             </p>
           </div>
-          <div className="bg-gray-800/50 rounded-lg p-4">
-            <p className="text-gray-400 text-sm">Failed Transactions</p>
+          <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+            <p className="text-[var(--text-muted)] text-sm">Failed Transactions</p>
             <p className="text-xl font-bold mt-1">
               {payments.filter((p) => p.status === "failed").length}
             </p>
@@ -247,33 +263,33 @@ const AdminPaymentsList = () => {
       </div>
 
       {/* Payments Table */}
-      <div className="bg-gray-900/30 border border-gray-700 rounded-lg overflow-hidden">
+      <div className="bg-[var(--bg-primary)]/30 border border-[var(--border)] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-800/50 border-b border-gray-700">
+            <thead className="bg-[var(--bg-secondary)]/50 border-b border-[var(--border)]">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Transaction ID
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   User
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Movie
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Amount
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Method
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Date
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-300">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--text-secondary)]">
                   Actions
                 </th>
               </tr>
@@ -283,16 +299,16 @@ const AdminPaymentsList = () => {
                 filteredPayments.map((payment) => (
                   <tr
                     key={payment._id}
-                    className="hover:bg-gray-800/30 transition"
+                    className="hover:bg-[var(--bg-secondary)]/30 transition"
                   >
-                    <td className="px-6 py-4 text-sm font-mono text-gray-300">
+                    <td className="px-6 py-4 text-sm font-mono text-[var(--text-secondary)]">
                       {payment.transactionId?.slice(-12).toUpperCase() ||
                         payment._id.slice(-8).toUpperCase()}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div>
                         <p className="font-medium">{payment.user?.name}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-[var(--text-muted)]">
                           {payment.user?.email}
                         </p>
                       </div>
@@ -303,7 +319,7 @@ const AdminPaymentsList = () => {
                           {payment.movie?.title || "N/A"}
                         </p>
                         {payment.theatre?.name && (
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-[var(--text-muted)]">
                             {payment.theatre.name}
                           </p>
                         )}
@@ -314,7 +330,7 @@ const AdminPaymentsList = () => {
                       {payment.amount?.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className="px-2 py-1 bg-gray-700 rounded text-xs">
+                      <span className="px-2 py-1 bg-[var(--bg-elevated)] rounded text-xs">
                         {payment.method || "Online"}
                       </span>
                     </td>
@@ -348,7 +364,7 @@ const AdminPaymentsList = () => {
               ) : (
                 <tr>
                   <td colSpan="8" className="px-6 py-12 text-center">
-                    <p className="text-gray-400">No payments found</p>
+                    <p className="text-[var(--text-muted)]">No payments found</p>
                   </td>
                 </tr>
               )}
@@ -360,12 +376,12 @@ const AdminPaymentsList = () => {
       {/* Payment Details Modal */}
       {viewingPayment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6">
               <h2 className="text-2xl font-bold">Payment Details</h2>
               <button
                 onClick={() => setViewingPayment(null)}
-                className="text-gray-400 hover:text-white"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               >
                 <svg
                   className="w-6 h-6"
@@ -385,19 +401,19 @@ const AdminPaymentsList = () => {
 
             <div className="space-y-6">
               {/* Transaction Information */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="font-semibold text-primary mb-3">
+              <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                <h3 className="font-semibold text-[var(--color-accent)] mb-3">
                   Transaction Information
                 </h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm text-[var(--text-secondary)]">
                   <div>
-                    <span className="text-gray-400">Transaction ID:</span>
-                    <span className="ml-2 text-gray-300 font-mono">
+                    <span className="text-[var(--text-muted)]">Transaction ID:</span>
+                    <span className="ml-2 font-mono">
                       {viewingPayment.transactionId || viewingPayment._id}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Status:</span>
+                    <span className="text-[var(--text-muted)]">Status:</span>
                     <span
                       className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${
                         viewingPayment.status === "success"
@@ -411,28 +427,28 @@ const AdminPaymentsList = () => {
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Amount:</span>
-                    <span className="ml-2 text-gray-300 font-bold">
+                    <span className="text-[var(--text-muted)]">Amount:</span>
+                    <span className="ml-2 font-bold">
                       {currency}
                       {viewingPayment.amount?.toFixed(2)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Payment Method:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Payment Method:</span>
+                    <span className="ml-2">
                       {viewingPayment.method || "Online Payment"}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Payment Date:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Payment Date:</span>
+                    <span className="ml-2">
                       {new Date(viewingPayment.createdAt).toLocaleString()}
                     </span>
                   </div>
                   {viewingPayment.paidAt && (
                     <div>
-                      <span className="text-gray-400">Paid At:</span>
-                      <span className="ml-2 text-gray-300">
+                      <span className="text-[var(--text-muted)]">Paid At:</span>
+                      <span className="ml-2">
                         {new Date(viewingPayment.paidAt).toLocaleString()}
                       </span>
                     </div>
@@ -441,27 +457,27 @@ const AdminPaymentsList = () => {
               </div>
 
               {/* User Information */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="font-semibold text-primary mb-3">
+              <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                <h3 className="font-semibold text-[var(--color-accent)] mb-3">
                   User Information
                 </h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm text-[var(--text-secondary)]">
                   <div>
-                    <span className="text-gray-400">Name:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Name:</span>
+                    <span className="ml-2">
                       {viewingPayment.user?.name}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Email:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Email:</span>
+                    <span className="ml-2">
                       {viewingPayment.user?.email}
                     </span>
                   </div>
                   {viewingPayment.user?.phone && (
                     <div>
-                      <span className="text-gray-400">Phone:</span>
-                      <span className="ml-2 text-gray-300">
+                      <span className="text-[var(--text-muted)]">Phone:</span>
+                      <span className="ml-2">
                         {viewingPayment.user.phone}
                       </span>
                     </div>
@@ -470,8 +486,8 @@ const AdminPaymentsList = () => {
               </div>
 
               {/* Booking Information */}
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <h3 className="font-semibold text-primary mb-3">
+              <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                <h3 className="font-semibold text-[var(--color-accent)] mb-3">
                   Booking Information
                 </h3>
                 <div className="flex gap-4 mb-4">
@@ -487,10 +503,10 @@ const AdminPaymentsList = () => {
                     />
                   )}
                   <div className="flex-1">
-                    <p className="font-semibold">
+                    <p className="font-semibold text-[var(--text-secondary)]">
                       {viewingPayment.movie?.title}
                     </p>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-[var(--text-muted)] text-sm mt-1">
                       {viewingPayment.theatre?.name} •{" "}
                       {viewingPayment.screenNumber
                         ? `Screen ${viewingPayment.screenNumber}`
@@ -498,29 +514,29 @@ const AdminPaymentsList = () => {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm text-[var(--text-secondary)]">
                   <div>
-                    <span className="text-gray-400">Show Date & Time:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Show Date & Time:</span>
+                    <span className="ml-2">
                       {viewingPayment.showDateTime
                         ? new Date(viewingPayment.showDateTime).toLocaleString()
                         : "N/A"}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Seats:</span>
-                    <span className="ml-2 text-gray-300">
+                    <span className="text-[var(--text-muted)]">Seats:</span>
+                    <span className="ml-2">
                       {viewingPayment.seats?.length || 0} seats
                     </span>
                   </div>
                   {viewingPayment.seats && (
                     <div className="col-span-2">
-                      <span className="text-gray-400">Booked Seats:</span>
+                      <span className="text-[var(--text-muted)]">Booked Seats:</span>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {viewingPayment.seats.map((seat, index) => (
                           <span
                             key={index}
-                            className="px-2 py-1 bg-primary/20 text-primary text-xs rounded"
+                            className="px-2 py-1 bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-secondary)] text-xs rounded"
                           >
                             {typeof seat === "string"
                               ? seat
@@ -535,11 +551,11 @@ const AdminPaymentsList = () => {
 
               {/* Payment Gateway Details */}
               {viewingPayment.gatewayResponse && (
-                <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h3 className="font-semibold text-primary mb-3">
+                <div className="bg-[var(--bg-secondary)]/50 rounded-lg p-4">
+                  <h3 className="font-semibold text-[var(--color-accent)] mb-3">
                     Gateway Response
                   </h3>
-                  <div className="text-xs text-gray-400 font-mono bg-gray-900 p-3 rounded overflow-x-auto">
+                  <div className="text-xs text-[var(--text-muted)] font-mono bg-[var(--bg-primary)] p-3 rounded overflow-x-auto">
                     {JSON.stringify(viewingPayment.gatewayResponse, null, 2)}
                   </div>
                 </div>

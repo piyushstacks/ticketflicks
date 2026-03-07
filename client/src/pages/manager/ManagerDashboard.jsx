@@ -4,8 +4,10 @@ import { useAppContext } from "../../context/AppContext";
 import { useAuthContext } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import Loading from "../../components/Loading";
+import { useNavigate } from "react-router-dom";
 
 const ManagerDashboard = () => {
+  const navigate = useNavigate();
   const currency = import.meta.env.VITE_CURRENCY || "₹";
   const { axios, getAuthHeaders, user } = useAppContext();
   const { getTheatresByManager } = useAuthContext();
@@ -104,12 +106,12 @@ const ManagerDashboard = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-bold">Theatre Manager Dashboard</h1>
-        <p className="text-gray-400 mt-2">
+        <h1 className="text-4xl font-bold" style={{ color: "var(--text-primary)" }}>Theatre Manager Dashboard</h1>
+        <p className="mt-2" style={{ color: "var(--text-muted)" }}>
           Welcome, <span className="text-primary font-semibold">{user?.name}</span>
         </p>
-        <p className="text-gray-500 text-sm mt-1">
-          Managing: <span className="font-semibold">
+        <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+          Managing: <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
             {theatre?.name || "No Theatre Assigned"}
           </span>
         </p>
@@ -120,14 +122,15 @@ const ManagerDashboard = () => {
         {cards.map((card, i) => (
           <div
             key={i}
-            className="bg-gray-900/30 border border-gray-700 rounded-lg p-6 hover:border-gray-600 transition"
+            className="rounded-lg p-6 transition"
+            style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm font-medium">
+                <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
                   {card.title}
                 </p>
-                <p className="text-3xl font-bold mt-3">{card.value}</p>
+                <p className="text-3xl font-bold mt-3" style={{ color: "var(--text-primary)" }}>{card.value}</p>
               </div>
               <div className={`${card.bgColor} p-4 rounded-lg`}>
                 <card.icon className={`w-8 h-8 ${card.color}`} />
@@ -139,38 +142,44 @@ const ManagerDashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-red-600/20 to-red-900/20 border border-red-500/30 rounded-lg p-8 hover:border-red-500/50 transition cursor-pointer">
-          <Film className="w-12 h-12 text-red-400 mb-4" />
-          <h3 className="text-xl font-bold mb-2">Manage Shows</h3>
-          <p className="text-gray-400 text-sm">
+        <div 
+          onClick={() => navigate('/manager/shows')}
+          className="bg-red-500/10 border border-red-500/20 rounded-lg p-8 hover:border-red-500/40 hover:-translate-y-1 transition cursor-pointer"
+        >
+          <Film className="w-12 h-12 text-red-500 mb-4" />
+          <h3 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Manage Shows</h3>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             Add, edit, or delete movie shows and manage showtimes
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 border border-purple-500/30 rounded-lg p-8 hover:border-purple-500/50 transition cursor-pointer">
-          <Tv className="w-12 h-12 text-purple-400 mb-4" />
-          <h3 className="text-xl font-bold mb-2">Manage Screens</h3>
-          <p className="text-gray-400 text-sm">
+        <div 
+          onClick={() => navigate('/manager/screens')}
+          className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-8 hover:border-purple-500/40 hover:-translate-y-1 transition cursor-pointer"
+        >
+          <Tv className="w-12 h-12 text-purple-500 mb-4" />
+          <h3 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Manage Screens</h3>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             Configure screens, seat layouts, and screen settings
           </p>
         </div>
       </div>
 
       {/* Info Section */}
-      <div className="bg-gray-900/30 border border-gray-700 rounded-lg p-6">
-        <h2 className="text-lg font-bold mb-4">Theatre Statistics</h2>
+      <div className="rounded-lg p-6" style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
+        <h2 className="text-lg font-bold mb-4" style={{ color: "var(--text-primary)" }}>Theatre Statistics</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-gray-400">Currently Active Shows</p>
-            <p className="text-2xl font-bold mt-2">{dashboardData?.activeShows || 0}</p>
+            <p style={{ color: "var(--text-muted)" }}>Currently Active Shows</p>
+            <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>{dashboardData?.activeShows || 0}</p>
           </div>
           <div>
-            <p className="text-gray-400">Total Screens</p>
-            <p className="text-2xl font-bold mt-2">{dashboardData?.screens || 0}</p>
+            <p style={{ color: "var(--text-muted)" }}>Total Screens</p>
+            <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>{dashboardData?.screens || 0}</p>
           </div>
           <div>
-            <p className="text-gray-400">Monthly Revenue</p>
-            <p className="text-2xl font-bold mt-2">
+            <p style={{ color: "var(--text-muted)" }}>Monthly Revenue</p>
+            <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>
               {currency}
               {dashboardData?.monthRevenue?.toFixed(2) || "0.00"}
             </p>

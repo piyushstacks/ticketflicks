@@ -69,8 +69,8 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
       const booking = await Booking.findById(bookingId);
 
       // If booking still exists and payment is not made, release seats and delete booking
-      if (booking && !booking.isPaid) {
-        const show = await ShowTbls.findById(booking.show);
+      if (booking && booking.payment_status !== "completed") {
+        const show = await ShowTbls.findById(booking.show_id);
 
         // This check is important in case the show was deleted for some reason
         if (show && Array.isArray(show.seatTiers)) {
@@ -130,24 +130,23 @@ const sendBookingConfirmationEmail = inngest.createFunction(
       body: `
             <div style="font-family: Arial, sans-serif; line-height: 1.5;">
               <h2>Hey, ${booking.user.name}</h2>
-              <p>Your booking for <strong style="color: #F84565;">"${
-                booking.show.movie.title
-              }"</strong> is confirmed.</p>
+              <p>Your booking for <strong style="color: #F84565;">"${booking.show.movie.title
+        }"</strong> is confirmed.</p>
               <p>
                 <strong>Date : </strong> ${new Date(
-                  booking.show.showDateTime
-                ).toLocaleDateString("en-US", {
-                  timeZone: "Asia/Kolkata",
-                })}<br/>
+          booking.show.showDateTime
+        ).toLocaleDateString("en-US", {
+          timeZone: "Asia/Kolkata",
+        })}<br/>
                 <strong>Time : </strong> ${new Date(
-                  booking.show.showDateTime
-                ).toLocaleTimeString("en-US", { timeZone: "Asia/Kolkata" })}
+          booking.show.showDateTime
+        ).toLocaleTimeString("en-US", { timeZone: "Asia/Kolkata" })}
               </p>
               <p>
                 <strong>Seats : </strong> ${(booking.bookedSeats || [])
-                  .map((s) => s.seatNumber)
-                  .filter(Boolean)
-                  .join(", ")}<br/>
+          .map((s) => s.seatNumber)
+          .filter(Boolean)
+          .join(", ")}<br/>
                 <strong>Total Tickets : </strong> ${(booking.bookedSeats || []).length}<br/>
                 <strong>Total Amount : </strong> $${booking.amount}
               </p>
@@ -223,10 +222,10 @@ const sendShowReminders = inngest.createFunction(
                   <p>This a quick reminder that your movie: </p>
                   <h3 style="color: #F84565">"${task.movieTitle}"</h3>
                   <p>is scheduled for <strong>${new Date(
-                    task.showTime
-                  ).toLocaleDateString("en-US", {
-                    timeZone: "Asia/Kolkata",
-                  })}</strong> at <strong>${new Date(
+              task.showTime
+            ).toLocaleDateString("en-US", {
+              timeZone: "Asia/Kolkata",
+            })}</strong> at <strong>${new Date(
               task.showTime
             ).toLocaleTimeString("en-US", {
               timeZone: "Asia/Kolkata",

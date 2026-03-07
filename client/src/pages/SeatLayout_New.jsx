@@ -734,7 +734,7 @@ const SeatLayout = () => {
     <div className="glass-card backdrop-blur-lg rounded-xl p-5 mb-6 border border-white/10 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-              <Info className="w-4 h-4 text-gray-400" />
+              <Info className="w-4 h-4 text-[var(--text-muted)]" />
               Seat Categories & Pricing
             </h3>
             <button
@@ -898,7 +898,7 @@ const SeatLayout = () => {
               <button
                   onClick={handleBooking}
                   disabled={bookingLoading}
-                  className={`btn-primary w-full py-4 px-6 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${bookingLoading ? "bg-gray-600 cursor-not-allowed opacity-50" : "active:scale-[0.98] shadow-lg shadow-accent/30"}`}
+                  className={`btn-primary w-full py-4 px-6 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${bookingLoading ? "bg-[var(--border-hover)] cursor-not-allowed opacity-50" : "active:scale-[0.98] shadow-lg shadow-accent/30"}`}
               >
                 {bookingLoading ? (
                   <>
@@ -913,7 +913,7 @@ const SeatLayout = () => {
                 )}
               </button>
 
-              <p className="text-center text-gray-500 text-xs mt-4">
+              <p className="text-center text-[var(--text-muted)] text-xs mt-4">
                 {selectedSeats.size} seat{selectedSeats.size > 1 ? "s" : ""} •
                 Secure payment via Stripe
               </p>

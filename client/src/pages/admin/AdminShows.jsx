@@ -112,13 +112,13 @@ const AdminShows = () => {
 
   return (
     <div className="space-y-8 pb-10">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-gray-900/40 p-8 rounded-3xl border border-gray-800 backdrop-blur-sm">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-[var(--bg-primary)]/40 p-8 rounded-3xl border border-gray-800 backdrop-blur-sm">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight flex items-center gap-4">
+          <h1 className="text-4xl font-black text-[var(--text-primary)] tracking-tight flex items-center gap-4">
             <Calendar className="w-10 h-10 text-primary" />
             Live Show Management
           </h1>
-          <p className="text-gray-400 mt-2 font-medium flex items-center gap-2">
+          <p className="text-[var(--text-muted)] mt-2 font-medium flex items-center gap-2">
             <Users className="w-4 h-4 text-primary" />
             Monitoring all active movie shows across all registered theatres
           </p>
@@ -127,12 +127,12 @@ const AdminShows = () => {
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
           <div className="relative group w-full sm:w-64">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <MapPin className="w-4 h-4 text-gray-500 group-focus-within:text-primary transition-colors" />
+              <MapPin className="w-4 h-4 text-[var(--text-muted)] group-focus-within:text-primary transition-colors" />
             </div>
             <select
               value={selectedTheatre}
               onChange={(e) => setSelectedTheatre(e.target.value)}
-              className="w-full pl-11 pr-10 py-4 bg-gray-800/50 border border-gray-700 rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
+              className="w-full pl-11 pr-10 py-4 bg-[var(--bg-secondary)]/50 border border-[var(--border)] rounded-2xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer font-bold text-sm"
             >
               <option value="">🏢 All Registered Theatres</option>
               {theatres.map((theatre) => (
@@ -142,8 +142,8 @@ const AdminShows = () => {
               ))}
             </select>
             <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-              <div className="w-5 h-5 bg-gray-700 rounded-lg flex items-center justify-center">
-                <Monitor className="w-3 h-3 text-gray-400" />
+              <div className="w-5 h-5 bg-[var(--bg-elevated)] rounded-lg flex items-center justify-center">
+                <Monitor className="w-3 h-3 text-[var(--text-muted)]" />
               </div>
             </div>
           </div>
@@ -165,19 +165,19 @@ const AdminShows = () => {
               {/* Theatre Header */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center border border-gray-700">
+                  <div className="w-12 h-12 bg-[var(--bg-secondary)] rounded-xl flex items-center justify-center border border-[var(--border)]">
                     <MapPin className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-white tracking-tight">{theatre.name}</h2>
-                    <p className="text-gray-500 text-sm font-medium">
+                    <h2 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">{theatre.name}</h2>
+                    <p className="text-[var(--text-muted)] text-sm font-medium">
                       {theatre.city} • {theatre.location}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gray-900/50 border border-gray-800 rounded-xl">
-                  <Monitor className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm font-bold text-gray-300">
+                <div className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-primary)]/50 border border-gray-800 rounded-xl">
+                  <Monitor className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span className="text-sm font-bold text-[var(--text-secondary)]">
                     {theatreShows.length} Scheduled {theatreShows.length === 1 ? 'Show' : 'Shows'}
                   </span>
                 </div>
@@ -188,7 +188,7 @@ const AdminShows = () => {
                 {theatreShows.map((show) => (
                   <div
                     key={show._id}
-                    className="group bg-gray-900/40 border border-gray-800 rounded-3xl overflow-hidden hover:border-primary/30 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5"
+                    className="group bg-[var(--bg-primary)]/40 border border-gray-800 rounded-3xl overflow-hidden hover:border-primary/30 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5"
                   >
                     <div className="flex flex-col sm:flex-row h-full">
                       {/* Movie Poster */}
@@ -206,7 +206,7 @@ const AdminShows = () => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-gray-900 via-transparent to-transparent opacity-60" />
                         <div className="absolute top-4 left-4">
-                          <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-lg border border-white/10">
+                          <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-[var(--text-primary)] text-[10px] font-black uppercase tracking-widest rounded-lg border border-white/10">
                             {show.language || "English"}
                           </span>
                         </div>
@@ -216,11 +216,11 @@ const AdminShows = () => {
                       <div className="flex-1 p-6 flex flex-col">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <h3 className="text-xl font-bold text-white group-hover:text-primary transition-colors line-clamp-1">
+                            <h3 className="text-xl font-bold text-[var(--text-primary)] group-hover:text-primary transition-colors line-clamp-1">
                               {show.movie?.title || "Unknown Movie"}
                             </h3>
                             <div className="flex items-center gap-3 mt-1">
-                              <span className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                              <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-muted)]">
                                 <Monitor className="w-3.5 h-3.5 text-primary" />
                                 {show.screen?.name || `Screen ${show.screen?.screenNumber}`}
                               </span>
@@ -230,15 +230,19 @@ const AdminShows = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="bg-gray-800/40 p-3 rounded-2xl border border-gray-700/50">
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Show Date</p>
-                            <p className="text-sm font-black text-gray-200">
-                              {show.showDateTime ? new Date(show.showDateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                          <div className="bg-[var(--bg-secondary)]/40 p-3 rounded-2xl border border-[var(--border)]/50">
+                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Show Date</p>
+                            <p className="text-sm font-black text-[var(--text-primary)]">
+                              {show.startDate && show.endDate
+                                ? (new Date(show.startDate).toLocaleDateString('en-IN') === new Date(show.endDate).toLocaleDateString('en-IN')
+                                  ? new Date(show.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                                  : `${new Date(show.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(show.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}`)
+                                : show.showDateTime ? new Date(show.showDateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                             </p>
                           </div>
-                          <div className="bg-gray-800/40 p-3 rounded-2xl border border-gray-700/50">
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Start → End</p>
-                            <p className="text-sm font-black text-gray-200">
+                          <div className="bg-[var(--bg-secondary)]/40 p-3 rounded-2xl border border-[var(--border)]/50">
+                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">Start → End</p>
+                            <p className="text-sm font-black text-[var(--text-primary)]">
                               {show.showDateTime
                                 ? (() => {
                                     const start = new Date(show.showDateTime);
@@ -256,7 +260,7 @@ const AdminShows = () => {
                             {show.movie?.genres?.slice(0, 2).map((genre, idx) => (
                               <span 
                                 key={idx}
-                                className="px-3 py-1 bg-gray-800 text-gray-400 text-[10px] font-bold rounded-full border border-gray-700"
+                                className="px-3 py-1 bg-[var(--bg-secondary)] text-[var(--text-muted)] text-[10px] font-bold rounded-full border border-[var(--border)]"
                               >
                                 {genre.name || genre}
                               </span>
@@ -301,12 +305,12 @@ const AdminShows = () => {
             </div>
           ))
         ) : (
-          <div className="bg-gray-900/40 border border-gray-800 rounded-3xl p-20 flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-gray-800 rounded-2xl flex items-center justify-center mb-6 border border-gray-700">
-              <Film className="w-10 h-10 text-gray-600" />
+          <div className="bg-[var(--bg-primary)]/40 border border-gray-800 rounded-3xl p-20 flex flex-col items-center text-center">
+            <div className="w-20 h-20 bg-[var(--bg-secondary)] rounded-2xl flex items-center justify-center mb-6 border border-[var(--border)]">
+              <Film className="w-10 h-10 text-[var(--text-muted)]" />
             </div>
-            <h3 className="text-2xl font-black text-white tracking-tight mb-2">No active shows found</h3>
-            <p className="text-gray-500 font-medium max-w-xs">
+            <h3 className="text-2xl font-black text-[var(--text-primary)] tracking-tight mb-2">No active shows found</h3>
+            <p className="text-[var(--text-muted)] font-medium max-w-xs">
               There are no movie shows scheduled for the selected theatre or criteria.
             </p>
           </div>
@@ -316,16 +320,16 @@ const AdminShows = () => {
       {/* Show Details Modal */}
       {viewingShow && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-gray-900 border border-gray-800 rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+          <div className="bg-[var(--bg-primary)] border border-gray-800 rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-8 border-b border-gray-800 bg-gray-900/50">
+            <div className="flex justify-between items-center p-8 border-b border-gray-800 bg-[var(--bg-primary)]/50">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
                   <Film className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white tracking-tight">Show Details</h2>
-                  <p className="text-gray-500 text-sm font-medium">Detailed insights for this screening</p>
+                  <h2 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">Show Details</h2>
+                  <p className="text-[var(--text-muted)] text-sm font-medium">Detailed insights for this screening</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -349,7 +353,7 @@ const AdminShows = () => {
                 </button>
                 <button
                   onClick={() => setViewingShow(null)}
-                  className="w-10 h-10 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl flex items-center justify-center transition-all border border-gray-700"
+                  className="w-10 h-10 bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-xl flex items-center justify-center transition-all border border-[var(--border)]"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -376,10 +380,10 @@ const AdminShows = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent" />
                     <div className="absolute bottom-6 left-6 right-6">
-                      <h3 className="text-2xl font-black text-white mb-2">{viewingShow.movie?.title}</h3>
+                      <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2">{viewingShow.movie?.title}</h3>
                       <div className="flex flex-wrap gap-2">
                         {viewingShow.movie?.genres?.map((genre, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-lg border border-white/10">
+                          <span key={idx} className="px-3 py-1 bg-white/10 backdrop-blur-md text-[var(--text-primary)] text-[10px] font-black uppercase tracking-widest rounded-lg border border-white/10">
                             {genre.name || genre}
                           </span>
                         ))}
@@ -387,12 +391,12 @@ const AdminShows = () => {
                     </div>
                   </div>
 
-                  <div className="bg-gray-800/30 rounded-3xl p-6 border border-gray-800/50">
-                    <h4 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <div className="bg-[var(--bg-secondary)]/30 rounded-3xl p-6 border border-gray-800/50">
+                    <h4 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-widest mb-4 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-primary" />
                       Synopsis
                     </h4>
-                    <p className="text-gray-400 text-sm leading-relaxed font-medium">
+                    <p className="text-[var(--text-muted)] text-sm leading-relaxed font-medium">
                       {viewingShow.movie?.overview || "No overview available for this movie."}
                     </p>
                   </div>
@@ -402,23 +406,31 @@ const AdminShows = () => {
                 <div className="lg:col-span-7 space-y-8">
                   {/* Show Info Cards */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-800/30 p-5 rounded-3xl border border-gray-800/50">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <div className="bg-[var(--bg-secondary)]/30 p-5 rounded-3xl border border-gray-800/50">
+                      <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2 flex items-center gap-2">
                         <MapPin className="w-3 h-3 text-primary" />
                         Theatre & Screen
                       </p>
-                      <p className="text-lg font-black text-white leading-tight">{viewingShow.theatre?.name}</p>
+                      <p className="text-lg font-black text-[var(--text-primary)] leading-tight">{viewingShow.theatre?.name}</p>
                       <p className="text-sm font-bold text-primary mt-1">
                         {viewingShow.screen?.name || `Screen ${viewingShow.screen?.screenNumber}`}
                       </p>
                     </div>
-                    <div className="bg-gray-800/30 p-5 rounded-3xl border border-gray-800/50">
-                       <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <div className="bg-[var(--bg-secondary)]/30 p-5 rounded-3xl border border-gray-800/50">
+                       <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-2 flex items-center gap-2">
                          <Calendar className="w-3 h-3 text-primary" />
                          Schedule
                        </p>
-                       <p className="text-lg font-black text-white leading-tight">
-                         {viewingShow.showDateTime ? new Date(viewingShow.showDateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}
+                       <p className="text-lg font-black text-[var(--text-primary)] leading-tight">
+                         {(() => {
+                           if (viewingShow.startDate && viewingShow.endDate) {
+                             const startD = new Date(viewingShow.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                             const endD = new Date(viewingShow.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                             if (startD !== endD) return `${startD} - ${endD}`;
+                             return startD;
+                           }
+                           return viewingShow.showDateTime ? new Date(viewingShow.showDateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A';
+                         })()}
                        </p>
                        {viewingShow.showDateTime && (() => {
                          const start = new Date(viewingShow.showDateTime);
@@ -430,87 +442,23 @@ const AdminShows = () => {
                                <Clock className="w-3.5 h-3.5" />
                                Start: {start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                              </p>
-                             <p className="text-sm font-bold text-gray-400 flex items-center gap-1.5">
+                             <p className="text-sm font-bold text-[var(--text-muted)] flex items-center gap-1.5">
                                <Clock className="w-3.5 h-3.5" />
                                End: {end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                              </p>
-                             <p className="text-xs text-gray-600 mt-1">{runtime} min runtime</p>
+                             <p className="text-xs text-[var(--text-muted)] mt-1">{runtime} min runtime</p>
                            </div>
                          );
                        })()}
                      </div>
                   </div>
 
-                  {/* Booking Statistics */}
-                  <div className="bg-gray-800/30 rounded-[2rem] border border-gray-800/50 overflow-hidden">
-                    <div className="p-6 border-b border-gray-800/50 flex justify-between items-center">
-                      <h4 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <Users className="w-4 h-4 text-primary" />
-                        Booking Statistics
-                      </h4>
-                      <div className="px-3 py-1 bg-primary/10 rounded-lg border border-primary/20">
-                        <span className="text-[10px] font-black text-primary uppercase">Live Data</span>
-                      </div>
-                    </div>
-                    <div className="p-8">
-                      <div className="grid grid-cols-2 gap-8 mb-10">
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Occupancy</p>
-                          <div className="flex items-end gap-2">
-                            <p className="text-4xl font-black text-white">
-                              {viewingShow.screen?.seatLayout?.totalSeats
-                                ? `${((Object.keys(viewingShow.occupiedSeats || {}).length / viewingShow.screen.seatLayout.totalSeats) * 100).toFixed(0)}%`
-                                : "0%"}
-                            </p>
-                            <p className="text-sm font-bold text-gray-500 mb-1.5">
-                              ({Object.keys(viewingShow.occupiedSeats || {}).length}/{viewingShow.screen?.seatLayout?.totalSeats || 0})
-                            </p>
-                          </div>
-                          {/* Progress Bar */}
-                          <div className="w-full h-2 bg-gray-800 rounded-full mt-4 overflow-hidden border border-gray-700">
-                            <div 
-                              className="h-full bg-primary transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,51,102,0.5)]"
-                              style={{ 
-                                width: viewingShow.screen?.seatLayout?.totalSeats 
-                                  ? `${(Object.keys(viewingShow.occupiedSeats || {}).length / viewingShow.screen.seatLayout.totalSeats) * 100}%` 
-                                  : '0%' 
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Estimated Revenue</p>
-                          <p className="text-4xl font-black text-primary">
-                            ₹{(Object.keys(viewingShow.occupiedSeats || {}).length * (viewingShow.showPrice || 0)).toLocaleString()}
-                          </p>
-                          <p className="text-sm font-bold text-gray-500 mt-2">Based on ₹{viewingShow.showPrice || 0} avg price</p>
-                        </div>
-                      </div>
 
-                      {/* Screen Details Grid */}
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="bg-gray-900/40 p-4 rounded-2xl border border-gray-800/50">
-                          <p className="text-[9px] font-black text-gray-500 uppercase mb-1">Available</p>
-                          <p className="text-xl font-black text-white">
-                            {(viewingShow.screen?.seatLayout?.totalSeats || 0) - Object.keys(viewingShow.occupiedSeats || {}).length}
-                          </p>
-                        </div>
-                        <div className="bg-gray-900/40 p-4 rounded-2xl border border-gray-800/50">
-                          <p className="text-[9px] font-black text-gray-500 uppercase mb-1">Rows</p>
-                          <p className="text-xl font-black text-white">{viewingShow.screen?.seatLayout?.rows || 0}</p>
-                        </div>
-                        <div className="bg-gray-900/40 p-4 rounded-2xl border border-gray-800/50">
-                          <p className="text-[9px] font-black text-gray-500 uppercase mb-1">Per Row</p>
-                          <p className="text-xl font-black text-white">{viewingShow.screen?.seatLayout?.seatsPerRow || 0}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Occupied Seats Map (Visual Tooltip) */}
                   {viewingShow.occupiedSeats && Object.keys(viewingShow.occupiedSeats).length > 0 && (
-                    <div className="bg-gray-800/30 rounded-3xl p-6 border border-gray-800/50">
-                      <h4 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="bg-[var(--bg-secondary)]/30 rounded-3xl p-6 border border-gray-800/50">
+                      <h4 className="text-sm font-black text-[var(--text-primary)] uppercase tracking-widest mb-4 flex items-center gap-2">
                         <Users className="w-4 h-4 text-primary" />
                         Booked Seats Map
                       </h4>

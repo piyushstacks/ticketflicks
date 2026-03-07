@@ -61,29 +61,28 @@ export const getDashboardData = async (managerId) => {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
+  const showDocs = await Show.find({ theatre: theatreId }).select("_id");
+  const showIds = showDocs.map(s => s._id);
+
   const todayBookings = await Booking.countDocuments({
-    show_id: {
-      $in: await Show.find({ theatre: theatreId }).select("_id"),
-    },
+    show_id: { $in: showIds },
     createdAt: { $gte: todayStart, $lte: todayEnd },
     status: "confirmed",
   });
 
-  // Monthly revenue
+  // Monthly revenue & bookings
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const monthBookings = await Booking.find({
-    show_id: {
-      $in: await Show.find({ theatre: theatreId }).select("_id"),
-    },
+    show_id: { $in: showIds },
     createdAt: { $gte: monthStart },
-    payment_status: "completed",
-    status: "confirmed",
   });
 
   const monthRevenue = monthBookings.reduce(
-    (acc, booking) => acc + booking.total_amount,
+    (acc, booking) => (booking.payment_status === "completed" && booking.status === "confirmed") ? acc + booking.total_amount : acc,
     0
   );
+
+  const totalConfirmedThisMonth = monthBookings.filter(b => b.status === "confirmed").length;
 
   return {
     theatre: {
@@ -96,7 +95,7 @@ export const getDashboardData = async (managerId) => {
       activeShows,
       todayBookings,
       monthRevenue,
-      totalBookings: monthBookings.length,
+      totalBookings: totalConfirmedThisMonth,
     },
   };
 };
@@ -189,9 +188,11 @@ export const getTheatreBookings = async (
         dateTime: b.show_id.showDateTime,
       },
       seats: b.seats_booked,
-      totalAmount: b.total_amount,
+      totalAmount: b.total_amount || b.amount || 0,
       status: b.status,
-      paymentStatus: b.payment_status,
+      paymentStatus: b.payment_status || (b.isPaid ? 'completed' : 'pending'),
+      isPaid: b.payment_status === "completed" || b.isPaid === true,
+      paymentId: b.payment_id || b.paymentIntentId || null,
       createdAt: b.createdAt,
     })),
     pagination: {

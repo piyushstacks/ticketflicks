@@ -29,7 +29,10 @@ const AdminMovies = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [viewingMovie, setViewingMovie] = useState(null);
-  const [autoFillLoading, setAutoFillLoading] = useState(false);
+  const [tmdbRatingLoading, setTmdbRatingLoading] = useState(false);
+  const [showTweetPicker, setShowTweetPicker] = useState(false);
+  const [tweetPickerUrl, setTweetPickerUrl] = useState("");
+  const [tweetPickerError, setTweetPickerError] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     overview: "",
@@ -39,6 +42,7 @@ const AdminMovies = () => {
     release_date: "",
     runtime: "",
     tagline: "",
+    vote_average: "",
     original_language: "en",
     genres: [],
     casts: [],
@@ -213,33 +217,59 @@ const AdminMovies = () => {
     return twitterRegex.test(url);
   };
 
-  // Auto-fill reviews from Twitter search (simulated - in production, this would call Twitter API)
-  const handleAutoFillReviews = async () => {
-    if (!formData.title) {
-      toast.error("Please enter movie title first");
+  // Fetch TMDB rating by current movie title
+  const handleFetchTMDBRating = async () => {
+    if (!formData.title.trim()) {
+      toast.error("Please enter the movie title first");
       return;
     }
-
-    setAutoFillLoading(true);
-
+    setTmdbRatingLoading(true);
     try {
-      // Note: In a real implementation, you would call a backend API that searches Twitter
-      // For now, we'll show a message explaining how to manually add tweets
-      toast.success(
-        `To find reviews for "${formData.title}", search on Twitter/X:\n` +
-          `"${formData.title} movie review" and copy tweet URLs`,
-        { duration: 5000 },
+      const { data } = await axios.get(
+        `/api/admin/movies/tmdb-rating?title=${encodeURIComponent(formData.title)}`
       );
-
-      // Example placeholder URLs (in production, these would come from Twitter API)
-      // For demo purposes, we're not auto-filling with real URLs
-      toast("Paste Twitter/X post URLs in the fields below", { icon: "ℹ️" });
-    } catch (error) {
-      console.error("Error auto-filling reviews:", error);
-      toast.error("Failed to fetch reviews. Please add manually.");
+      if (data.success) {
+        setFormData(prev => ({ ...prev, vote_average: parseFloat(data.vote_average.toFixed(1)) }));
+        toast.success(`Fetched rating: ${data.vote_average}/10 (${data.vote_count} votes) for "${data.title}"`);
+      } else {
+        toast.error(data.message || "Could not fetch from TMDB");
+      }
+    } catch (err) {
+      toast.error("Failed to connect to TMDB");
     } finally {
-      setAutoFillLoading(false);
+      setTmdbRatingLoading(false);
     }
+  };
+
+  // Tweet Picker modal helpers
+  const handleAddTweet = () => {
+    const url = tweetPickerUrl.trim();
+    const twitterRegex = /^https?:\/\/(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/status\/\d+/;
+    if (!url) {
+      setTweetPickerError("Please paste a tweet URL");
+      return;
+    }
+    if (!twitterRegex.test(url)) {
+      setTweetPickerError("Invalid URL — must be a Twitter/X post URL");
+      return;
+    }
+    if (formData.reviews.includes(url)) {
+      setTweetPickerError("This tweet URL is already added");
+      return;
+    }
+    // Replace the first empty slot, or append
+    const emptyIdx = formData.reviews.findIndex(r => !r.trim());
+    if (emptyIdx !== -1) {
+      const next = [...formData.reviews];
+      next[emptyIdx] = url;
+      setFormData(prev => ({ ...prev, reviews: next }));
+    } else {
+      setFormData(prev => ({ ...prev, reviews: [...prev.reviews, url] }));
+    }
+    setTweetPickerUrl("");
+    setTweetPickerError("");
+    setShowTweetPicker(false);
+    toast.success("Tweet added to review list!");
   };
 
   const getTodayString = () => {
@@ -452,6 +482,7 @@ const AdminMovies = () => {
   }
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Movie Details Management</h1>
@@ -588,11 +619,11 @@ const AdminMovies = () => {
                   )}
                   {formData.poster_path && (
                     <div className="mt-2">
-                      <p className="text-xs text-gray-400 mb-1">Preview:</p>
+                      <p className="text-xs text-[var(--text-muted)] mb-1">Preview:</p>
                       <img
                         src={formData.poster_path}
                         alt="Poster preview"
-                        className="w-32 h-48 object-cover rounded-lg border border-gray-600"
+                        className="w-32 h-48 object-cover rounded-lg border border-[var(--border-hover)]"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           console.error('Failed to load poster image:', formData.poster_path);
@@ -629,11 +660,11 @@ const AdminMovies = () => {
                   )}
                   {formData.backdrop_path && (
                     <div className="mt-2">
-                      <p className="text-xs text-gray-400 mb-1">Preview:</p>
+                      <p className="text-xs text-[var(--text-muted)] mb-1">Preview:</p>
                       <img
                         src={formData.backdrop_path}
                         alt="Backdrop preview"
-                        className="w-full h-32 object-cover rounded-lg border border-gray-600"
+                        className="w-full h-32 object-cover rounded-lg border border-[var(--border-hover)]"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           console.error('Failed to load backdrop image:', formData.backdrop_path);
@@ -693,6 +724,43 @@ const AdminMovies = () => {
                     {fieldErrors.runtime}
                   </p>
                 )}
+              </div>
+              <div>
+                <label
+                  htmlFor="vote_average"
+                  className="block text-sm font-medium mb-2"
+                >
+                  TMDB Rating (0–10)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="vote_average"
+                    type="number"
+                    name="vote_average"
+                    placeholder="e.g. 7.8"
+                    value={formData.vote_average}
+                    onChange={handleInputChange}
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    className="input-field flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleFetchTMDBRating}
+                    disabled={tmdbRatingLoading}
+                    title="Fetch rating from TMDB using the title above"
+                    className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition text-sm font-medium disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {tmdbRatingLoading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Star className="w-4 h-4" />
+                    )}
+                    Fetch from TMDB
+                  </button>
+                </div>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Enter the movie title above, then click Fetch to auto-fill from TMDB.</p>
               </div>
               <div>
                 <label
@@ -816,7 +884,7 @@ const AdminMovies = () => {
                   <div className="flex-1">
                     <label
                       htmlFor={`cast-name-${index}`}
-                      className="block text-xs font-medium mb-1 text-gray-400"
+                      className="block text-xs font-medium mb-1 text-[var(--text-muted)]"
                     >
                       Cast Name
                     </label>
@@ -834,7 +902,7 @@ const AdminMovies = () => {
                   <div className="flex-1">
                     <label
                       htmlFor={`cast-profile-${index}`}
-                      className="block text-xs font-medium mb-1 text-gray-400"
+                      className="block text-xs font-medium mb-1 text-[var(--text-muted)]"
                     >
                       Profile URL
                     </label>
@@ -854,12 +922,12 @@ const AdminMovies = () => {
                           <img
                             src={cast.profile_path}
                             alt={`${cast.name} profile`}
-                            className="w-12 h-12 rounded-full object-cover border border-gray-600"
+                            className="w-12 h-12 rounded-full object-cover border border-[var(--border-hover)]"
                             onError={(e) => {
                               e.target.style.display = 'none';
                             }}
                           />
-                          <span className="text-xs text-gray-400">Profile preview</span>
+                          <span className="text-xs text-[var(--text-muted)]">Profile preview</span>
                         </div>
                       )}
                     </div>
@@ -884,29 +952,16 @@ const AdminMovies = () => {
             </div>
 
             {/* Reviews Section - Twitter/X Post URLs */}
-            <div className="border-t border-gray-700 pt-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="border-t border-[var(--border)] pt-6">
+              <div className="flex items-center mb-4">
                 <div className="flex items-center gap-2">
                   <Twitter className="w-5 h-5 text-blue-400" />
                   <label className="block text-sm font-medium">
                     Twitter/X Reviews
                   </label>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAutoFillReviews}
-                  disabled={autoFillLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition text-sm font-medium disabled:opacity-50"
-                >
-                  {autoFillLoading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )}
-                  Auto-Fill from Twitter
-                </button>
               </div>
-              <p className="text-xs text-gray-400 mb-4">
+              <p className="text-xs text-[var(--text-muted)] mb-4">
                 Add Twitter/X post URLs containing reviews about this movie.
                 These will be embedded on the movie details page.
               </p>
@@ -915,7 +970,7 @@ const AdminMovies = () => {
                 <div key={index} className="flex gap-2 mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Link className="w-4 h-4 text-gray-500" />
+                      <Link className="w-4 h-4 text-[var(--text-muted)]" />
                       <input
                         type="url"
                         placeholder={`https://twitter.com/user/status/123... or https://x.com/user/status/123...`}
@@ -923,10 +978,10 @@ const AdminMovies = () => {
                         onChange={(e) =>
                           handleReviewChange(index, e.target.value)
                         }
-                        className={`w-full px-4 py-2 bg-gray-800 border rounded-lg focus:border-primary outline-none transition ${
+                        className={`w-full px-4 py-2 bg-[var(--bg-secondary)] border rounded-lg focus:border-primary outline-none transition ${
                           reviewUrl && !isValidTwitterUrl(reviewUrl)
                             ? "border-red-500"
-                            : "border-gray-700"
+                            : "border-[var(--border)]"
                         }`}
                       />
                     </div>
@@ -985,10 +1040,10 @@ const AdminMovies = () => {
         {movies.map((movie) => (
           <div
             key={movie._id || movie.id}
-            className={`bg-gray-900/30 border rounded-lg p-6 hover:border-primary/50 transition ${
+            className={`bg-[var(--bg-primary)]/30 border rounded-lg p-6 hover:border-primary/50 transition ${
               movie.disabled
                 ? "border-red-500/30 opacity-60"
-                : "border-gray-700"
+                : "border-[var(--border)]"
             }`}
           >
             <div className="space-y-3">
@@ -1023,7 +1078,7 @@ const AdminMovies = () => {
                 </div>
               </div>
 
-              <div className="space-y-2 text-sm text-gray-400">
+              <div className="space-y-2 text-sm text-[var(--text-muted)]">
                 <p>{movie.overview?.substring(0, 100)}...</p>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-primary" />
@@ -1104,19 +1159,19 @@ const AdminMovies = () => {
 
       {movies.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-400 text-lg">No movies found</p>
+          <p className="text-[var(--text-muted)] text-lg">No movies found</p>
         </div>
       )}
 
       {/* Movie Details Modal */}
       {viewingMovie && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+          <div className="bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-2xl font-bold">{viewingMovie.title}</h2>
               <button
                 onClick={() => setViewingMovie(null)}
-                className="text-gray-400 hover:text-white"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -1136,26 +1191,26 @@ const AdminMovies = () => {
                 </div>
               )}
               <div>
-                <h3 className="font-semibold text-primary">Overview</h3>
-                <p className="text-gray-300">{viewingMovie.overview}</p>
+                <h3 className="font-semibold text-[var(--color-accent)]">Overview</h3>
+                <p className="text-[var(--text-secondary)]">{viewingMovie.overview}</p>
               </div>
               {viewingMovie.tagline && (
                 <div>
-                  <h3 className="font-semibold text-primary">Tagline</h3>
-                  <p className="text-gray-300">"{viewingMovie.tagline}"</p>
+                  <h3 className="font-semibold text-[var(--color-accent)]">Tagline</h3>
+                  <p className="text-[var(--text-secondary)]">"{viewingMovie.tagline}"</p>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold text-primary">Release Date</h3>
-                  <p className="text-gray-300">
+                  <h3 className="font-semibold text-[var(--color-accent)]">Release Date</h3>
+                  <p className="text-[var(--text-secondary)]">
                     {new Date(viewingMovie.release_date).toLocaleDateString()}
                   </p>
                 </div>
                 {viewingMovie.runtime && (
                   <div>
-                    <h3 className="font-semibold text-primary">Runtime</h3>
-                    <p className="text-gray-300">
+                    <h3 className="font-semibold text-[var(--color-accent)]">Runtime</h3>
+                    <p className="text-[var(--text-secondary)]">
                       {viewingMovie.runtime} minutes
                     </p>
                   </div>
@@ -1163,7 +1218,7 @@ const AdminMovies = () => {
               </div>
               {viewingMovie.genres && viewingMovie.genres.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-primary">Genres</h3>
+                  <h3 className="font-semibold text-[var(--color-accent)]">Genres</h3>
                   <div className="flex flex-wrap gap-2">
                     {viewingMovie.genres.map((genre) => (
                       <span
@@ -1178,7 +1233,7 @@ const AdminMovies = () => {
               )}
               {viewingMovie.casts && viewingMovie.casts.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-primary">Cast</h3>
+                  <h3 className="font-semibold text-[var(--color-accent)]">Cast</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
                     {viewingMovie.casts.slice(0, 6).map((cast, index) => (
                       <div key={index} className="flex items-center gap-3">
@@ -1192,11 +1247,11 @@ const AdminMovies = () => {
                             }}
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
-                            <span className="text-gray-400 text-xs">{cast.name?.charAt(0) || '?'}</span>
+                          <div className="w-12 h-12 rounded-full bg-[var(--bg-elevated)] flex items-center justify-center">
+                            <span className="text-[var(--text-muted)] text-xs">{cast.name?.charAt(0) || '?'}</span>
                           </div>
                         )}
-                        <span className="text-gray-300">{cast.name}</span>
+                        <span className="text-[var(--text-secondary)]">{cast.name}</span>
                       </div>
                     ))}
                   </div>
@@ -1204,7 +1259,7 @@ const AdminMovies = () => {
               )}
               {viewingMovie.reviews && viewingMovie.reviews.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-primary flex items-center gap-2">
+                  <h3 className="font-semibold text-[var(--color-accent)] flex items-center gap-2">
                     <Twitter className="w-4 h-4" />
                     Twitter/X Reviews ({viewingMovie.reviews.length})
                   </h3>
@@ -1229,6 +1284,90 @@ const AdminMovies = () => {
         </div>
       )}
     </div>
+
+      {/* Tweet Picker Modal */}
+      {showTweetPicker && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-2xl shadow-2xl w-full max-w-lg">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2">
+                <Twitter className="w-5 h-5 text-blue-400" />
+                <h3 className="font-semibold text-base">Add a Tweet Review</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTweetPicker(false)}
+                className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition"
+              >
+                <X className="w-5 h-5 text-[var(--text-muted)]" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                Paste a Twitter or X post URL below. It will be embedded on the movie's detail page as a review.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Tweet URL</label>
+                <input
+                  type="url"
+                  autoFocus
+                  placeholder="https://x.com/user/status/123456789"
+                  value={tweetPickerUrl}
+                  onChange={e => { setTweetPickerUrl(e.target.value); setTweetPickerError(""); }}
+                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleAddTweet())}
+                  className={`input-field w-full ${
+                    tweetPickerError ? "border-red-500" : ""
+                  }`}
+                />
+                {tweetPickerError && (
+                  <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    {tweetPickerError}
+                  </p>
+                )}
+              </div>
+
+              {tweetPickerUrl && !tweetPickerError && (
+                <div className="rounded-lg bg-[var(--bg-secondary)] border border-[var(--border)] px-4 py-3 text-xs text-[var(--text-secondary)] break-all">
+                  <span className="text-[var(--text-muted)] mr-1">Preview URL:</span>
+                  <span className="text-blue-400">{tweetPickerUrl}</span>
+                </div>
+              )}
+
+              <p className="text-xs text-[var(--text-muted)]">
+                Valid formats:{" "}
+                <code className="bg-[var(--bg-secondary)] px-1 rounded">https://twitter.com/user/status/ID</code>{" "}
+                or{" "}
+                <code className="bg-[var(--bg-secondary)] px-1 rounded">https://x.com/user/status/ID</code>
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 justify-end px-6 py-4 border-t border-[var(--border)]">
+              <button
+                type="button"
+                onClick={() => setShowTweetPicker(false)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddTweet}
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium text-sm"
+              >
+                <Check className="w-4 h-4" />
+                Add Tweet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

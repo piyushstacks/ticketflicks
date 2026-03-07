@@ -50,7 +50,7 @@ export const getAvailableMovies = async (managerId) => {
 
     const isActiveForTheatre =
       !isTheatreExcluded &&
-      (isTheatreIncluded || movie.excludedTheatres.length === 0);
+      (isTheatreIncluded || !movie.excludedTheatres || movie.excludedTheatres.length === 0);
 
     return {
       ...movie.toObject(),
@@ -161,14 +161,14 @@ export const addShow = async (managerId, showData) => {
     seatTiers: screenDoc.seatTiers.map((tier) => ({
       tierName: tier.tierName,
       price: tier.price,
-      seatsPerRow: tier.seatsPerRow || screenDoc.seatLayout.seatsPerRow,
-      rowCount: tier.rows.length,
+      seatsPerRow: tier.seatsPerRow || screenDoc.seatLayout?.seatsPerRow || 0,
+      rowCount: tier.rows ? tier.rows.length : 0,
       totalSeats:
-        (tier.seatsPerRow || screenDoc.seatLayout.seatsPerRow) *
-        tier.rows.length,
+        (tier.seatsPerRow || screenDoc.seatLayout?.seatsPerRow || 0) *
+        (tier.rows ? tier.rows.length : 0),
       occupiedSeats: {},
     })),
-    totalCapacity: screenDoc.seatLayout.totalSeats,
+    totalCapacity: screenDoc.seatLayout?.totalSeats || 0,
     isActive,
   });
 

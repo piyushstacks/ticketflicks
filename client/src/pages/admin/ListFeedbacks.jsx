@@ -63,7 +63,7 @@ const Feedbacks = () => {
                       className={
                         index < feedback.rating
                           ? "text-yellow-500 fill-yellow-400"
-                          : "text-gray-300"
+                          : "text-[var(--text-secondary)]"
                       }
                     />
                   ))}

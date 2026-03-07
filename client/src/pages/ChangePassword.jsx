@@ -31,7 +31,7 @@ const ChangePassword = () => {
 
   // Password validation helper
   const getPasswordStrength = (pwd) => {
-    if (!pwd) return { score: 0, text: "", color: "text-gray-400" };
+    if (!pwd) return { score: 0, text: "", color: "text-[var(--text-muted)]" };
     let score = 0;
     if (pwd.length >= 8) score++;
     if (/[a-z]/.test(pwd)) score++;
@@ -82,10 +82,10 @@ const ChangePassword = () => {
 
   return (
     <div className="max-w-md mx-auto mt-12 p-6 bg-black/60 rounded-md border border-white/10">
-      <h2 className="text-2xl text-white mb-4">Change Password</h2>
+      <h2 className="text-2xl text-[var(--text-primary)] mb-4">Change Password</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm text-white/80 font-medium" htmlFor={`${formId}-currentPassword`}>Current Password</label>
+          <label className="text-sm text-[var(--text-primary)]/80 font-medium" htmlFor={`${formId}-currentPassword`}>Current Password</label>
           <div className="relative group">
             <input
               type="password"
@@ -96,7 +96,7 @@ const ChangePassword = () => {
               required
               title="Enter your current password for verification"
             />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-primary)]/60 group-hover:text-primary transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -111,7 +111,7 @@ const ChangePassword = () => {
         </div>
 
         <div>
-          <label className="text-sm text-white/80 font-medium" htmlFor={`${formId}-newPassword`}>New Password</label>
+          <label className="text-sm text-[var(--text-primary)]/80 font-medium" htmlFor={`${formId}-newPassword`}>New Password</label>
           <div className="relative group">
             <input
               type="password"
@@ -123,7 +123,7 @@ const ChangePassword = () => {
               required
               title="Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters"
             />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-primary)]/60 group-hover:text-primary transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -139,7 +139,7 @@ const ChangePassword = () => {
             <p>
               Strength: <span className={passwordStrength.color}>{passwordStrength.text}</span>
             </p>
-            <p className="text-white/60 mt-1">
+            <p className="text-[var(--text-primary)]/60 mt-1">
               <span className={values.newPassword.length >= 8 ? "text-green-400" : "text-white/60"}>✓ 8+ characters</span>
               {"\n"}
               <span className={/[A-Z]/.test(values.newPassword) ? "text-green-400" : "text-white/60"}>✓ Uppercase</span>
@@ -154,7 +154,7 @@ const ChangePassword = () => {
         </div>
 
         <div>
-          <label className="text-sm text-white/80 font-medium" htmlFor={`${formId}-confirmPassword`}>Confirm New Password</label>
+          <label className="text-sm text-[var(--text-primary)]/80 font-medium" htmlFor={`${formId}-confirmPassword`}>Confirm New Password</label>
           <div className="relative group">
             <input
               type="password"
@@ -166,7 +166,7 @@ const ChangePassword = () => {
               required
               title="Re-enter your new password to confirm"
             />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60 group-hover:text-primary transition-colors duration-200">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-primary)]/60 group-hover:text-primary transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -187,14 +187,14 @@ const ChangePassword = () => {
           <button
             type="submit"
             disabled={loading || !passwordsMatch || !values.currentPassword || !values.newPassword}
-            className="px-4 py-2 bg-indigo-600 rounded-md text-white transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/20"
+            className="px-4 py-2 bg-indigo-600 rounded-md text-[var(--text-primary)] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/20"
             title={loading ? "Changing your password..." : "Update your account password"}
           >
             {loading ? "Saving..." : "Change Password"}
           </button>
           <button
             type="button"
-            className="text-sm text-white/70 hover:text-white hover:underline transition-all duration-200 hover:scale-105 active:scale-95"
+            className="text-sm text-[var(--text-primary)]/70 hover:text-[var(--text-primary)] hover:underline transition-all duration-200 hover:scale-105 active:scale-95"
             onClick={() => navigate(-1)}
             title="Go back to previous page"
           >
