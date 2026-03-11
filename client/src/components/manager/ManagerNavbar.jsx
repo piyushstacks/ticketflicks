@@ -34,9 +34,9 @@ const ManagerNavbar = () => {
 
   const handleLogout = async () => {
     try {
+      toast.success("Logged out successfully");
       await logout();
       navigate("/login");
-      toast.success("Logged out successfully");
     } catch (error) {
       toast.error("Failed to logout");
     }

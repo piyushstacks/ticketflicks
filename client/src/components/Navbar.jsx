@@ -6,6 +6,7 @@ import { useAppContext } from "../context/AppContext";
 import { useAuthContext } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import UniversalSearch from "./UniversalSearch";
+import toast from "react-hot-toast";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -204,7 +205,12 @@ const Navbar = () => {
                     <div style={{ borderTop: "1px solid var(--border)" }} className="py-1">
                       <button
                         type="button"
-                        onClick={() => { logout(); setIsProfileOpen(false); }}
+                        onClick={() => { 
+                          toast.success("Logged out successfully");
+                          logout(); 
+                          setIsProfileOpen(false); 
+                          navigate("/login");
+                        }}
                         className="w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-3 transition-all duration-200 text-red-500 hover:bg-red-500/10"
                       >
                         <LogOut className="w-4 h-4" />
