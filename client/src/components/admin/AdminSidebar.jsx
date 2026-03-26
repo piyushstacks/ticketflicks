@@ -8,6 +8,7 @@ import {
   ListCollapseIcon,
   ListIcon,
   PlusSquareIcon,
+  BarChart3,
 } from "lucide-react";
 import React from "react";
 import { assets } from "../../assets/assets";
@@ -27,6 +28,7 @@ const AdminSidebar = () => {
     { name: "Shows Running", path: "/admin/shows", icon: Monitor },
     { name: "Bookings", path: "/admin/bookings", icon: Ticket },
     { name: "Payments", path: "/admin/payments-list", icon: CreditCard },
+    { name: "Reports", path: "/admin/reports", icon: BarChart3 },
   ];
 
   return (

@@ -312,6 +312,14 @@ export const downloadTargetedReport = asyncHandler(async (req, res) => {
     });
   }
 
+  // ── Advanced filter params ───────────────────────────────────────────────
+  const startDate   = req.query.startDate   || "";
+  const endDate     = req.query.endDate     || "";
+  const sortBy      = req.query.sortBy      || "date";
+  const sortOrder   = req.query.sortOrder   || "desc";
+  const topN        = req.query.topN        || "0";
+  const movieFilter = req.query.movieFilter || "";
+
   const projectRoot = path.resolve(__dirname, "../..");
   const analyticsDir = path.join(projectRoot, "analytics");
   const reportsDir = path.join(analyticsDir, "reports");
@@ -324,7 +332,18 @@ export const downloadTargetedReport = asyncHandler(async (req, res) => {
   fs.mkdirSync(reportsDir, { recursive: true });
 
   const typesArg = types.join(" ");
-  const cmd = `python3 "${script}" --types ${typesArg}`;
+
+  // Build filter flags (only include non-empty values to keep the command clean)
+  const filterFlags = [
+    startDate   ? `--start_date "${startDate}"`     : "",
+    endDate     ? `--end_date "${endDate}"`         : "",
+    sortBy      ? `--sort_by "${sortBy}"`           : "",
+    sortOrder   ? `--sort_order "${sortOrder}"`     : "",
+    topN && topN !== "0" ? `--top_n "${topN}"`      : "",
+    movieFilter ? `--movie_filter "${movieFilter}"` : "",
+  ].filter(Boolean).join(" ");
+
+  const cmd = `python3 "${script}" --types ${typesArg} ${filterFlags}`.trim();
 
   console.log("[Analytics] Running targeted report:", cmd);
 

@@ -45,6 +45,8 @@ const AddShows              = lazy(() => import("./pages/admin/AddShows"));
 const ListShows             = lazy(() => import("./pages/admin/ListShows"));
 const ListBookings          = lazy(() => import("./pages/admin/ListBookings"));
 const ListFeedbacks         = lazy(() => import("./pages/admin/ListFeedbacks"));
+const AdminReports          = lazy(() => import("./pages/admin/AdminReports"));
+
 
 // Manager
 const ManagerLayout         = lazy(() => import("./pages/manager/ManagerLayout"));
@@ -128,6 +130,7 @@ const App = () => {
           <Route path="list-shows" element={<ListShows />} />
           <Route path="list-bookings" element={<ListBookings />} />
           <Route path="feedbacks" element={<ListFeedbacks />} />
+          <Route path="reports" element={<AdminReports />} />
         </Route>
 
         {/* Manager Routes */}

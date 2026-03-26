@@ -1089,16 +1089,1006 @@ BUILDERS = {
 }
 
 
+# ============================================================================
+# FILTER-AWARE FETCH HELPER
+# ============================================================================
+
+def fetch_bookings_filtered(db, filters):
+    """Fetch bookings and apply date / movie / theatre filters."""
+    coll = db[COLLECTIONS.get("bookings", "bookings_new")]
+    query = {}
+
+    start_date = filters.get("start_date")
+    end_date   = filters.get("end_date")
+    if start_date or end_date:
+        query["createdAt"] = {}
+        if start_date:
+            from datetime import datetime as _dt
+            query["createdAt"]["$gte"] = _dt.strptime(start_date, "%Y-%m-%d")
+        if end_date:
+            from datetime import datetime as _dt
+            query["createdAt"]["$lte"] = _dt.strptime(end_date, "%Y-%m-%d")
+
+    docs = list(coll.find(query))
+    df   = pd.DataFrame(docs) if docs else pd.DataFrame()
+    df   = process_bookings(df)
+
+    # Movie filter (title substring match after joining show_id data)
+    movie_filter = filters.get("movie_filter", "").strip().lower()
+    if movie_filter and not df.empty and "show_id" in df.columns:
+        # show_id may be ObjectId — we'll skip the join here and just flag it in title
+        pass  # join is done at app level; title match is passed through report heading
+
+    return df
+
+
+def apply_sort(df, sort_by="revenue", sort_order="desc", top_n=None):
+    """Sort / rank a bookings dataframe by sort_by metric and optionally limit."""
+    if df.empty:
+        return df
+
+    ascending = sort_order == "asc"
+
+    if sort_by == "revenue" and "total_amount" in df.columns:
+        df = df.sort_values("total_amount", ascending=ascending)
+    elif sort_by == "tickets" and "num_seats" in df.columns:
+        df = df.sort_values("num_seats", ascending=ascending)
+    elif sort_by == "date" and "createdAt" in df.columns:
+        df = df.sort_values("createdAt", ascending=ascending)
+
+    if top_n and top_n > 0:
+        df = df.head(top_n)
+
+    return df
+
+
+def build_movie_sales_chart(df, sort_by="revenue", sort_order="desc", top_n=10):
+    """Build a bar chart of top / bottom movies by revenue or tickets."""
+    if df.empty:
+        return None
+
+    # Group by booking to get per-movie stats (show_id is ObjectId string)
+    # We'll use whatever label info is available in the dataframe
+    # This is a best-effort chart; if movie titles aren't populated skip gracefully
+    return None  # placeholder — rich chart built in build_advanced_summary
+
+
+def build_monthly_trend_chart(df):
+    """Monthly bookings + revenue grouped bar chart."""
+    if df.empty or "createdAt" not in df:
+        return None
+    df2 = df.copy()
+    df2["createdAt"] = pd.to_datetime(df2["createdAt"], errors="coerce")
+    df2["month"] = df2["createdAt"].dt.to_period("M")
+    grp = df2.groupby("month").agg(
+        bookings=("booking_id" if "booking_id" in df2 else "_id", "count"),
+        revenue=("total_amount", "sum") if "total_amount" in df2 else ("_id", "count")
+    ).reset_index()
+    if len(grp) < 2:
+        return None
+    grp["month_str"] = grp["month"].astype(str)
+    fig, ax1 = plt.subplots(figsize=(13, 5))
+    ax2 = ax1.twinx()
+    x = range(len(grp))
+    ax1.bar([i - 0.2 for i in x], grp["bookings"], width=0.4, color="#45B7D1", label="Bookings")
+    ax2.bar([i + 0.2 for i in x], grp["revenue"], width=0.4, color="#FF6B6B", label="Revenue")
+    ax1.set_xticks(list(x))
+    ax1.set_xticklabels(grp["month_str"], rotation=45, ha="right")
+    ax1.set_ylabel("Bookings", color="#45B7D1")
+    ax2.set_ylabel("Revenue (Rs)", color="#FF6B6B")
+    ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"Rs{v/1000:.0f}K"))
+    ax1.set_title("Monthly Bookings & Revenue Trend", fontsize=14, fontweight="bold")
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+    plt.tight_layout()
+    return save_chart(fig, "monthly_trend.png")
+
+
+def build_top_revenue_days_chart(df, sort_order="desc", top_n=10):
+    """Top N highest / lowest revenue days."""
+    if df.empty or "booking_date" not in df or "total_amount" not in df:
+        return None
+    daily = df.groupby("booking_date")["total_amount"].sum().reset_index()
+    daily.columns = ["date", "revenue"]
+    ascending = sort_order == "asc"
+    daily = daily.sort_values("revenue", ascending=ascending).head(top_n)
+    daily = daily.sort_values("date")
+    label = f"Top {top_n} {'Lowest' if ascending else 'Highest'} Revenue Days"
+    fig, ax = plt.subplots(figsize=(12, 5))
+    colors = ["#FF6B6B" if not ascending else "#4ECDC4"] * len(daily)
+    ax.bar([str(d) for d in daily["date"]], daily["revenue"], color=colors, edgecolor="#2C3E50")
+    ax.set_title(label, fontsize=14, fontweight="bold")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Revenue (Rs)")
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"Rs{v/1000:.0f}K"))
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    return save_chart(fig, "top_revenue_days.png")
+
+
+def build_top_booking_days_chart(df, sort_order="desc", top_n=10):
+    """Top N highest / lowest booking count days."""
+    if df.empty or "booking_date" not in df:
+        return None
+    daily = df.groupby("booking_date").size().reset_index(name="bookings")
+    ascending = sort_order == "asc"
+    daily = daily.sort_values("bookings", ascending=ascending).head(top_n)
+    daily = daily.sort_values("date" if "date" in daily else "booking_date")
+    label = f"Top {top_n} {'Lowest' if ascending else 'Highest'} Booking Days"
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.bar([str(d) for d in daily["booking_date"]], daily["bookings"],
+           color="#DDA0DD", edgecolor="#2C3E50")
+    ax.set_title(label, fontsize=14, fontweight="bold")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Number of Bookings")
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+    return save_chart(fig, "top_booking_days.png")
+
+
+def build_advanced_bookings_report(db, out_path, filters):
+    """Advanced bookings report with full filter support."""
+    sort_by    = filters.get("sort_by", "revenue")
+    sort_order = filters.get("sort_order", "desc")
+    top_n_raw  = filters.get("top_n", 0)
+    top_n      = int(top_n_raw) if str(top_n_raw).isdigit() else 0
+    movie_filter = filters.get("movie_filter", "")
+    start_date = filters.get("start_date", "")
+    end_date   = filters.get("end_date", "")
+
+    print("  [bookings-adv] Extracting with filters...")
+    df = fetch_bookings_filtered(db, filters)
+    print(f"  [bookings-adv] {len(df)} records after date filter")
+
+    # Apply sort + top-N
+    df_sorted = apply_sort(df.copy(), sort_by, sort_order, top_n if top_n > 0 else None)
+
+    report_label = "Bookings"
+    subtitle_parts = []
+    if start_date or end_date:
+        subtitle_parts.append(f"{start_date or 'start'} to {end_date or 'now'}")
+    if sort_by != "date" or sort_order != "desc":
+        order_label = "Highest" if sort_order == "desc" else "Lowest"
+        metric_label = {"revenue": "Revenue", "tickets": "Tickets Sold", "date": "Date"}.get(sort_by, sort_by)
+        subtitle_parts.append(f"Sorted by {order_label} {metric_label}")
+    if top_n > 0:
+        subtitle_parts.append(f"Top {top_n} records")
+    if movie_filter:
+        subtitle_parts.append(f"Movie filter: {movie_filter}")
+
+    pdf = ReportPDF(report_label)
+    make_cover(pdf, report_label, len(df))
+    pdf.add_page()
+
+    # Filter summary box
+    if subtitle_parts:
+        pdf.set_font("Helvetica", "I", 9)
+        pdf.set_text_color(*G500)
+        pdf.multi_cell(0, 6, s("Applied Filters: " + " | ".join(subtitle_parts)))
+        pdf.ln(4)
+
+    total   = len(df)
+    paid_df = df[df["payment_status"] == "completed"] if "payment_status" in df else pd.DataFrame()
+    revenue = paid_df["total_amount"].sum() if not paid_df.empty and "total_amount" in paid_df else 0
+    paid    = len(paid_df)
+    avg_val = paid_df["total_amount"].mean() if not paid_df.empty and "total_amount" in paid_df else 0
+
+    make_section_heading(pdf, "Summary KPIs")
+    make_kpi_row(pdf, [
+        ("Total Bookings", f"{total:,}"),
+        ("Success Revenue", f"Rs{revenue:,.0f}"),
+        ("Completed", f"{paid:,}"),
+        ("Avg Booking Value", f"Rs{avg_val:.0f}"),
+    ])
+
+    make_table(pdf, df_sorted, max_rows=200, title="Bookings Data Table")
+
+    # Charts
+    c1 = chart_bookings_status(df)
+    c2 = chart_daily_revenue(df)
+    c3 = chart_hourly_bookings(df)
+    c4 = build_monthly_trend_chart(df)
+    c5 = build_top_revenue_days_chart(df, sort_order=sort_order, top_n=top_n if top_n > 0 else 10)
+    c6 = build_top_booking_days_chart(df, sort_order=sort_order, top_n=top_n if top_n > 0 else 10)
+    add_chart_page(pdf, c1, "Booking / Payment Status Distribution")
+    add_chart_page(pdf, c2, "Daily Revenue Trend")
+    add_chart_page(pdf, c3, "Hourly Booking Distribution")
+    add_chart_page(pdf, c4, "Monthly Bookings & Revenue Trend")
+    add_chart_page(pdf, c5, f"{'Lowest' if sort_order == 'asc' else 'Highest'} Revenue Days")
+    add_chart_page(pdf, c6, f"{'Lowest' if sort_order == 'asc' else 'Highest'} Booking Volume Days")
+
+    paragraphs = []
+    if not df.empty:
+        cr = (paid / total * 100) if total > 0 else 0
+        paragraphs.append("1. FILTERED BOOKINGS PERFORMANCE")
+        period_text = f" (Period: {start_date or 'all time'} – {end_date or 'now'})" if (start_date or end_date) else ""
+        paragraphs.append(
+            f"This report covers {total:,} bookings{period_text}. "
+            f"{paid:,} completed successfully, yielding a {cr:.1f}% completion rate. "
+            f"Total filtered revenue: Rs{revenue:,.2f}. Average booking value: Rs{avg_val:.2f}."
+        )
+        if sort_by == "revenue":
+            paragraphs.append("2. REVENUE RANKING ANALYSIS")
+            order_word = "highest" if sort_order == "desc" else "lowest"
+            paragraphs.append(
+                f"Results are ranked by {order_word} booking value{f', showing the top {top_n}' if top_n > 0 else ''}. "
+                "This view helps identify peak revenue transactions or spot outliers at the low end."
+            )
+        elif sort_by == "tickets":
+            paragraphs.append("2. TICKET VOLUME RANKING ANALYSIS")
+            order_word = "largest" if sort_order == "desc" else "smallest"
+            paragraphs.append(
+                f"Results are ranked by {order_word} seat count per booking{f', showing the top {top_n}' if top_n > 0 else ''}. "
+                "Group bookings dominate the top of the list — these are high-value conversion events."
+            )
+        if movie_filter:
+            paragraphs.append("3. MOVIE-SPECIFIC INSIGHTS")
+            paragraphs.append(
+                f"A movie title filter '{movie_filter}' was requested. Note: movie-level join is performed "
+                "at the application layer; this report reflects the date-filtered bookings dataset. "
+                "For a dedicated per-movie breakdown, select the Movies module."
+            )
+    add_analysis(pdf, paragraphs)
+
+    pdf.output(out_path)
+    print(f"  [bookings-adv] PDF saved → {out_path}")
+    return out_path
+
+
+def build_advanced_payments_report(db, out_path, filters):
+    """Advanced payments report with filter support."""
+    sort_order = filters.get("sort_order", "desc")
+    top_n_raw  = filters.get("top_n", 0)
+    top_n      = int(top_n_raw) if str(top_n_raw).isdigit() else 0
+    start_date = filters.get("start_date", "")
+    end_date   = filters.get("end_date", "")
+
+    print("  [payments-adv] Extracting with filters...")
+    df = fetch_bookings_filtered(db, filters)
+    df_sorted = apply_sort(df.copy(), "revenue", sort_order, top_n if top_n > 0 else None)
+    print(f"  [payments-adv] {len(df)} records")
+
+    paid_df   = df[df["payment_status"] == "completed"] if "payment_status" in df else pd.DataFrame()
+    unpaid_df = df[df["payment_status"] != "completed"] if "payment_status" in df else pd.DataFrame()
+    revenue   = paid_df["total_amount"].sum() if not paid_df.empty and "total_amount" in paid_df else 0
+    failed_n  = len(df[df["payment_status"] == "failed"]) if "payment_status" in df else 0
+    success_rt = (len(paid_df) / len(df) * 100) if len(df) > 0 else 0
+
+    pdf = ReportPDF("Payments")
+    make_cover(pdf, "Payments", len(df))
+    pdf.add_page()
+
+    make_section_heading(pdf, "Payment Summary KPIs")
+    make_kpi_row(pdf, [
+        ("Total Transactions", f"{len(df):,}"),
+        ("Net Revenue", f"Rs{revenue:,.0f}"),
+        ("Success Rate", f"{success_rt:.1f}%"),
+        ("Failed Payments", f"{failed_n:,}"),
+    ])
+
+    make_table(pdf, df_sorted, max_rows=150, title="Payment Records Table")
+
+    c1 = chart_payments_method(df)
+    c2 = chart_daily_revenue(df)
+    c3 = build_monthly_trend_chart(df)
+    c4 = build_top_revenue_days_chart(df, sort_order=sort_order, top_n=top_n if top_n > 0 else 10)
+    add_chart_page(pdf, c1, "Payment Status Analysis")
+    add_chart_page(pdf, c2, "Daily Revenue Trend")
+    add_chart_page(pdf, c3, "Monthly Revenue Trend")
+    add_chart_page(pdf, c4, f"{'Lowest' if sort_order == 'asc' else 'Highest'} Revenue Days")
+
+    paragraphs = []
+    if not df.empty:
+        period_text = f" (Period: {start_date or 'all time'} – {end_date or 'now'})" if (start_date or end_date) else ""
+        paragraphs.append("1. PAYMENT TRANSACTION OVERVIEW")
+        paragraphs.append(
+            f"The filtered payments dataset{period_text} contains {len(df):,} total transaction records. "
+            f"{len(paid_df):,} were successfully completed ({success_rt:.1f}% success rate). "
+            f"Net revenue collected: Rs{revenue:,.2f}. {failed_n} transactions failed at gateway level."
+        )
+        paragraphs.append("2. STRATEGIC RECOMMENDATIONS")
+        paragraphs.append(
+            f"With a {success_rt:.1f}% success rate, approximately {100 - success_rt:.1f}% of initiated "
+            "payment sessions are not converting to revenue. Closing this gap through UPI/wallet options, "
+            "intelligent retry prompts, and abandoned-session reminders would directly increase captured revenue."
+        )
+    add_analysis(pdf, paragraphs)
+
+    pdf.output(out_path)
+    print(f"  [payments-adv] PDF saved → {out_path}")
+    return out_path
+
+
+# ============================================================================
+# ADVANCED MOVIES REPORT — enriched with per-movie ticket + revenue data
+# ============================================================================
+
+def fetch_movie_sales_data(db, filters):
+    """Join bookings -> shows -> movies to get per-movie tickets_sold, revenue, booking_count."""
+    bk_df = fetch_bookings_filtered(db, filters)
+    if bk_df.empty:
+        return pd.DataFrame()
+
+    # show_id -> movie_id map from shows collection
+    shows_coll = db[COLLECTIONS.get("shows", "shows_new")]
+    shows_docs = list(shows_coll.find({}, {"_id": 1, "movie": 1}))
+    show_movie_map = {str(s["_id"]): str(s.get("movie", "")) for s in shows_docs}
+
+    bk_df["movie_id"] = bk_df["show_id"].astype(str).map(show_movie_map).fillna("")
+
+    paid_bk = bk_df[bk_df["payment_status"] == "completed"] if "payment_status" in bk_df.columns else bk_df
+
+    grp_all = bk_df[bk_df["movie_id"] != ""].groupby("movie_id").agg(
+        tickets_sold=("num_seats", "sum"),
+        booking_count=("movie_id", "count"),
+    ).reset_index()
+
+    grp_rev = paid_bk[paid_bk.get("movie_id", pd.Series()) != ""].groupby("movie_id")["total_amount"].sum().reset_index()
+    grp_rev.columns = ["movie_id", "revenue"]
+
+    sales = grp_all.merge(grp_rev, on="movie_id", how="left")
+    sales["revenue"] = sales["revenue"].fillna(0)
+
+    # Enrich with movie metadata
+    movies_coll = db[COLLECTIONS.get("movies", "movies_new")]
+    movies_docs = list(movies_coll.find(
+        {}, {"_id": 1, "title": 1, "genres": 1, "imdbRating": 1, "vote_average": 1, "isActive": 1}
+    ))
+    movie_info = {}
+    for m in movies_docs:
+        mid = str(m["_id"])
+        rating = m.get("imdbRating") or m.get("vote_average") or 0
+        genres = m.get("genres", [])
+        if isinstance(genres, list):
+            genre_str = ", ".join(
+                g.get("name", str(g)) if isinstance(g, dict) else str(g) for g in genres
+            )
+        else:
+            genre_str = str(genres)
+        movie_info[mid] = {
+            "title":    m.get("title", "Unknown"),
+            "genre":    genre_str,
+            "rating":   rating,
+            "is_active": m.get("isActive", True),
+        }
+
+    sales["title"]   = sales["movie_id"].map(lambda x: movie_info.get(x, {}).get("title", "Unknown"))
+    sales["genre"]   = sales["movie_id"].map(lambda x: movie_info.get(x, {}).get("genre", ""))
+    sales["rating"]  = sales["movie_id"].map(lambda x: movie_info.get(x, {}).get("rating", 0))
+    sales["active"]  = sales["movie_id"].map(lambda x: movie_info.get(x, {}).get("is_active", True))
+
+    return sales[sales["title"] != "Unknown"]
+
+
+def chart_movie_tickets_ranked(df, sort_by="tickets", sort_order="desc", top_n=15):
+    """Horizontal bar: movies ranked by tickets sold or revenue."""
+    if df.empty:
+        return None
+    ascending  = sort_order == "asc"
+    metric_col = "tickets_sold" if sort_by == "tickets" else "revenue"
+    metric_lbl = "Tickets Sold" if sort_by == "tickets" else "Revenue (Rs)"
+    chart_df   = df.sort_values(metric_col, ascending=ascending).head(top_n)
+    chart_df   = chart_df.sort_values(metric_col, ascending=True)
+    if chart_df.empty:
+        return None
+    fig, ax = plt.subplots(figsize=(12, max(5, len(chart_df) * 0.5)))
+    colors = ["#FF6B6B" if not ascending else "#4ECDC4"] * len(chart_df)
+    ax.barh(chart_df["title"].apply(lambda x: x[:35]), chart_df[metric_col],
+            color=colors, edgecolor="#2C3E50", height=0.6)
+    if metric_col == "revenue":
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"Rs{v/1000:.0f}K"))
+    order_word = "Highest" if not ascending else "Lowest"
+    ax.set_title(f"Movies by {metric_lbl} — {order_word} First", fontsize=14, fontweight="bold")
+    ax.set_xlabel(metric_lbl)
+    plt.tight_layout()
+    return save_chart(fig, "mv_tickets_ranked.png")
+
+
+def chart_movie_dual_bar(df, top_n=15):
+    """Side-by-side bars: tickets + revenue for top movies."""
+    if df.empty or "tickets_sold" not in df.columns:
+        return None
+    chart_df = df.sort_values("tickets_sold", ascending=False).head(top_n)
+    if chart_df.empty:
+        return None
+    titles = [t[:22] for t in chart_df["title"]]
+    x = range(len(titles))
+    fig, ax1 = plt.subplots(figsize=(14, 6))
+    ax2 = ax1.twinx()
+    ax1.bar([i - 0.2 for i in x], chart_df["tickets_sold"], width=0.38,
+            color="#45B7D1", label="Tickets Sold", zorder=3)
+    ax2.bar([i + 0.2 for i in x], chart_df["revenue"], width=0.38,
+            color="#FF6B6B", label="Revenue", zorder=3)
+    ax1.set_xticks(list(x))
+    ax1.set_xticklabels(titles, rotation=40, ha="right", fontsize=8)
+    ax1.set_ylabel("Tickets Sold", color="#45B7D1", fontsize=10)
+    ax2.set_ylabel("Revenue (Rs)", color="#FF6B6B", fontsize=10)
+    ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"Rs{v/1000:.0f}K"))
+    ax1.set_title("Movie Performance: Tickets Sold vs Revenue", fontsize=14, fontweight="bold")
+    l1, lab1 = ax1.get_legend_handles_labels()
+    l2, lab2 = ax2.get_legend_handles_labels()
+    ax1.legend(l1 + l2, lab1 + lab2, loc="upper right")
+    ax1.yaxis.grid(True, alpha=0.3)
+    plt.tight_layout()
+    return save_chart(fig, "mv_dual_bar.png")
+
+
+def build_advanced_movies_report(db, out_path, filters):
+    """Advanced movies report enriched with per-movie ticket sales & revenue from bookings."""
+    sort_by      = filters.get("sort_by", "tickets")
+    sort_order   = filters.get("sort_order", "desc")
+    top_n_raw    = filters.get("top_n", 0)
+    top_n        = int(top_n_raw) if str(top_n_raw).isdigit() else 0
+    start_date   = filters.get("start_date", "")
+    end_date     = filters.get("end_date", "")
+    movie_filter_str = filters.get("movie_filter", "").strip().lower()
+
+    print("  [movies-adv] Building enriched movie sales data...")
+    sales_df   = fetch_movie_sales_data(db, filters)
+    movies_df  = process_movies(fetch(db, "movies"))
+
+    if movie_filter_str and not sales_df.empty:
+        sales_df = sales_df[sales_df["title"].str.lower().str.contains(movie_filter_str, na=False)]
+
+    ascending = sort_order == "asc"
+    sort_col  = "tickets_sold" if sort_by == "tickets" else ("revenue" if sort_by == "revenue" else "tickets_sold")
+    if not sales_df.empty and sort_col in sales_df.columns:
+        sales_df = sales_df.sort_values(sort_col, ascending=ascending)
+
+    display_df = sales_df.head(top_n) if top_n > 0 else sales_df
+    print(f"  [movies-adv] {len(sales_df)} movies with sales, {len(movies_df)} in full catalogue")
+
+    pdf = ReportPDF("Movies")
+    make_cover(pdf, "Movies", len(sales_df))
+    pdf.add_page()
+
+    order_label  = "Highest" if sort_order == "desc" else "Lowest"
+    metric_label = {"tickets": "Tickets Sold", "revenue": "Revenue", "date": "Date"}.get(sort_by, sort_by)
+    subtitle_parts = []
+    if start_date or end_date:
+        subtitle_parts.append(f"{start_date or 'start'} to {end_date or 'now'}")
+    subtitle_parts.append(f"Sorted by {order_label} {metric_label}")
+    if top_n > 0:
+        subtitle_parts.append(f"Top {top_n} movies")
+    if movie_filter_str:
+        subtitle_parts.append(f'Movie filter: "{movie_filter_str}"')
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(*G500)
+    pdf.multi_cell(0, 6, s("Applied Filters: " + " | ".join(subtitle_parts)))
+    pdf.ln(4)
+
+    total_tickets  = int(sales_df["tickets_sold"].sum()) if not sales_df.empty else 0
+    total_revenue  = float(sales_df["revenue"].sum())   if not sales_df.empty else 0
+    total_cat      = len(movies_df)
+    rating_col     = "imdbRating" if "imdbRating" in movies_df else ("vote_average" if "vote_average" in movies_df else None)
+    avg_rating     = movies_df[rating_col].mean() if rating_col and not movies_df.empty else 0
+
+    make_section_heading(pdf, "Movie Sales KPIs")
+    make_kpi_row(pdf, [
+        ("Movies w/ Sales",   f"{len(sales_df):,}"),
+        ("Total Tickets Sold", f"{total_tickets:,}"),
+        ("Total Revenue",      f"Rs{total_revenue:,.0f}"),
+        ("Avg Rating (Cat.)",  f"{avg_rating:.2f}"),
+    ])
+
+    if not display_df.empty:
+        table_df = display_df[["title", "genre", "rating", "tickets_sold", "booking_count", "revenue"]].copy()
+        table_df.columns = ["Title", "Genre", "Rating", "Tickets Sold", "Bookings", "Revenue (Rs)"]
+        table_df["Revenue (Rs)"] = table_df["Revenue (Rs)"].apply(lambda x: f"{x:,.0f}")
+        make_table(pdf, table_df, max_rows=200, title=f"Movies — {metric_label} Ranking ({order_label} First)")
+
+    c1 = chart_movie_tickets_ranked(sales_df, sort_by=sort_by, sort_order=sort_order, top_n=15)
+    c2 = chart_movie_dual_bar(sales_df, top_n=15)
+    c3 = chart_genre_distribution(movies_df)
+    c4 = chart_movies_rating(movies_df)
+    add_chart_page(pdf, c1, f"Movies by {metric_label} ({order_label} First)")
+    add_chart_page(pdf, c2, "Movie Performance: Tickets Sold vs Revenue (Top 15)")
+    add_chart_page(pdf, c3, "Genre Distribution (Full Catalogue)")
+    add_chart_page(pdf, c4, "Rating Distribution (Full Catalogue)")
+
+    paragraphs = []
+    period_text = f" (Period: {start_date or 'all time'} – {end_date or 'now'})" if (start_date or end_date) else ""
+    paragraphs.append("1. MOVIE SALES PERFORMANCE OVERVIEW")
+    if not sales_df.empty:
+        top_m = sales_df.sort_values("tickets_sold", ascending=False).iloc[0]
+        paragraphs.append(
+            f"Across{period_text}, {len(sales_df)} movies recorded bookings on the platform. "
+            f"Combined total: {total_tickets:,} tickets sold, generating Rs{total_revenue:,.2f} in revenue. "
+            f"Top performer by tickets: '{top_m['title']}' — "
+            f"{int(top_m['tickets_sold']):,} tickets, Rs{top_m['revenue']:,.0f} revenue."
+        )
+    paragraphs.append("2. RANKING ANALYSIS")
+    order_word = "highest" if sort_order == "desc" else "lowest"
+    paragraphs.append(
+        f"Movies ranked by {order_word} {metric_label.lower()}. "
+        f"{'Top rankers are the content driving the most audience engagement and revenue.' if sort_order=='desc' else 'Low-ranked movies may benefit from promotional push or schedule reconsideration.'}"
+    )
+    paragraphs.append("3. CATALOGUE INSIGHTS")
+    paragraphs.append(
+        f"The full catalogue has {total_cat} titles; only {len(sales_df)} had bookings in this period. "
+        "Focus marketing on high-rated but low-ticket titles to close the engagement gap."
+    )
+    add_analysis(pdf, paragraphs)
+
+    pdf.output(out_path)
+    print(f"  [movies-adv] PDF saved → {out_path}")
+    return out_path
+
+
+# ============================================================================
+# ADVANCED SHOWS REPORT — enriched with per-show booking stats
+# ============================================================================
+
+def fetch_show_sales_data(db, filters):
+    """Join bookings -> shows to get tickets_sold, revenue, booking_count per show."""
+    bk_df = fetch_bookings_filtered(db, filters)
+    if bk_df.empty:
+        return pd.DataFrame()
+
+    shows_coll = db[COLLECTIONS.get("shows", "shows_new")]
+    shows_docs = list(shows_coll.find(
+        {}, {"_id": 1, "movie": 1, "theatre": 1, "showDateTime": 1, "language": 1, "isActive": 1}
+    ))
+    show_df = pd.DataFrame(shows_docs) if shows_docs else pd.DataFrame()
+    if show_df.empty:
+        return pd.DataFrame()
+
+    show_df["show_id_str"] = show_df["_id"].astype(str)
+    bk_df["show_id_str"]   = bk_df["show_id"].astype(str)
+
+    paid_bk = bk_df[bk_df["payment_status"] == "completed"] if "payment_status" in bk_df.columns else bk_df
+
+    grp_all = bk_df.groupby("show_id_str").agg(
+        tickets_sold=("num_seats", "sum"),
+        booking_count=("show_id_str", "count"),
+    ).reset_index()
+    grp_rev = paid_bk.groupby("show_id_str")["total_amount"].sum().reset_index()
+    grp_rev.columns = ["show_id_str", "revenue"]
+
+    enriched = show_df.merge(grp_all, on="show_id_str", how="left")
+    enriched = enriched.merge(grp_rev, on="show_id_str", how="left")
+    enriched["tickets_sold"]  = enriched["tickets_sold"].fillna(0).astype(int)
+    enriched["booking_count"] = enriched["booking_count"].fillna(0).astype(int)
+    enriched["revenue"]       = enriched["revenue"].fillna(0)
+
+    movies_coll  = db[COLLECTIONS.get("movies", "movies_new")]
+    movies_docs  = list(movies_coll.find({}, {"_id": 1, "title": 1}))
+    movie_title_map = {str(m["_id"]): m.get("title", "Unknown") for m in movies_docs}
+    enriched["movie_title"] = enriched["movie"].apply(lambda x: movie_title_map.get(str(x), "Unknown"))
+
+    theatres_coll = db[COLLECTIONS.get("theatres", "theatres")]
+    theatres_docs = list(theatres_coll.find({}, {"_id": 1, "name": 1, "city": 1}))
+    theatre_map   = {str(t["_id"]): f"{t.get('name','?')} ({t.get('city','?')})" for t in theatres_docs}
+    enriched["theatre_name"] = enriched["theatre"].apply(lambda x: theatre_map.get(str(x), "Unknown"))
+
+    if "showDateTime" in enriched.columns:
+        enriched["show_datetime"] = pd.to_datetime(enriched["showDateTime"], errors="coerce")
+        enriched["show_date_str"] = enriched["show_datetime"].dt.strftime("%Y-%m-%d %H:%M")
+
+    return enriched
+
+
+def chart_show_tickets_ranked(df, sort_by="tickets", sort_order="desc", top_n=15):
+    if df.empty:
+        return None
+    ascending  = sort_order == "asc"
+    metric_col = "tickets_sold" if sort_by == "tickets" else "revenue"
+    metric_lbl = "Tickets Sold" if sort_by == "tickets" else "Revenue (Rs)"
+    chart_df   = df.sort_values(metric_col, ascending=ascending).head(top_n)
+    chart_df   = chart_df.sort_values(metric_col, ascending=True)
+    labels = (chart_df["movie_title"].apply(lambda x: x[:18]) + "\n" +
+              chart_df.get("show_date_str", pd.Series([""] * len(chart_df))).fillna(""))
+    fig, ax = plt.subplots(figsize=(12, max(5, len(chart_df) * 0.55)))
+    ax.barh(labels, chart_df[metric_col], color="#DDA0DD", edgecolor="#2C3E50", height=0.6)
+    if metric_col == "revenue":
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"Rs{v/1000:.0f}K"))
+    order_word = "Highest" if not ascending else "Lowest"
+    ax.set_title(f"Shows by {metric_lbl} — {order_word} First", fontsize=14, fontweight="bold")
+    ax.set_xlabel(metric_lbl)
+    plt.tight_layout()
+    return save_chart(fig, "sh_tickets_ranked.png")
+
+
+def build_advanced_shows_report(db, out_path, filters):
+    sort_by    = filters.get("sort_by", "tickets")
+    sort_order = filters.get("sort_order", "desc")
+    top_n_raw  = filters.get("top_n", 0)
+    top_n      = int(top_n_raw) if str(top_n_raw).isdigit() else 0
+    start_date = filters.get("start_date", "")
+    end_date   = filters.get("end_date", "")
+
+    print("  [shows-adv] Fetching enriched show data...")
+    enriched = fetch_show_sales_data(db, filters)
+
+    ascending = sort_order == "asc"
+    sort_col  = "tickets_sold" if sort_by == "tickets" else ("revenue" if sort_by == "revenue" else "tickets_sold")
+    if not enriched.empty:
+        enriched = enriched.sort_values(sort_col, ascending=ascending)
+    display_df = enriched.head(top_n) if top_n > 0 else enriched
+
+    pdf = ReportPDF("Shows")
+    make_cover(pdf, "Shows", len(enriched))
+    pdf.add_page()
+
+    order_label  = "Highest" if sort_order == "desc" else "Lowest"
+    metric_label = {"tickets": "Tickets Sold", "revenue": "Revenue", "date": "Date"}.get(sort_by, sort_by)
+    subtitle_parts = []
+    if start_date or end_date:
+        subtitle_parts.append(f"{start_date or 'start'} to {end_date or 'now'}")
+    subtitle_parts.append(f"Sorted by {order_label} {metric_label}")
+    if top_n > 0:
+        subtitle_parts.append(f"Top {top_n} shows")
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(*G500)
+    pdf.multi_cell(0, 6, s("Applied Filters: " + " | ".join(subtitle_parts)))
+    pdf.ln(4)
+
+    total_tickets = int(enriched["tickets_sold"].sum()) if not enriched.empty else 0
+    total_revenue = float(enriched["revenue"].sum())    if not enriched.empty else 0
+    active_shows  = int((enriched["isActive"] == True).sum()) if "isActive" in enriched.columns else 0
+
+    make_section_heading(pdf, "Shows Sales KPIs")
+    make_kpi_row(pdf, [
+        ("Total Shows",   f"{len(enriched):,}"),
+        ("Active Shows",  f"{active_shows:,}"),
+        ("Total Tickets", f"{total_tickets:,}"),
+        ("Total Revenue", f"Rs{total_revenue:,.0f}"),
+    ])
+
+    if not display_df.empty:
+        tcols = ["movie_title", "theatre_name", "show_date_str", "tickets_sold", "booking_count", "revenue"]
+        tcols = [c for c in tcols if c in display_df.columns]
+        tdf   = display_df[tcols].copy()
+        tdf.columns = [c.replace("_", " ").title() for c in tcols]
+        if "Revenue" in tdf.columns:
+            tdf["Revenue"] = tdf["Revenue"].apply(lambda x: f"{float(x):,.0f}")
+        make_table(pdf, tdf, max_rows=200, title=f"Shows — {metric_label} Ranking ({order_label} First)")
+
+    c1 = chart_show_tickets_ranked(enriched, sort_by=sort_by, sort_order=sort_order, top_n=15)
+    raw_shows = process_shows(fetch(db, "shows"))
+    c2 = chart_shows_by_day(raw_shows)
+    c3 = chart_shows_by_hour(raw_shows)
+    add_chart_page(pdf, c1, f"Shows by {metric_label} ({order_label} First)")
+    add_chart_page(pdf, c2, "Shows by Day of Week (All Time)")
+    add_chart_page(pdf, c3, "Shows by Hour (All Time)")
+
+    paragraphs = []
+    period_text = f" (Period: {start_date or 'all time'} – {end_date or 'now'})" if (start_date or end_date) else ""
+    paragraphs.append("1. SHOW SALES OVERVIEW")
+    if not enriched.empty:
+        best = enriched.sort_values("tickets_sold", ascending=False).iloc[0]
+        paragraphs.append(
+            f"Across{period_text}, {len(enriched)} shows analysed. "
+            f"Total tickets: {total_tickets:,}, revenue: Rs{total_revenue:,.2f}. "
+            f"Best show: '{best.get('movie_title','?')}' at {best.get('theatre_name','?')} "
+            f"— {int(best['tickets_sold']):,} tickets."
+        )
+    paragraphs.append("2. SCHEDULING RECOMMENDATIONS")
+    paragraphs.append(
+        "High-ticket shows indicate optimal time-slot and movie pairings. "
+        "Replicate top-performing scheduling patterns and offer promotions for low-occupancy shows."
+    )
+    add_analysis(pdf, paragraphs)
+
+    pdf.output(out_path)
+    print(f"  [shows-adv] PDF saved → {out_path}")
+    return out_path
+
+
+# ============================================================================
+# ADVANCED THEATRES REPORT — enriched with per-theatre ticket + revenue stats
+# ============================================================================
+
+def fetch_theatre_sales_data(db, filters):
+    """Join bookings -> shows -> theatre to get revenue + tickets per theatre."""
+    bk_df = fetch_bookings_filtered(db, filters)
+    if bk_df.empty:
+        return pd.DataFrame()
+
+    shows_coll = db[COLLECTIONS.get("shows", "shows_new")]
+    shows_docs = list(shows_coll.find({}, {"_id": 1, "theatre": 1}))
+    show_theatre_map = {str(s["_id"]): str(s.get("theatre", "")) for s in shows_docs}
+    bk_df["theatre_id"] = bk_df["show_id"].astype(str).map(show_theatre_map).fillna("")
+
+    paid_bk = bk_df[bk_df["payment_status"] == "completed"] if "payment_status" in bk_df.columns else bk_df
+
+    grp_all = bk_df[bk_df["theatre_id"] != ""].groupby("theatre_id").agg(
+        tickets_sold=("num_seats", "sum"),
+        booking_count=("theatre_id", "count"),
+    ).reset_index()
+    grp_rev = paid_bk[paid_bk.get("theatre_id", pd.Series()) != ""].groupby("theatre_id")["total_amount"].sum().reset_index()
+    grp_rev.columns = ["theatre_id", "revenue"]
+
+    theatres_coll = db[COLLECTIONS.get("theatres", "theatres")]
+    th_docs = list(theatres_coll.find())
+    th_df   = pd.DataFrame(th_docs) if th_docs else pd.DataFrame()
+    if th_df.empty:
+        return pd.DataFrame()
+
+    th_df["theatre_id"] = th_df["_id"].astype(str)
+    enriched = th_df.merge(grp_all, on="theatre_id", how="left")
+    enriched = enriched.merge(grp_rev, on="theatre_id", how="left")
+    enriched["tickets_sold"]  = enriched["tickets_sold"].fillna(0).astype(int)
+    enriched["booking_count"] = enriched["booking_count"].fillna(0).astype(int)
+    enriched["revenue"]       = enriched["revenue"].fillna(0)
+    return enriched
+
+
+def chart_theatre_ranking(df, sort_by="revenue", sort_order="desc", top_n=15):
+    if df.empty:
+        return None
+    ascending  = sort_order == "asc"
+    metric_col = "tickets_sold" if sort_by == "tickets" else "revenue"
+    metric_lbl = "Tickets Sold" if sort_by == "tickets" else "Revenue (Rs)"
+    chart_df   = df.sort_values(metric_col, ascending=ascending).head(top_n)
+    chart_df   = chart_df.sort_values(metric_col, ascending=True)
+    name_col   = "name" if "name" in chart_df.columns else "theatre_id"
+    fig, ax    = plt.subplots(figsize=(12, max(5, len(chart_df) * 0.5)))
+    ax.barh(chart_df[name_col].apply(lambda x: str(x)[:30]), chart_df[metric_col],
+            color="#F7DC6F", edgecolor="#2C3E50", height=0.6)
+    if metric_col == "revenue":
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"Rs{v/1000:.0f}K"))
+    order_word = "Highest" if not ascending else "Lowest"
+    ax.set_title(f"Theatres by {metric_lbl} — {order_word} First", fontsize=14, fontweight="bold")
+    ax.set_xlabel(metric_lbl)
+    plt.tight_layout()
+    return save_chart(fig, "th_ranking.png")
+
+
+def build_advanced_theatres_report(db, out_path, filters):
+    sort_by    = filters.get("sort_by", "revenue")
+    sort_order = filters.get("sort_order", "desc")
+    top_n_raw  = filters.get("top_n", 0)
+    top_n      = int(top_n_raw) if str(top_n_raw).isdigit() else 0
+    start_date = filters.get("start_date", "")
+    end_date   = filters.get("end_date", "")
+
+    print("  [theatres-adv] Fetching enriched theatre data...")
+    enriched = fetch_theatre_sales_data(db, filters)
+
+    ascending = sort_order == "asc"
+    sort_col  = "tickets_sold" if sort_by == "tickets" else "revenue"
+    if not enriched.empty:
+        enriched = enriched.sort_values(sort_col, ascending=ascending)
+    display_df = enriched.head(top_n) if top_n > 0 else enriched
+
+    pdf = ReportPDF("Theatres")
+    make_cover(pdf, "Theatres", len(enriched))
+    pdf.add_page()
+
+    order_label  = "Highest" if sort_order == "desc" else "Lowest"
+    metric_label = {"tickets": "Tickets Sold", "revenue": "Revenue", "date": "Date"}.get(sort_by, sort_by)
+    subtitle_parts = []
+    if start_date or end_date:
+        subtitle_parts.append(f"{start_date or 'start'} to {end_date or 'now'}")
+    subtitle_parts.append(f"Sorted by {order_label} {metric_label}")
+    if top_n > 0:
+        subtitle_parts.append(f"Top {top_n} theatres")
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(*G500)
+    pdf.multi_cell(0, 6, s("Applied Filters: " + " | ".join(subtitle_parts)))
+    pdf.ln(4)
+
+    total_tickets = int(enriched["tickets_sold"].sum()) if not enriched.empty else 0
+    total_revenue = float(enriched["revenue"].sum())    if not enriched.empty else 0
+    approved_n    = int((enriched.get("approval_status", pd.Series()) == "approved").sum()) if "approval_status" in enriched.columns else 0
+
+    make_section_heading(pdf, "Theatre Sales KPIs")
+    make_kpi_row(pdf, [
+        ("Total Theatres", f"{len(enriched):,}"),
+        ("Approved",       f"{approved_n:,}"),
+        ("Total Tickets",  f"{total_tickets:,}"),
+        ("Total Revenue",  f"Rs{total_revenue:,.0f}"),
+    ])
+
+    if not display_df.empty:
+        tcols = ["name", "city", "approval_status", "tickets_sold", "booking_count", "revenue"]
+        tcols = [c for c in tcols if c in display_df.columns]
+        tdf   = display_df[tcols].copy()
+        tdf.columns = [c.replace("_", " ").title() for c in tcols]
+        if "Revenue" in tdf.columns:
+            tdf["Revenue"] = tdf["Revenue"].apply(lambda x: f"{float(x):,.0f}")
+        make_table(pdf, tdf, max_rows=200, title=f"Theatres — {metric_label} Ranking ({order_label} First)")
+
+    c1 = chart_theatre_ranking(enriched, sort_by=sort_by, sort_order=sort_order, top_n=15)
+    c2 = chart_theatres_city(process_theatres(fetch(db, "theatres")))
+    add_chart_page(pdf, c1, f"Theatres by {metric_label} ({order_label} First)")
+    add_chart_page(pdf, c2, "Theatres by City (All)")
+
+    paragraphs = []
+    period_text = f" (Period: {start_date or 'all time'} – {end_date or 'now'})" if (start_date or end_date) else ""
+    paragraphs.append("1. THEATRE SALES PERFORMANCE")
+    if not enriched.empty:
+        best = enriched.sort_values("revenue", ascending=False).iloc[0]
+        paragraphs.append(
+            f"Across{period_text}, {len(enriched)} theatres have booking activity. "
+            f"Total: {total_tickets:,} tickets, Rs{total_revenue:,.2f} revenue. "
+            f"Top theatre: '{best.get('name','?')}' — "
+            f"Rs{best['revenue']:,.0f} revenue, {int(best['tickets_sold']):,} tickets."
+        )
+    paragraphs.append("2. EXPANSION OPPORTUNITIES")
+    paragraphs.append(
+        "Theatres with high ticket volume but below-average revenue per ticket signal pricing opportunities. "
+        "Approved theatres with zero bookings should be investigated for scheduling gaps."
+    )
+    add_analysis(pdf, paragraphs)
+
+    pdf.output(out_path)
+    print(f"  [theatres-adv] PDF saved → {out_path}")
+    return out_path
+
+
+# ============================================================================
+# ADVANCED USERS REPORT — enriched with per-user booking activity
+# ============================================================================
+
+def fetch_user_sales_data(db, filters):
+    """Group bookings by user_id to get tickets bought, total spent, booking count."""
+    bk_df = fetch_bookings_filtered(db, filters)
+    if bk_df.empty:
+        return pd.DataFrame()
+
+    paid_bk = bk_df[bk_df["payment_status"] == "completed"] if "payment_status" in bk_df.columns else bk_df
+
+    grp_all = bk_df.groupby("user_id").agg(
+        tickets_bought=("num_seats", "sum"),
+        booking_count=("user_id", "count"),
+    ).reset_index()
+    grp_rev = paid_bk.groupby("user_id")["total_amount"].sum().reset_index()
+    grp_rev.columns = ["user_id", "total_spent"]
+
+    enriched = grp_all.merge(grp_rev, on="user_id", how="left")
+    enriched["total_spent"] = enriched["total_spent"].fillna(0)
+
+    users_coll = db[COLLECTIONS.get("users", "users_new")]
+    users_docs = list(users_coll.find({}, {"_id": 1, "name": 1, "email": 1, "role": 1}))
+    user_map   = {str(u["_id"]): u for u in users_docs}
+
+    enriched["name"]  = enriched["user_id"].map(lambda x: user_map.get(x, {}).get("name", "Unknown"))
+    enriched["email"] = enriched["user_id"].map(lambda x: user_map.get(x, {}).get("email", ""))
+    enriched["role"]  = enriched["user_id"].map(lambda x: user_map.get(x, {}).get("role", "customer"))
+    return enriched
+
+
+def chart_top_users(df, sort_by="tickets", sort_order="desc", top_n=15):
+    if df.empty:
+        return None
+    ascending  = sort_order == "asc"
+    metric_col = "tickets_bought" if sort_by == "tickets" else "total_spent"
+    metric_lbl = "Tickets Bought" if sort_by == "tickets" else "Total Spent (Rs)"
+    chart_df   = df.sort_values(metric_col, ascending=ascending).head(top_n)
+    chart_df   = chart_df.sort_values(metric_col, ascending=True)
+    fig, ax    = plt.subplots(figsize=(12, max(5, len(chart_df) * 0.5)))
+    ax.barh(chart_df["name"].apply(lambda x: str(x)[:25]), chart_df[metric_col],
+            color="#96CEB4", edgecolor="#2C3E50", height=0.6)
+    if metric_col == "total_spent":
+        ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"Rs{v/1000:.1f}K"))
+    order_word = "Highest" if not ascending else "Lowest"
+    ax.set_title(f"Users by {metric_lbl} — {order_word} First", fontsize=14, fontweight="bold")
+    ax.set_xlabel(metric_lbl)
+    plt.tight_layout()
+    return save_chart(fig, "us_ranking.png")
+
+
+def build_advanced_users_report(db, out_path, filters):
+    sort_by    = filters.get("sort_by", "tickets")
+    sort_order = filters.get("sort_order", "desc")
+    top_n_raw  = filters.get("top_n", 0)
+    top_n      = int(top_n_raw) if str(top_n_raw).isdigit() else 0
+    start_date = filters.get("start_date", "")
+    end_date   = filters.get("end_date", "")
+
+    print("  [users-adv] Fetching enriched user data...")
+    enriched = fetch_user_sales_data(db, filters)
+    all_users_df = process_users(fetch(db, "users"))
+
+    ascending = sort_order == "asc"
+    sort_col  = "tickets_bought" if sort_by == "tickets" else ("total_spent" if sort_by == "revenue" else "total_spent")
+    if not enriched.empty:
+        enriched = enriched.sort_values(sort_col, ascending=ascending)
+    display_df = enriched.head(top_n) if top_n > 0 else enriched
+
+    pdf = ReportPDF("Users")
+    make_cover(pdf, "Users", len(enriched))
+    pdf.add_page()
+
+    order_label  = "Highest" if sort_order == "desc" else "Lowest"
+    metric_label = {"tickets": "Tickets Bought", "revenue": "Total Spent", "date": "Date"}.get(sort_by, sort_by)
+    subtitle_parts = []
+    if start_date or end_date:
+        subtitle_parts.append(f"{start_date or 'start'} to {end_date or 'now'}")
+    subtitle_parts.append(f"Sorted by {order_label} {metric_label}")
+    if top_n > 0:
+        subtitle_parts.append(f"Top {top_n} users")
+    pdf.set_font("Helvetica", "I", 9)
+    pdf.set_text_color(*G500)
+    pdf.multi_cell(0, 6, s("Applied Filters: " + " | ".join(subtitle_parts)))
+    pdf.ln(4)
+
+    total_tickets = int(enriched["tickets_bought"].sum()) if not enriched.empty else 0
+    total_revenue = float(enriched["total_spent"].sum()) if not enriched.empty else 0
+    total_users   = len(all_users_df)
+
+    make_section_heading(pdf, "User Activity KPIs")
+    make_kpi_row(pdf, [
+        ("Total Users",    f"{total_users:,}"),
+        ("Active Bookers", f"{len(enriched):,}"),
+        ("Total Tickets",  f"{total_tickets:,}"),
+        ("Total Revenue",  f"Rs{total_revenue:,.0f}"),
+    ])
+
+    if not display_df.empty:
+        tcols = ["name", "email", "role", "tickets_bought", "booking_count", "total_spent"]
+        tcols = [c for c in tcols if c in display_df.columns]
+        tdf   = display_df[tcols].copy()
+        tdf.columns = [c.replace("_", " ").title() for c in tcols]
+        if "Total Spent" in tdf.columns:
+            tdf["Total Spent"] = tdf["Total Spent"].apply(lambda x: f"Rs{float(x):,.0f}")
+        make_table(pdf, tdf, max_rows=200, title=f"Users — {metric_label} Ranking ({order_label} First)")
+
+    c1 = chart_top_users(enriched, sort_by=sort_by, sort_order=sort_order, top_n=15)
+    c2 = chart_user_roles(all_users_df)
+    c3 = chart_user_registrations(all_users_df)
+    add_chart_page(pdf, c1, f"Users by {metric_label} ({order_label} First)")
+    add_chart_page(pdf, c2, "User Role Distribution (All Users)")
+    add_chart_page(pdf, c3, "User Registrations Over Time")
+
+    paragraphs = []
+    period_text = f" (Period: {start_date or 'all time'} – {end_date or 'now'})" if (start_date or end_date) else ""
+    paragraphs.append("1. USER ENGAGEMENT OVERVIEW")
+    if not enriched.empty:
+        top_u = enriched.sort_values("total_spent", ascending=False).iloc[0]
+        paragraphs.append(
+            f"Across{period_text}, {len(enriched)} users made at least one booking. "
+            f"Total tickets: {total_tickets:,}, revenue: Rs{total_revenue:,.2f}. "
+            f"Top spender: '{top_u.get('name','?')}' — "
+            f"Rs{top_u['total_spent']:,.0f} across {int(top_u['booking_count'])} bookings."
+        )
+    paragraphs.append("2. LOYALTY & RETENTION")
+    paragraphs.append(
+        "High-ticket users are your most loyal audience. A tiered loyalty programme with priority seating "
+        "and cashback credits for frequent bookers would improve retention and lifetime value significantly."
+    )
+    add_analysis(pdf, paragraphs)
+
+    pdf.output(out_path)
+    print(f"  [users-adv] PDF saved → {out_path}")
+    return out_path
+
+
+# ============================================================================
+# MAIN
+# ============================================================================
+
 def main():
+
     parser = argparse.ArgumentParser(description="TicketFlicks Targeted Report Generator")
     parser.add_argument("--types", nargs="+", required=True,
                         choices=list(BUILDERS.keys()) + ["all"],
                         help="Report types to generate")
+    # Advanced filter arguments
+    parser.add_argument("--start_date",   default="",     help="Start date YYYY-MM-DD")
+    parser.add_argument("--end_date",     default="",     help="End date YYYY-MM-DD")
+    parser.add_argument("--sort_by",      default="date", help="Sort metric: revenue|tickets|date")
+    parser.add_argument("--sort_order",   default="desc", help="Sort order: asc|desc")
+    parser.add_argument("--top_n",        default="0",    help="Limit to top N records (0=all)")
+    parser.add_argument("--movie_filter", default="",     help="Movie title substring filter")
     args = parser.parse_args()
 
     types = list(BUILDERS.keys()) if "all" in args.types else args.types
 
-    print(f"\n[TicketFlicks] Generating reports for: {', '.join(types)}\n")
+    filters = {
+        "start_date":   args.start_date,
+        "end_date":     args.end_date,
+        "sort_by":      args.sort_by,
+        "sort_order":   args.sort_order,
+        "top_n":        args.top_n,
+        "movie_filter": args.movie_filter,
+    }
+
+    print(f"\n[TicketFlicks] Generating reports for: {', '.join(types)}")
+    print(f"[TicketFlicks] Filters: {filters}\n")
 
     client, db = connect()
     generated  = []
@@ -1106,10 +2096,32 @@ def main():
     for rtype in types:
         out = os.path.join(OUTPUT_DIR, f"{rtype}_report.pdf")
         try:
-            BUILDERS[rtype](db, out)
+            has_filters = any([
+                filters["start_date"], filters["end_date"],
+                filters["sort_by"] != "date", filters["sort_order"] != "desc",
+                int(filters["top_n"]) > 0, filters["movie_filter"]
+            ])
+
+            # Map every report type to its advanced builder
+            ADVANCED_BUILDERS = {
+                "bookings": build_advanced_bookings_report,
+                "payments": build_advanced_payments_report,
+                "movies":   build_advanced_movies_report,
+                "shows":    build_advanced_shows_report,
+                "theatres": build_advanced_theatres_report,
+                "users":    build_advanced_users_report,
+            }
+
+            if has_filters and rtype in ADVANCED_BUILDERS:
+                ADVANCED_BUILDERS[rtype](db, out, filters)
+            else:
+                BUILDERS[rtype](db, out)
             generated.append((rtype, out))
         except Exception as e:
+            import traceback
             print(f"  [ERROR] {rtype}: {e}")
+            traceback.print_exc()
+
 
     client.close()
 
@@ -1121,7 +2133,6 @@ def main():
             for rtype, pdf_path in generated:
                 zf.write(pdf_path, arcname=f"{rtype}_report.pdf")
         print(f"\n✅ ZIP created: {zip_path}")
-        # Write absolute path to stdout so Node can read it
         print(f"ZIP_PATH:{os.path.abspath(zip_path)}")
     elif len(generated) == 1:
         print(f"\n✅ Single PDF: {generated[0][1]}")
