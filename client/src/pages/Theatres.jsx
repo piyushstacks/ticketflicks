@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { MapPin, Film, Search, Plus, Clock, Calendar, Star, ChevronDown, ChevronUp } from 'lucide-react'
+import { MapPin, Film, Search, Plus, Clock, Calendar, Star, ChevronDown, ChevronUp, Monitor } from 'lucide-react'
 import BlurCircle from '../components/BlurCircle'
 import { useAppContext } from '../context/AppContext'
 import toast from 'react-hot-toast'
@@ -200,7 +200,18 @@ const Theatres = () => {
                 <div className="p-5 bg-[var(--bg-card)]">
                   {theatre.shows && theatre.shows.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                      {theatre.shows.map((show) => (
+                      {theatre.shows.map((show) => {
+                        const movieTitle = show.movie?.title || 'Unknown Movie'
+                        const showDate = show.showDateTime
+                          ? new Date(show.showDateTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : (show.startDate ? new Date(show.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD')
+                        const showTime = show.showDateTime
+                          ? new Date(show.showDateTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+                          : (show.showTime || 'TBD')
+                        const screenName = show.screen?.name || (show.screen?.screenNumber ? `Screen ${show.screen.screenNumber}` : 'Screen')
+                        const minPrice = getMinPrice(show)
+
+                        return (
                         <div
                           key={show._id}
                           className="rounded-xl overflow-hidden group transition-all duration-300 hover:shadow-lg"
@@ -213,42 +224,53 @@ const Theatres = () => {
                                   ? show.movie.poster_path
                                   : imageBaseURL + (show.movie?.poster_path || '')
                               }
-                              alt={show.movie?.title}
+                              alt={movieTitle}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               loading="lazy"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                            {/* Language badge over poster */}
+                            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                                  style={{ backgroundColor: 'rgba(0,0,0,0.65)', color: 'var(--color-accent)', border: '1px solid var(--border)' }}>
+                              {show.language || 'English'}
+                            </span>
                           </div>
-                          
-                          <div className="p-4 flex flex-col h-[140px]">
-                            <h4 className="font-bold text-sm mb-1.5 line-clamp-1" style={{ color: "var(--text-primary)" }}>
-                              {show.movie?.title}
+
+                          <div className="p-4 flex flex-col gap-2">
+                            {/* Movie Title */}
+                            <h4 className="font-bold text-sm leading-tight line-clamp-1" style={{ color: "var(--text-primary)" }}>
+                              {movieTitle}
                             </h4>
-                            
-                            <div className="flex items-center gap-2 text-xs mb-2" style={{ color: "var(--text-muted)" }}>
-                              <Clock className="w-3.5 h-3.5 text-accent" />
-                              <span className="font-medium text-[var(--text-secondary)]">
-                                {show.showDateTime
-                                  ? new Date(show.showDateTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-                                  : show.showTime || 'TBD'}
-                              </span>
+
+                            {/* Date Row */}
+                            <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                              <Calendar className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--color-accent)' }} />
+                              <span>{showDate}</span>
                             </div>
-                            
-                            <div className="flex items-center gap-2 text-xs mb-auto" style={{ color: "var(--text-muted)" }}>
-                              <span className="px-2 py-0.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)]">
-                                {show.language || 'English'}
-                              </span>
+
+                            {/* Time Row */}
+                            <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                              <Clock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--color-accent)' }} />
+                              <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{showTime}</span>
                             </div>
-                            
+
+                            {/* Screen Row */}
+                            <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                              <Monitor className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--color-accent)' }} />
+                              <span>{screenName}</span>
+                              <span className="ml-auto font-semibold text-accent">₹{minPrice}</span>
+                            </div>
+
                             <button
                               onClick={(e) => { e.stopPropagation(); handleSelectShow(show._id); }}
-                              className="btn-primary w-full py-2.5 text-xs mt-3 shadow-md hover:shadow-accent/25"
+                              className="btn-primary w-full py-2 text-xs mt-1 shadow-md hover:shadow-accent/25"
                             >
                               Book Tickets
                             </button>
                           </div>
                         </div>
-                      ))}
+                        )})
+                      }
                     </div>
                   ) : (
                     <div

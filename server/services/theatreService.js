@@ -4,6 +4,7 @@
  */
 
 import Theatre from "../models/Theatre.js";
+import ScreenTbl from "../models/ScreenTbl.js";
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
 import sendEmail from "../configs/nodeMailer.js";
@@ -232,6 +233,23 @@ export const registerTheatre = async (registrationData) => {
   managerUser.managedTheatreId = theatreDoc._id;
   await managerUser.save();
 
+  // Persist submitted screens so admin can see them in the pending review
+  if (Array.isArray(screens) && screens.length > 0) {
+    const ScreenTbl = (await import("../models/ScreenTbl.js")).default;
+    const screenDocs = screens.map((s, idx) => ({
+      name: s.name || `Screen ${idx + 1}`,
+      screenNumber: s.screenNumber || String(idx + 1),
+      theatre: theatreDoc._id,
+      seatLayout: s.seatLayout || null,
+      seatTiers: s.seatTiers || s.pricing || [],
+      isActive: false, // inactive until theatre is approved
+      status: "inactive",
+      createdBy: managerUser._id,
+      lastModifiedBy: managerUser._id,
+    }));
+    await ScreenTbl.insertMany(screenDocs);
+  }
+
   // Delete OTP
   await Otp.deleteOne({ _id: otpRecord._id });
 
@@ -319,6 +337,7 @@ export const getAllTheatres = async (filters = {}, skip = 0, limit = 50) => {
  * Get pending theatres (admin only)
  */
 export const getPendingTheatres = async (skip = 0, limit = 50) => {
+
   const theatres = await Theatre.find({ approval_status: "pending" })
     .populate("manager_id", "name email phone")
     .skip(skip)
@@ -327,17 +346,42 @@ export const getPendingTheatres = async (skip = 0, limit = 50) => {
 
   const total = await Theatre.countDocuments({ approval_status: "pending" });
 
+  // Fetch screen counts for all pending theatres in one query
+  const theatreIds = theatres.map((t) => t._id);
+  const screenCounts = await ScreenTbl.aggregate([
+    { $match: { theatre: { $in: theatreIds } } },
+    { $group: { _id: "$theatre", count: { $sum: 1 } } },
+  ]);
+  const screenCountMap = {};
+  screenCounts.forEach((s) => { screenCountMap[s._id.toString()] = s.count; });
+
   return {
     theatres: theatres.map((t) => ({
+      _id: t._id,
       id: t._id.toString(),
       name: t.name,
       location: t.location,
+      address: t.address,
+      city: t.city,
+      state: t.state,
+      zipCode: t.zipCode,
+      contact_no: t.contact_no,
+      email: t.email,
+      step3_pdf_url: t.step3_pdf_url,
+      screenCount: screenCountMap[t._id.toString()] ?? 0,
+      manager_id: {
+        _id: t.manager_id._id,
+        name: t.manager_id.name,
+        email: t.manager_id.email,
+        phone: t.manager_id.phone,
+      },
       manager: {
         id: t.manager_id._id.toString(),
         name: t.manager_id.name,
         email: t.manager_id.email,
         phone: t.manager_id.phone,
       },
+      approval_status: t.approval_status,
       approvalStatus: t.approval_status,
       createdAt: t.createdAt,
     })),
@@ -375,6 +419,13 @@ export const approveTheatre = async (theatreId, action, notes = "") => {
     theatre.approval_date = new Date();
     theatre.approval_notes = notes;
     await theatre.save();
+
+    // Activate any screens that were pre-registered during signup
+    const ScreenTbl = (await import("../models/ScreenTbl.js")).default;
+    await ScreenTbl.updateMany(
+      { theatre: theatreId, status: "inactive" },
+      { $set: { isActive: true, status: "active" } }
+    );
 
     // Send approval email
     try {

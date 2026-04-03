@@ -55,9 +55,22 @@ export const getShowsByTheatre = async (req, res) => {
     const shows = await ShowTbls.find({
       theatre: theatreId,
       isActive: true,
-      showDateTime: { $gte: now },           // ← strict current-time filter
-      startDate: { $lte: now },
-      endDate: { $gte: now }
+      showDateTime: { $gte: now },
+      // startDate & endDate are optional — only filter if the field is present
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: null },
+        { startDate: { $lte: now } }
+      ],
+      $and: [
+        {
+          $or: [
+            { endDate: { $exists: false } },
+            { endDate: null },
+            { endDate: { $gte: now } }
+          ]
+        }
+      ]
     })
       .populate("movie", "title poster_path backdrop_path isActive runtime duration_min")
       .populate("theatre", "name location city")
@@ -104,9 +117,22 @@ export const getShowsByMovie = async (req, res) => {
     const shows = await ShowTbls.find({
       movie: movieId,
       isActive: true,
-      showDateTime: { $gte: now },           // strict current-time filter
-      startDate: { $lte: now },
-      endDate: { $gte: now }
+      showDateTime: { $gte: now },
+      // startDate & endDate are optional — only filter if the field is present
+      $or: [
+        { startDate: { $exists: false } },
+        { startDate: null },
+        { startDate: { $lte: now } }
+      ],
+      $and: [
+        {
+          $or: [
+            { endDate: { $exists: false } },
+            { endDate: null },
+            { endDate: { $gte: now } }
+          ]
+        }
+      ]
     })
       .populate({
         path: "theatre",

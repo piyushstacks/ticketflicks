@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { AlertCircle, Ban, CheckCircle, Clock, Edit2, MapPin, Monitor, Phone, Users, XCircle } from "lucide-react";
+import { AlertCircle, Ban, Building2, CheckCircle, Clock, Edit2, ExternalLink, FileText, Mail, MapPin, Monitor, Phone, User, Users, XCircle } from "lucide-react";
 import { useFormValidation } from "../../hooks/useFormValidation.js";
 import { email as emailValidator, errorId, optional, optionalPhone10, required } from "../../lib/validation.js";
 
@@ -424,85 +424,176 @@ const AdminTheatres = () => {
 
       {/* Pending Theatres Grid */}
       {activeTab === "pending" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
-          {pendingTheatres.map((theatre) => (
-            <div
-              key={theatre._id}
-              className="bg-[var(--bg-primary)]/30 border border-yellow-500/30 rounded-xl p-4 sm:p-5 hover:border-yellow-500/50 transition min-w-0 overflow-hidden flex flex-col"
-            >
-              <div className="space-y-3 flex-1 min-w-0">
-                <div className="flex justify-between items-start gap-2">
-                  <h3 className="text-lg sm:text-xl font-bold truncate">{theatre.name}</h3>
-                  <span className="shrink-0 px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-full flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Pending
-                  </span>
+        <div className="space-y-5 min-w-0">
+          {pendingTheatres.map((theatre) => {
+            const mgr = theatre.manager_id || theatre.manager || {};
+            const hasAddress = theatre.address || theatre.city || theatre.state;
+            const submittedDate = new Date(theatre.createdAt).toLocaleDateString("en-IN", {
+              day: "2-digit", month: "short", year: "numeric"
+            });
+            const submittedTime = new Date(theatre.createdAt).toLocaleTimeString("en-IN", {
+              hour: "2-digit", minute: "2-digit"
+            });
+
+            return (
+              <div
+                key={theatre._id}
+                className="bg-[var(--bg-primary)]/30 border border-yellow-500/30 rounded-2xl overflow-hidden hover:border-yellow-500/60 hover:shadow-lg hover:shadow-yellow-500/5 transition-all duration-200"
+              >
+                {/* Card Header */}
+                <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-yellow-500/20 bg-yellow-500/5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-yellow-500/15 flex items-center justify-center shrink-0">
+                      <Building2 className="w-5 h-5 text-yellow-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-lg font-bold truncate leading-tight">{theatre.name}</h3>
+                      <p className="text-xs text-[var(--text-muted)] truncate">
+                        <MapPin className="w-3 h-3 inline mr-1 text-primary" />
+                        {theatre.location || "Location not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="px-2.5 py-1 bg-yellow-600/20 text-yellow-400 text-xs rounded-full flex items-center gap-1.5 font-medium">
+                      <Clock className="w-3 h-3" />
+                      Awaiting Review
+                    </span>
+                  </div>
                 </div>
 
-                <div className="space-y-2 text-sm text-[var(--text-muted)] min-w-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <MapPin className="w-4 h-4 shrink-0 text-primary" />
-                    <span className="truncate">{theatre.location || "N/A"}</span>
-                  </div>
+                {/* Card Body — two-column grid on md+ */}
+                <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                  {theatre.manager_id && (
-                    <>
-                      <div className="text-xs truncate">
-                        <span className="text-[var(--text-muted)]">Manager: </span>
-                        <span>{theatre.manager_id.name}</span>
-                      </div>
-                      <div className="text-xs truncate">
-                        <span className="text-[var(--text-muted)]">Email: </span>
-                        <span>{theatre.manager_id.email}</span>
-                      </div>
-                      {theatre.manager_id.phone && (
-                        <div className="text-xs">
-                          <span className="text-[var(--text-muted)]">Phone: </span>
-                          <span>{theatre.manager_id.phone}</span>
+                  {/* ── Theatre Details ── */}
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+                      Theatre Details
+                    </p>
+
+                    {hasAddress && (
+                      <div className="flex items-start gap-2.5">
+                        <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        <div className="text-sm min-w-0">
+                          {theatre.address && (
+                            <p className="text-[var(--text-primary)] font-medium">{theatre.address}</p>
+                          )}
+                          {(theatre.city || theatre.state) && (
+                            <p className="text-[var(--text-muted)]">
+                              {[theatre.city, theatre.state].filter(Boolean).join(", ")}
+                              {theatre.zipCode ? ` — ${theatre.zipCode}` : ""}
+                            </p>
+                          )}
                         </div>
-                      )}
-                    </>
-                  )}
+                      </div>
+                    )}
 
-                  {theatre.screenCount !== undefined && (
-                    <div className="text-xs flex items-center gap-1">
-                      <span className="text-[var(--text-muted)]">Screens: </span>
-                      <span className="text-primary font-bold">
-                        {theatre.screenCount}
+                    {theatre.contact_no && (
+                      <div className="flex items-center gap-2.5">
+                        <Phone className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-sm text-[var(--text-primary)]">{theatre.contact_no}</span>
+                      </div>
+                    )}
+
+                    {theatre.email && (
+                      <div className="flex items-center gap-2.5">
+                        <Mail className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-sm text-[var(--text-primary)] truncate">{theatre.email}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2.5">
+                      <Monitor className="w-4 h-4 text-primary shrink-0" />
+                      <span className="text-sm">
+                        <span className="text-[var(--text-muted)]">Screens registered: </span>
+                        <span className="font-bold text-primary">
+                          {theatre.screenCount > 0 
+                            ? theatre.screenCount 
+                            : <span className="text-orange-400 text-xs uppercase tracking-wider font-semibold">Not Synced</span>}
+                        </span>
                       </span>
                     </div>
-                  )}
 
-                  <div className="text-xs">
-                    <span className="text-[var(--text-muted)]">Submitted: </span>
-                    <span>{new Date(theatre.createdAt).toLocaleDateString()}</span>
+                    {theatre.step3_pdf_url && (
+                      <div className="flex items-center gap-2.5">
+                        <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                        <a
+                          href={theatre.step3_pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 flex items-center gap-1 transition-colors"
+                        >
+                          View submitted document
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Manager Details ── */}
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+                      Manager / Owner Details
+                    </p>
+
+                    <div className="flex items-center gap-2.5">
+                      <User className="w-4 h-4 text-purple-400 shrink-0" />
+                      <span className="text-sm font-semibold text-[var(--text-primary)]">
+                        {mgr.name || "—"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <Mail className="w-4 h-4 text-purple-400 shrink-0" />
+                      <span className="text-sm text-[var(--text-primary)] truncate">
+                        {mgr.email || "—"}
+                      </span>
+                    </div>
+
+                    {mgr.phone && (
+                      <div className="flex items-center gap-2.5">
+                        <Phone className="w-4 h-4 text-purple-400 shrink-0" />
+                        <span className="text-sm text-[var(--text-primary)]">{mgr.phone}</span>
+                      </div>
+                    )}
+
+                    {/* Submission timestamp */}
+                    <div className="mt-auto pt-2 border-t border-[var(--border)]/50">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        <Clock className="w-3 h-3 inline mr-1" />
+                        Submitted on <span className="text-[var(--text-secondary)]">{submittedDate}</span> at{" "}
+                        <span className="text-[var(--text-secondary)]">{submittedTime}</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-3 sm:pt-4 mt-auto">
+                {/* Card Footer — action buttons */}
+                <div className="px-5 pb-5 flex flex-wrap gap-3">
                   <button
                     onClick={() => handleApproveTheatre(theatre._id, "approve")}
-                    className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition text-xs sm:text-sm font-medium"
+                    className="flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-500/30 hover:border-green-500/60 rounded-xl transition-all text-sm font-semibold"
                   >
                     <CheckCircle className="w-4 h-4 shrink-0" />
-                    Approve
+                    Approve Theatre
                   </button>
                   <button
                     onClick={() => handleApproveTheatre(theatre._id, "decline")}
-                    className="flex-1 min-w-[100px] flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition text-xs sm:text-sm font-medium"
+                    className="flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 hover:border-red-500/60 rounded-xl transition-all text-sm font-semibold"
                   >
                     <XCircle className="w-4 h-4 shrink-0" />
                     Decline
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {pendingTheatres.length === 0 && (
-            <div className="col-span-full text-center py-12 px-4">
+            <div className="text-center py-16 px-4">
               <Clock className="w-12 h-12 text-[var(--text-muted)] mx-auto mb-4" />
               <p className="text-[var(--text-muted)] text-lg">No pending theatre approvals</p>
+              <p className="text-[var(--text-muted)] text-sm mt-1">All submissions have been reviewed</p>
             </div>
           )}
         </div>
